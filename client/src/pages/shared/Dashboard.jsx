@@ -1,263 +1,119 @@
-import { useState, useEffect } from 'react';
-import { Users, Shield, FileText, Activity, TrendingUp, TrendingDown, Eye, Clock } from 'lucide-react';
+import { Users, BookOpen, BarChart3, Home, Truck, CreditCard, Calculator, ShoppingCart, Package, FileText, Settings, HelpCircle, DollarSign, Megaphone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalRoles: 0,
-    totalAuditLogs: 0,
-    activeUsers: 0
-  });
+  const navigate = useNavigate();
 
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Navigation tabs configuration with descriptions
+  const navigationTabs = [
+    { 
+      name: 'Students', 
+      icon: Users, 
+      href: '/dashboard/students',
+      description: 'Manage student profiles, registrations, and personal information'
+    },
+    { 
+      name: 'Classes', 
+      icon: BookOpen, 
+      href: '/dashboard/classes',
+      description: 'Create and manage classes, subjects, and academic schedules'
+    },
+    { 
+      name: 'Results', 
+      icon: BarChart3, 
+      href: '/dashboard/results',
+      description: 'Enter, view, and analyze student academic performance and grades'
+    },
+    { 
+      name: 'Boarding', 
+      icon: Home, 
+      href: '/dashboard/boarding',
+      description: 'Manage hostel facilities, room assignments, and boarding enrollments'
+    },
+    { 
+      name: 'Transport', 
+      icon: Truck, 
+      href: '/dashboard/transport',
+      description: 'Manage transport routes, student registrations, and weekly fee payments'
+    },
+    { 
+      name: 'Announcements', 
+      icon: Megaphone, 
+      href: '/dashboard/announcements',
+      description: 'Create and manage announcements for students and employees'
+    },
+    { 
+      name: 'Student Billing', 
+      icon: CreditCard, 
+      href: '/dashboard/fees-payment',
+      description: 'Generate invoices, process payments, and manage fee structures'
+    },
+    { 
+      name: 'Accounting', 
+      icon: Calculator, 
+      href: '/dashboard/accounting/chart-of-accounts',
+      description: 'Track financial transactions, manage accounts, and generate reports'
+    },
+    // { 
+    //   name: 'Procurement', 
+    //   icon: ShoppingCart, 
+    //   href: '/dashboard/procurement',
+    //   description: 'Manage purchasing, suppliers, and procurement processes'
+    // },
+    { 
+      name: 'Payroll', 
+      icon: DollarSign, 
+      href: '/dashboard/payroll',
+      description: 'Create payslips and process employee payroll'
+    },
+    { 
+      name: 'Inventory', 
+      icon: Package, 
+      href: '/dashboard/inventory',
+      description: 'Track school supplies, equipment, and inventory management'
+    },
+    { 
+      name: 'Financial Reports', 
+      icon: FileText, 
+      href: '/dashboard/reports/income-statement',
+      description: 'Generate comprehensive financial reports and analytics'
+    },
+    { 
+      name: 'Admin', 
+      icon: Settings, 
+      href: '/dashboard/settings',
+      description: 'System administration, user management, and configuration settings'
+    },
+    // { 
+    //   name: 'Help & Tutorials', 
+    //   icon: HelpCircle, 
+    //   href: '/dashboard/help',
+    //   description: 'Access user guides, tutorials, and support documentation'
+    // },
+  ];
 
-  useEffect(() => {
-    // Simulate loading data
-    const loadData = async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setStats({
-        totalUsers: 156,
-        totalRoles: 8,
-        totalAuditLogs: 1247,
-        activeUsers: 89
-      });
-
-      setRecentActivity([
-        {
-          id: 1,
-          action: 'User login',
-          user: 'sysadmin',
-          timestamp: '2024-01-15T10:30:00Z',
-          type: 'login'
-        },
-        {
-          id: 2,
-          action: 'User created',
-          user: 'john.doe',
-          timestamp: '2024-01-15T09:15:00Z',
-          type: 'create'
-        },
-        {
-          id: 3,
-          action: 'Role assigned',
-          user: 'jane.smith',
-          timestamp: '2024-01-15T08:45:00Z',
-          type: 'update'
-        },
-        {
-          id: 4,
-          action: 'Audit log viewed',
-          user: 'admin',
-          timestamp: '2024-01-15T08:30:00Z',
-          type: 'view'
-        }
-      ]);
-
-      setIsLoading(false);
-    };
-
-    loadData();
-  }, []);
-
-  const StatCard = ({ title, value, icon: Icon, change, changeType }) => (
-    <div className="bg-white overflow-hidden shadow rounded-lg">
-      <div className="p-5">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <Icon className="h-6 w-6 text-gray-400" />
-          </div>
-          <div className="ml-5 w-0 flex-1">
-            <dl>
-              <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
-              <dd className="flex items-baseline">
-                <div className="text-2xl font-semibold text-gray-900">{value}</div>
-                {change && (
-                  <div className={`ml-2 flex items-baseline text-sm font-semibold ${
-                    changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {changeType === 'increase' ? (
-                      <TrendingUp className="self-center flex-shrink-0 h-4 w-4 text-green-500" />
-                    ) : (
-                      <TrendingDown className="self-center flex-shrink-0 h-4 w-4 text-red-500" />
-                    )}
-                    <span className="sr-only">{changeType === 'increase' ? 'Increased' : 'Decreased'} by</span>
-                    {change}
-                  </div>
-                )}
-              </dd>
-            </dl>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const ActivityItem = ({ activity }) => {
-    const getIcon = (type) => {
-      switch (type) {
-        case 'login':
-          return <Activity className="h-4 w-4 text-blue-500" />;
-        case 'create':
-          return <Users className="h-4 w-4 text-green-500" />;
-        case 'update':
-          return <Shield className="h-4 w-4 text-yellow-500" />;
-        case 'view':
-          return <Eye className="h-4 w-4 text-gray-500" />;
-        default:
-          return <Clock className="h-4 w-4 text-gray-400" />;
-      }
-    };
-
-    const formatTime = (timestamp) => {
-      return new Date(timestamp).toLocaleString();
+  const handleTabClick = (href) => {
+    navigate(href);
     };
 
     return (
-      <div className="flex items-center space-x-3 py-3">
-        <div className="flex-shrink-0">
-          {getIcon(activity.type)}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-          <p className="text-sm text-gray-500">by {activity.user}</p>
-        </div>
-        <div className="flex-shrink-0 text-sm text-gray-500">
-          {formatTime(activity.timestamp)}
-        </div>
-      </div>
-    );
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Welcome back! Here's what's happening with your SMS system.
-        </p>
-      </div>
-
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Users"
-          value={stats.totalUsers}
-          icon={Users}
-          change="12%"
-          changeType="increase"
-        />
-        <StatCard
-          title="Total Roles"
-          value={stats.totalRoles}
-          icon={Shield}
-          change="5%"
-          changeType="increase"
-        />
-        <StatCard
-          title="Audit Logs"
-          value={stats.totalAuditLogs}
-          icon={FileText}
-          change="8%"
-          changeType="increase"
-        />
-        <StatCard
-          title="Active Users"
-          value={stats.activeUsers}
-          icon={Activity}
-          change="3%"
-          changeType="decrease"
-        />
-      </div>
-
-      {/* Recent activity */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Activity</h3>
-          <div className="mt-5 flow-root">
-            <div className="-my-5 divide-y divide-gray-200">
-              {recentActivity.map((activity) => (
-                <ActivityItem key={activity.id} activity={activity} />
-              ))}
-            </div>
-          </div>
-          <div className="mt-6">
-            <a
-              href="#"
-              className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="max-w-5xl w-full">
+        <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Welcome to UbuntuLearn</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {navigationTabs.map((tab) => (
+            <button
+              key={tab.name}
+              onClick={() => handleTabClick(tab.href)}
+              className="group relative flex flex-col items-center p-4 bg-gray-100 border-2 border-gray-300 rounded-lg text-gray-700 transition-all duration-200 hover:bg-gray-200 hover:border-gray-400 hover:shadow-lg hover:scale-105 min-h-[120px]"
             >
-              View all activity
-            </a>
-          </div>
+              <div className="flex items-center justify-center w-8 h-8 mb-3 bg-gray-200 rounded-full">
+                <tab.icon className="h-4 w-4 text-gray-600" />
         </div>
-      </div>
-
-      {/* Quick actions */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Quick Actions</h3>
-          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <button className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500">
-              <div>
-                <span className="rounded-lg inline-flex p-3 bg-blue-50 text-blue-700 ring-4 ring-white">
-                  <Users className="h-6 w-6" />
-                </span>
-              </div>
-              <div className="mt-8">
-                <h3 className="text-lg font-medium">
-                  <span className="absolute inset-0" aria-hidden="true" />
-                  Add New User
-                </h3>
-                <p className="mt-2 text-sm text-gray-500">
-                  Create a new user account with specific roles and permissions.
-                </p>
-              </div>
+              <span className="text-sm font-semibold text-center mb-1">{tab.name}</span>
+              <span className="text-xs text-gray-600 text-center leading-tight">{tab.description}</span>
             </button>
-
-            <button className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500">
-              <div>
-                <span className="rounded-lg inline-flex p-3 bg-green-50 text-green-700 ring-4 ring-white">
-                  <Shield className="h-6 w-6" />
-                </span>
-              </div>
-              <div className="mt-8">
-                <h3 className="text-lg font-medium">
-                  <span className="absolute inset-0" aria-hidden="true" />
-                  Manage Roles
-                </h3>
-                <p className="mt-2 text-sm text-gray-500">
-                  Create and manage user roles and permissions.
-                </p>
-              </div>
-            </button>
-
-            <button className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500">
-              <div>
-                <span className="rounded-lg inline-flex p-3 bg-yellow-50 text-yellow-700 ring-4 ring-white">
-                  <FileText className="h-6 w-6" />
-                </span>
-              </div>
-              <div className="mt-8">
-                <h3 className="text-lg font-medium">
-                  <span className="absolute inset-0" aria-hidden="true" />
-                  View Audit Logs
-                </h3>
-                <p className="mt-2 text-sm text-gray-500">
-                  Review system activity and audit trails.
-                </p>
-              </div>
-            </button>
-          </div>
+          ))}
         </div>
       </div>
     </div>

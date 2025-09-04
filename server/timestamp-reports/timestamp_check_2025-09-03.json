@@ -1,0 +1,2865 @@
+{
+  "timestamp": "2025-09-03T12:21:11.921Z",
+  "total_tables": 70,
+  "tables_with_timestamps": 64,
+  "tables_missing_timestamps": 6,
+  "tables_with_recommended": 46,
+  "table_details": {
+    "account_balances": {
+      "table_name": "account_balances",
+      "total_columns": 7,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "account_id",
+        "currency_id",
+        "balance",
+        "as_of_date",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "accounting_periods": {
+      "table_name": "accounting_periods",
+      "total_columns": 10,
+      "timestamp_columns": [
+        {
+          "name": "closed_date",
+          "type": "datetime",
+          "nullable": "YES",
+          "default": null,
+          "extra": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "period_name",
+        "period_type",
+        "start_date",
+        "end_date",
+        "status",
+        "closed_date",
+        "closed_by",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "accounts_payable_balances": {
+      "table_name": "accounts_payable_balances",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "supplier_id",
+        "currency_id",
+        "original_expense_id",
+        "original_amount",
+        "paid_amount",
+        "outstanding_balance",
+        "due_date",
+        "status",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "accounts_payable_payments": {
+      "table_name": "accounts_payable_payments",
+      "total_columns": 9,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "transaction_id",
+        "original_expense_id",
+        "supplier_id",
+        "amount_paid",
+        "payment_date",
+        "status",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "audit_logs": {
+      "table_name": "audit_logs",
+      "total_columns": 10,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table audit_logs is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to audit_logs\nALTER TABLE `audit_logs` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "user_id",
+        "action",
+        "table_name",
+        "record_id",
+        "old_values",
+        "new_values",
+        "ip_address",
+        "user_agent",
+        "created_at"
+      ]
+    },
+    "bank_reconciliations": {
+      "table_name": "bank_reconciliations",
+      "total_columns": 12,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": null,
+          "extra": ""
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table bank_reconciliations is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to bank_reconciliations\nALTER TABLE `bank_reconciliations` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "bank_account_id",
+        "reconciliation_date",
+        "bank_balance",
+        "book_balance",
+        "adjusted_balance",
+        "description",
+        "notes",
+        "status",
+        "created_at",
+        "completed_at",
+        "created_by"
+      ]
+    },
+    "bank_statement_items": {
+      "table_name": "bank_statement_items",
+      "total_columns": 10,
+      "timestamp_columns": [
+        {
+          "name": "reconciled_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": null,
+          "extra": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table bank_statement_items is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to bank_statement_items\nALTER TABLE `bank_statement_items` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "reconciliation_id",
+        "description",
+        "amount",
+        "transaction_date",
+        "reference",
+        "transaction_type",
+        "is_reconciled",
+        "reconciled_at",
+        "created_at"
+      ]
+    },
+    "bank_transactions": {
+      "table_name": "bank_transactions",
+      "total_columns": 12,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "bank_account_id",
+        "transaction_type",
+        "amount",
+        "currency",
+        "description",
+        "reference",
+        "transaction_date",
+        "status",
+        "created_by",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "boarding_enrollments": {
+      "table_name": "boarding_enrollments",
+      "total_columns": 15,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "student_reg_number",
+        "hostel_id",
+        "room_id",
+        "enrollment_date",
+        "check_in_date",
+        "check_out_date",
+        "term",
+        "academic_year",
+        "status",
+        "notes",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "boarding_fee_balances": {
+      "table_name": "boarding_fee_balances",
+      "total_columns": 12,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "enrollment_id",
+        "total_fee",
+        "paid_amount",
+        "outstanding_balance",
+        "currency_id",
+        "term",
+        "academic_year",
+        "due_date",
+        "status",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "boarding_fees": {
+      "table_name": "boarding_fees",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "hostel_id",
+        "term",
+        "academic_year",
+        "amount",
+        "currency_id",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "boarding_fees_payments": {
+      "table_name": "boarding_fees_payments",
+      "total_columns": 22,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "journal_entry_id",
+        "student_reg_number",
+        "academic_year",
+        "term",
+        "hostel_id",
+        "amount_paid",
+        "currency_id",
+        "base_currency_amount",
+        "base_currency_id",
+        "exchange_rate",
+        "payment_method",
+        "payment_date",
+        "receipt_number",
+        "reference_number",
+        "notes",
+        "status",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "boarding_payments": {
+      "table_name": "boarding_payments",
+      "total_columns": 15,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "enrollment_id",
+        "amount",
+        "currency_id",
+        "payment_date",
+        "payment_method",
+        "receipt_number",
+        "term",
+        "academic_year",
+        "status",
+        "notes",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "book_transactions": {
+      "table_name": "book_transactions",
+      "total_columns": 10,
+      "timestamp_columns": [
+        {
+          "name": "reconciled_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": null,
+          "extra": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table book_transactions is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to book_transactions\nALTER TABLE `book_transactions` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "reconciliation_id",
+        "description",
+        "amount",
+        "transaction_date",
+        "reference",
+        "journal_entry_line_id",
+        "is_reconciled",
+        "reconciled_at",
+        "created_at"
+      ]
+    },
+    "chart_of_accounts": {
+      "table_name": "chart_of_accounts",
+      "total_columns": 8,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "code",
+        "name",
+        "type",
+        "parent_id",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "class_term_year": {
+      "table_name": "class_term_year",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "gradelevel_class_id",
+        "term",
+        "academic_year",
+        "start_date",
+        "end_date",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "currencies": {
+      "table_name": "currencies",
+      "total_columns": 8,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "code",
+        "name",
+        "symbol",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "base_currency"
+      ]
+    },
+    "departments": {
+      "table_name": "departments",
+      "total_columns": 6,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "name",
+        "description",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "employee_bank_accounts": {
+      "table_name": "employee_bank_accounts",
+      "total_columns": 9,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "employee_id",
+        "bank_name",
+        "account_number",
+        "currency",
+        "is_primary",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "employees": {
+      "table_name": "employees",
+      "total_columns": 13,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "employee_id",
+        "full_name",
+        "id_number",
+        "address",
+        "email",
+        "phone_number",
+        "department_id",
+        "job_title_id",
+        "hire_date",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "enrollments_gradelevel_classes": {
+      "table_name": "enrollments_gradelevel_classes",
+      "total_columns": 4,
+      "timestamp_columns": [],
+      "has_timestamps": false,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table enrollments_gradelevel_classes is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table enrollments_gradelevel_classes is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to enrollments_gradelevel_classes\nALTER TABLE `enrollments_gradelevel_classes` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to enrollments_gradelevel_classes\nALTER TABLE `enrollments_gradelevel_classes` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "student_regnumber",
+        "gradelevel_class_id",
+        "status"
+      ]
+    },
+    "enrollments_subject_classes": {
+      "table_name": "enrollments_subject_classes",
+      "total_columns": 5,
+      "timestamp_columns": [],
+      "has_timestamps": false,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table enrollments_subject_classes is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table enrollments_subject_classes is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to enrollments_subject_classes\nALTER TABLE `enrollments_subject_classes` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to enrollments_subject_classes\nALTER TABLE `enrollments_subject_classes` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "student_regnumber",
+        "subject_class_id",
+        "gradelevel_class_id",
+        "status"
+      ]
+    },
+    "exchange_rates": {
+      "table_name": "exchange_rates",
+      "total_columns": 10,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "from_currency_id",
+        "to_currency_id",
+        "exchange_rate",
+        "is_active",
+        "effective_date",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "expenses": {
+      "table_name": "expenses",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "supplier_id",
+        "amount",
+        "currency_id",
+        "expense_date",
+        "description",
+        "payment_method",
+        "payment_status",
+        "journal_entry_id",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "fee_payments": {
+      "table_name": "fee_payments",
+      "total_columns": 15,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table fee_payments is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to fee_payments\nALTER TABLE `fee_payments` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "journal_entry_id",
+        "student_reg_number",
+        "payment_amount",
+        "payment_currency",
+        "exchange_rate",
+        "base_currency_amount",
+        "payment_method",
+        "payment_date",
+        "receipt_number",
+        "reference_number",
+        "notes",
+        "status",
+        "created_at",
+        "created_by"
+      ]
+    },
+    "gradelevel_classes": {
+      "table_name": "gradelevel_classes",
+      "total_columns": 5,
+      "timestamp_columns": [],
+      "has_timestamps": false,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table gradelevel_classes is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table gradelevel_classes is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to gradelevel_classes\nALTER TABLE `gradelevel_classes` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to gradelevel_classes\nALTER TABLE `gradelevel_classes` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "stream_id",
+        "name",
+        "homeroom_teacher_employee_number",
+        "capacity"
+      ]
+    },
+    "grading_criteria": {
+      "table_name": "grading_criteria",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "grade",
+        "min_mark",
+        "max_mark",
+        "points",
+        "description",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "guardians": {
+      "table_name": "guardians",
+      "total_columns": 12,
+      "timestamp_columns": [
+        {
+          "name": "CreatedAt",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "UpdatedAt",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table guardians is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table guardians is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to guardians\nALTER TABLE `guardians` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to guardians\nALTER TABLE `guardians` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "GuardianID",
+        "StudentRegNumber",
+        "Name",
+        "Surname",
+        "DateOfBirth",
+        "NationalIDNumber",
+        "Address",
+        "PhoneNumber",
+        "RelationshipToStudent",
+        "Gender",
+        "CreatedAt",
+        "UpdatedAt"
+      ]
+    },
+    "hostels": {
+      "table_name": "hostels",
+      "total_columns": 12,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "name",
+        "description",
+        "location",
+        "gender",
+        "total_rooms",
+        "total_capacity",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "inventory_categories": {
+      "table_name": "inventory_categories",
+      "total_columns": 7,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "name",
+        "icon",
+        "color",
+        "description",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "inventory_items": {
+      "table_name": "inventory_items",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "name",
+        "reference",
+        "category_id",
+        "description",
+        "unit_price",
+        "current_stock",
+        "location",
+        "supplier",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "invoice_items": {
+      "table_name": "invoice_items",
+      "total_columns": 10,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "invoice_structure_id",
+        "item_name",
+        "amount",
+        "description",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "invoice_structures": {
+      "table_name": "invoice_structures",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "gradelevel_class_id",
+        "term",
+        "academic_year",
+        "total_amount",
+        "currency_id",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "job_titles": {
+      "table_name": "job_titles",
+      "total_columns": 6,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "title",
+        "description",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "journal_entries": {
+      "table_name": "journal_entries",
+      "total_columns": 8,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "journal_id",
+        "entry_date",
+        "reference",
+        "description",
+        "created_by",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "journal_entry_lines": {
+      "table_name": "journal_entry_lines",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "journal_entry_id",
+        "account_id",
+        "description",
+        "debit",
+        "credit",
+        "currency_id",
+        "currency_code",
+        "exchange_rate",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "journals": {
+      "table_name": "journals",
+      "total_columns": 6,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "name",
+        "description",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "mid_term_coursework": {
+      "table_name": "mid_term_coursework",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "reg_number",
+        "subject_class_id",
+        "gradelevel_class_id",
+        "academic_year",
+        "term",
+        "coursework_mark",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "paper_marks": {
+      "table_name": "paper_marks",
+      "total_columns": 8,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "result_id",
+        "paper_id",
+        "mark",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "papers": {
+      "table_name": "papers",
+      "total_columns": 8,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "name",
+        "description",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "payroll_run_details": {
+      "table_name": "payroll_run_details",
+      "total_columns": 6,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table payroll_run_details is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to payroll_run_details\nALTER TABLE `payroll_run_details` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "payroll_run_id",
+        "payslip_id",
+        "amount",
+        "currency",
+        "created_at"
+      ]
+    },
+    "payroll_runs": {
+      "table_name": "payroll_runs",
+      "total_columns": 13,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "pay_period",
+        "pay_date",
+        "bank_account_id",
+        "payment_method",
+        "reference",
+        "total_amount",
+        "employee_count",
+        "status",
+        "notes",
+        "created_at",
+        "updated_at",
+        "created_by"
+      ]
+    },
+    "payslip_deductions": {
+      "table_name": "payslip_deductions",
+      "total_columns": 6,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table payslip_deductions is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to payslip_deductions\nALTER TABLE `payslip_deductions` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "payslip_id",
+        "label",
+        "amount",
+        "currency",
+        "created_at"
+      ]
+    },
+    "payslip_earnings": {
+      "table_name": "payslip_earnings",
+      "total_columns": 6,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table payslip_earnings is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to payslip_earnings\nALTER TABLE `payslip_earnings` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "payslip_id",
+        "label",
+        "amount",
+        "currency",
+        "created_at"
+      ]
+    },
+    "payslips": {
+      "table_name": "payslips",
+      "total_columns": 15,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "employee_id",
+        "pay_period",
+        "pay_date",
+        "currency",
+        "payment_method",
+        "bank_account_id",
+        "total_earnings",
+        "total_deductions",
+        "net_pay",
+        "status",
+        "notes",
+        "created_at",
+        "updated_at",
+        "created_by"
+      ]
+    },
+    "period_closing_audit": {
+      "table_name": "period_closing_audit",
+      "total_columns": 7,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table period_closing_audit is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to period_closing_audit\nALTER TABLE `period_closing_audit` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "period_id",
+        "action",
+        "performed_by",
+        "description",
+        "metadata",
+        "created_at"
+      ]
+    },
+    "period_closing_entries": {
+      "table_name": "period_closing_entries",
+      "total_columns": 6,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table period_closing_entries is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to period_closing_entries\nALTER TABLE `period_closing_entries` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "period_id",
+        "journal_entry_id",
+        "entry_type",
+        "description",
+        "created_at"
+      ]
+    },
+    "period_opening_balances": {
+      "table_name": "period_opening_balances",
+      "total_columns": 6,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table period_opening_balances is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to period_opening_balances\nALTER TABLE `period_opening_balances` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "period_id",
+        "account_id",
+        "opening_balance",
+        "balance_type",
+        "created_at"
+      ]
+    },
+    "reconciliation_matches": {
+      "table_name": "reconciliation_matches",
+      "total_columns": 6,
+      "timestamp_columns": [
+        {
+          "name": "matched_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table reconciliation_matches is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table reconciliation_matches is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to reconciliation_matches\nALTER TABLE `reconciliation_matches` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to reconciliation_matches\nALTER TABLE `reconciliation_matches` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "reconciliation_id",
+        "bank_statement_item_id",
+        "book_transaction_id",
+        "matched_at",
+        "matched_by"
+      ]
+    },
+    "results": {
+      "table_name": "results",
+      "total_columns": 13,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "reg_number",
+        "subject_class_id",
+        "gradelevel_class_id",
+        "academic_year",
+        "term",
+        "total_mark",
+        "grade",
+        "points",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "roles": {
+      "table_name": "roles",
+      "total_columns": 5,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "name",
+        "description",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "rooms": {
+      "table_name": "rooms",
+      "total_columns": 13,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "hostel_id",
+        "room_number",
+        "room_type",
+        "capacity",
+        "current_occupancy",
+        "floor_number",
+        "description",
+        "is_active",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "stream": {
+      "table_name": "stream",
+      "total_columns": 3,
+      "timestamp_columns": [],
+      "has_timestamps": false,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table stream is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table stream is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to stream\nALTER TABLE `stream` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to stream\nALTER TABLE `stream` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "name",
+        "stage"
+      ]
+    },
+    "student_balances": {
+      "table_name": "student_balances",
+      "total_columns": 7,
+      "timestamp_columns": [
+        {
+          "name": "last_updated",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "student_reg_number",
+        "current_balance",
+        "last_updated",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by"
+      ]
+    },
+    "student_transactions": {
+      "table_name": "student_transactions",
+      "total_columns": 13,
+      "timestamp_columns": [
+        {
+          "name": "transaction_date",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table student_transactions is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table student_transactions is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to student_transactions\nALTER TABLE `student_transactions` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to student_transactions\nALTER TABLE `student_transactions` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "journal_entry_id",
+        "student_reg_number",
+        "transaction_type",
+        "amount",
+        "description",
+        "term",
+        "academic_year",
+        "class_id",
+        "hostel_id",
+        "enrollment_id",
+        "transaction_date",
+        "created_by"
+      ]
+    },
+    "student_transport_registrations": {
+      "table_name": "student_transport_registrations",
+      "total_columns": 13,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "student_reg_number",
+        "route_id",
+        "pickup_point",
+        "dropoff_point",
+        "registration_date",
+        "start_date",
+        "end_date",
+        "weekly_fee",
+        "currency",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "students": {
+      "table_name": "students",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "CreatedAt",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "UpdatedAt",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table students is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table students is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to students\nALTER TABLE `students` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to students\nALTER TABLE `students` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "RegNumber",
+        "Name",
+        "Surname",
+        "DateOfBirth",
+        "NationalIDNumber",
+        "Address",
+        "Gender",
+        "Active",
+        "ImagePath",
+        "CreatedAt",
+        "UpdatedAt"
+      ]
+    },
+    "subject_classes": {
+      "table_name": "subject_classes",
+      "total_columns": 7,
+      "timestamp_columns": [],
+      "has_timestamps": false,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table subject_classes is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table subject_classes is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to subject_classes\nALTER TABLE `subject_classes` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to subject_classes\nALTER TABLE `subject_classes` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "subject_id",
+        "stream_id",
+        "gradelevel_class_id",
+        "employee_number",
+        "room_id",
+        "capacity"
+      ]
+    },
+    "subjects": {
+      "table_name": "subjects",
+      "total_columns": 4,
+      "timestamp_columns": [],
+      "has_timestamps": false,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "created_at",
+          "priority": "high",
+          "description": "Table subjects is missing 'created_at' column for tracking when records are created"
+        },
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table subjects is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add created_at column to subjects\nALTER TABLE `subjects` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+        "-- Add updated_at column to subjects\nALTER TABLE `subjects` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "code",
+        "name",
+        "syllabus"
+      ]
+    },
+    "suppliers": {
+      "table_name": "suppliers",
+      "total_columns": 9,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "name",
+        "contact_person",
+        "phone",
+        "email",
+        "address",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "transactions": {
+      "table_name": "transactions",
+      "total_columns": 10,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "transaction_type",
+        "amount",
+        "currency_id",
+        "transaction_date",
+        "payment_method",
+        "description",
+        "journal_entry_id",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "transport_fees": {
+      "table_name": "transport_fees",
+      "total_columns": 10,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "student_registration_id",
+        "week_start_date",
+        "week_end_date",
+        "amount",
+        "currency",
+        "status",
+        "due_date",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "transport_payments": {
+      "table_name": "transport_payments",
+      "total_columns": 13,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "transport_fee_id",
+        "student_reg_number",
+        "payment_date",
+        "amount",
+        "currency",
+        "payment_method",
+        "reference_number",
+        "receipt_number",
+        "notes",
+        "created_by",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "transport_routes": {
+      "table_name": "transport_routes",
+      "total_columns": 10,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "route_name",
+        "route_code",
+        "pickup_point",
+        "dropoff_point",
+        "weekly_fee",
+        "currency",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "transport_schedules": {
+      "table_name": "transport_schedules",
+      "total_columns": 8,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "route_id",
+        "day_of_week",
+        "pickup_time",
+        "dropoff_time",
+        "is_active",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "trial_balance": {
+      "table_name": "trial_balance",
+      "total_columns": 11,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table trial_balance is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to trial_balance\nALTER TABLE `trial_balance` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "period_id",
+        "account_id",
+        "account_code",
+        "account_name",
+        "account_type",
+        "total_debit",
+        "total_credit",
+        "balance",
+        "balance_type",
+        "created_at"
+      ]
+    },
+    "uniform_issues": {
+      "table_name": "uniform_issues",
+      "total_columns": 13,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "item_id",
+        "student_reg_number",
+        "quantity",
+        "issue_date",
+        "payment_status",
+        "payment_method",
+        "amount",
+        "reference",
+        "notes",
+        "issued_by",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    "uniform_payments": {
+      "table_name": "uniform_payments",
+      "total_columns": 9,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table uniform_payments is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to uniform_payments\nALTER TABLE `uniform_payments` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "issue_id",
+        "amount",
+        "payment_date",
+        "payment_method",
+        "reference",
+        "notes",
+        "recorded_by",
+        "created_at"
+      ]
+    },
+    "user_roles": {
+      "table_name": "user_roles",
+      "total_columns": 4,
+      "timestamp_columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": false,
+      "recommendations": [
+        {
+          "type": "missing_column",
+          "column": "updated_at",
+          "priority": "high",
+          "description": "Table user_roles is missing 'updated_at' column for tracking when records are modified"
+        }
+      ],
+      "sql_commands": [
+        "-- Add updated_at column to user_roles\nALTER TABLE `user_roles` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+      ],
+      "all_columns": [
+        "id",
+        "user_id",
+        "role_id",
+        "created_at"
+      ]
+    },
+    "users": {
+      "table_name": "users",
+      "total_columns": 8,
+      "timestamp_columns": [
+        {
+          "name": "last_login",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": null,
+          "extra": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp",
+          "nullable": "YES",
+          "default": "CURRENT_TIMESTAMP",
+          "extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "has_timestamps": true,
+      "has_recommended": true,
+      "recommendations": [],
+      "sql_commands": [],
+      "all_columns": [
+        "id",
+        "username",
+        "password",
+        "role_id",
+        "is_active",
+        "last_login",
+        "created_at",
+        "updated_at"
+      ]
+    }
+  },
+  "recommendations": [
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table audit_logs is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table bank_reconciliations is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table bank_statement_items is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table book_transactions is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table enrollments_gradelevel_classes is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table enrollments_gradelevel_classes is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table enrollments_subject_classes is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table enrollments_subject_classes is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table fee_payments is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table gradelevel_classes is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table gradelevel_classes is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table guardians is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table guardians is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table payroll_run_details is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table payslip_deductions is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table payslip_earnings is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table period_closing_audit is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table period_closing_entries is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table period_opening_balances is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table reconciliation_matches is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table reconciliation_matches is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table stream is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table stream is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table student_transactions is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table student_transactions is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table students is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table students is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table subject_classes is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table subject_classes is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "created_at",
+      "priority": "high",
+      "description": "Table subjects is missing 'created_at' column for tracking when records are created"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table subjects is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table trial_balance is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table uniform_payments is missing 'updated_at' column for tracking when records are modified"
+    },
+    {
+      "type": "missing_column",
+      "column": "updated_at",
+      "priority": "high",
+      "description": "Table user_roles is missing 'updated_at' column for tracking when records are modified"
+    }
+  ],
+  "sql_commands": [
+    "-- Add updated_at column to audit_logs\nALTER TABLE `audit_logs` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to bank_reconciliations\nALTER TABLE `bank_reconciliations` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to bank_statement_items\nALTER TABLE `bank_statement_items` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to book_transactions\nALTER TABLE `book_transactions` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to enrollments_gradelevel_classes\nALTER TABLE `enrollments_gradelevel_classes` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to enrollments_gradelevel_classes\nALTER TABLE `enrollments_gradelevel_classes` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to enrollments_subject_classes\nALTER TABLE `enrollments_subject_classes` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to enrollments_subject_classes\nALTER TABLE `enrollments_subject_classes` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to fee_payments\nALTER TABLE `fee_payments` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to gradelevel_classes\nALTER TABLE `gradelevel_classes` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to gradelevel_classes\nALTER TABLE `gradelevel_classes` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to guardians\nALTER TABLE `guardians` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to guardians\nALTER TABLE `guardians` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to payroll_run_details\nALTER TABLE `payroll_run_details` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to payslip_deductions\nALTER TABLE `payslip_deductions` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to payslip_earnings\nALTER TABLE `payslip_earnings` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to period_closing_audit\nALTER TABLE `period_closing_audit` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to period_closing_entries\nALTER TABLE `period_closing_entries` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to period_opening_balances\nALTER TABLE `period_opening_balances` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to reconciliation_matches\nALTER TABLE `reconciliation_matches` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to reconciliation_matches\nALTER TABLE `reconciliation_matches` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to stream\nALTER TABLE `stream` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to stream\nALTER TABLE `stream` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to student_transactions\nALTER TABLE `student_transactions` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to student_transactions\nALTER TABLE `student_transactions` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to students\nALTER TABLE `students` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to students\nALTER TABLE `students` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to subject_classes\nALTER TABLE `subject_classes` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to subject_classes\nALTER TABLE `subject_classes` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add created_at column to subjects\nALTER TABLE `subjects` \nADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to subjects\nALTER TABLE `subjects` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to trial_balance\nALTER TABLE `trial_balance` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to uniform_payments\nALTER TABLE `uniform_payments` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;",
+    "-- Add updated_at column to user_roles\nALTER TABLE `user_roles` \nADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"
+  ]
+}

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import BASE_URL from './Api';
 
 const AuthContext = createContext();
@@ -14,7 +14,54 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      
+      if (storedToken && storedUser) {
+        try {
+          // Validate token by trying to get user profile
+          const response = await fetch(`${BASE_URL}/auth/profile`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${storedToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            setToken(storedToken);
+            setIsAuthenticated(true);
+          } else {
+            // Token is invalid, clear storage
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setToken(null);
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+        } catch (error) {
+          console.error('Token validation error:', error);
+          // Clear invalid data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setToken(null);
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkAuthStatus();
+  }, []);
 
   const login = async (username, password) => {
     setIsLoading(true);
@@ -52,6 +99,7 @@ export const AuthProvider = ({ children }) => {
         
         setUser(userData);
         setToken(authToken);
+        setIsAuthenticated(true);
         localStorage.setItem('token', authToken);
         localStorage.setItem('user', JSON.stringify(userData));
         
@@ -70,6 +118,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
+    setIsAuthenticated(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
@@ -78,9 +127,9 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     isLoading,
+    isAuthenticated,
     login,
-    logout,
-    isAuthenticated: !!user
+    logout
   };
 
   return (
