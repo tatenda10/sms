@@ -1,5 +1,6 @@
 const { pool } = require('../../config/database');
 const AuditLogger = require('../../utils/audit');
+const AccountBalanceService = require('../../services/accountBalanceService');
 
 class ExpenseController {
   // Get all expenses with pagination, search, and date range filter
@@ -251,6 +252,9 @@ class ExpenseController {
         }
       }
       
+      // 6. Update account balances
+      await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId, currency_id);
+      
       await conn.commit();
       res.status(201).json({ success: true, data: { id: expenseId, transaction_id: transactionId } });
     } catch (error) {
@@ -323,6 +327,9 @@ class ExpenseController {
           `UPDATE journal_entry_lines SET account_id = ?, debit = 0, credit = ?, currency_id = ? WHERE journal_entry_id = ? AND credit > 0`,
           [creditAccount.id, amount, currency_id, journalEntryId]
         );
+        
+        // 5. Recalculate account balances after updating journal entries
+        await AccountBalanceService.recalculateAllAccountBalances();
       }
       await conn.commit();
       res.json({ success: true, message: 'Expense and journal updated successfully' });

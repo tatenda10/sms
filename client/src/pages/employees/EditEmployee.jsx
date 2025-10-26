@@ -46,6 +46,7 @@ const EditEmployee = () => {
     address: '',
     email: '',
     phoneNumber: '',
+    gender: '',
     departmentId: '',
     jobTitleId: '',
     hireDate: '',
@@ -80,6 +81,7 @@ const EditEmployee = () => {
           address: employee.address || '',
           email: employee.email || '',
           phoneNumber: employee.phone_number || '',
+          gender: employee.gender || '',
           departmentId: employee.department_id || '',
           jobTitleId: employee.job_title_id || '',
           hireDate: employee.hire_date ? employee.hire_date.split('T')[0] : '',
@@ -361,6 +363,23 @@ const EditEmployee = () => {
                 className="mt-1 block w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:ring-gray-500 focus:border-gray-500"
                 placeholder="Enter phone number"
               />
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600">
+                Gender
+              </label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:ring-gray-500 focus:border-gray-500"
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
             </div>
 
             {/* Address */}

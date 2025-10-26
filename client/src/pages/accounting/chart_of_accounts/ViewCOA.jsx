@@ -209,20 +209,20 @@ const ViewCOA = () => {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 w-full max-w-full">
+    <div className="px-2 md:px-4 lg:px-8 w-full max-w-full">
       {loading ? (
-        <div className="p-6 text-xs text-gray-500">Loading account...</div>
+        <div className="p-3 md:p-6 text-xs text-gray-500">Loading account...</div>
       ) : error ? (
-        <div className="p-6 text-xs text-red-600">{error}</div>
+        <div className="p-3 md:p-6 text-xs text-red-600">{error}</div>
       ) : !account ? (
-        <div className="p-6 text-xs text-gray-500">Account not found.</div>
+        <div className="p-3 md:p-6 text-xs text-gray-500">Account not found.</div>
       ) : (
         <>
           {/* Account Info Header */}
-          <div className="mb-8 border-b border-gray-200 pb-4">
+          <div className="mb-4 md:mb-8 border-b border-gray-200 pb-3 md:pb-4">
             <div className="flex flex-col md:flex-row md:items-center md:space-x-6">
               <div className="flex-1">
-                <div className="text-lg font-bold text-gray-900 mb-1">
+                <div className="text-base md:text-lg font-bold text-gray-900 mb-1">
                   {account.code} &mdash; {account.name}
                 </div>
                 <div className="text-xs text-gray-500 mb-1">{account.type}</div>
@@ -234,92 +234,55 @@ const ViewCOA = () => {
           </div>
 
           {/* Balances Table */}
-          <div className="mb-8">
+          <div className="mb-4 md:mb-8">
             <div className="mb-2 text-xs font-semibold text-gray-700">Account Balances</div>
-            <div className="border border-gray-200">
+            <div className="border border-gray-200 overflow-hidden">
               {balancesLoading ? (
-                <div className="p-4 text-xs text-gray-500">Loading balances...</div>
+                <div className="p-3 md:p-4 text-xs text-gray-500">Loading balances...</div>
               ) : (
-                <table className="min-w-full divide-y divide-gray-200 text-xs">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-medium tracking-wider">Currency</th>
-                      <th className="px-3 py-2 text-left font-medium tracking-wider">Symbol</th>
-                      <th className="px-3 py-2 text-left font-medium tracking-wider">Balance</th>
-                      <th className="px-3 py-2 text-left font-medium tracking-wider">As of Date</th>
-                      <th className="px-3 py-2 text-left font-medium tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
+                <div className="overflow-x-auto">
+                  <table className="w-full divide-y divide-gray-200 text-xs" style={{ minWidth: '400px' }}>
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-2 md:px-3 py-2 text-left font-medium tracking-wider">Currency</th>
+                        <th className="px-2 md:px-3 py-2 text-left font-medium tracking-wider hidden sm:table-cell">Symbol</th>
+                        <th className="px-2 md:px-3 py-2 text-left font-medium tracking-wider">Balance</th>
+                        <th className="px-2 md:px-3 py-2 text-left font-medium tracking-wider hidden md:table-cell">As of Date</th>
+                      </tr>
+                    </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {balances.map((b, idx) => (
                       <tr key={b.currency.id}>
-                        <td className="px-3 py-2 whitespace-nowrap">{b.currency.code} - {b.currency.name}</td>
-                        <td className="px-3 py-2 whitespace-nowrap">{b.currency.symbol || '-'}</td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          {editIdx === idx ? (
-                            <input
-                              type="number"
-                              name="balance"
-                              value={editForm.balance}
-                              onChange={handleEditChange}
-                              className="border border-gray-300 px-2 py-1 text-xs w-24 focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                              style={{ borderRadius: 0 }}
-                              step="0.01"
-                            />
-                          ) : (
-                            b.balance
-                          )}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap">{b.as_of_date ? b.as_of_date.slice(0, 10) : '-'}</td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          {editIdx === idx ? (
-                            <>
-                              <button
-                                className="px-3 py-1 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 mr-2"
-                                style={{ borderRadius: 0 }}
-                                onClick={() => handleEditSave(idx)}
-                                disabled={editLoading}
-                              >
-                                {editLoading ? 'Saving...' : 'Save'}
-                              </button>
-                              <button
-                                className="px-3 py-1 text-xs font-medium text-gray-800 bg-gray-200 hover:bg-gray-300 border border-gray-300"
-                                style={{ borderRadius: 0 }}
-                                onClick={handleEditCancel}
-                                disabled={editLoading}
-                              >
-                                Cancel
-                              </button>
-                              {editError && <div className="text-xs text-red-600 mt-1">{editError}</div>}
-                            </>
-                          ) : (
-                            <button
-                              className="px-3 py-1 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
-                              style={{ borderRadius: 0 }}
-                              onClick={() => handleEditClick(idx)}
-                            >
-                              Edit
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          <td className="px-2 md:px-3 py-2 whitespace-nowrap">
+                            <div className="text-xs font-medium text-gray-900">{b.currency.code} - {b.currency.name}</div>
+                            <div className="text-xs text-gray-500 sm:hidden">{b.currency.symbol || '-'}</div>
+                          </td>
+                          <td className="px-2 md:px-3 py-2 whitespace-nowrap hidden sm:table-cell">{b.currency.symbol || '-'}</td>
+                          <td className="px-2 md:px-3 py-2 whitespace-nowrap">
+                            <span className={`text-xs font-medium ${b.balance < 0 ? 'text-green-600' : b.balance > 0 ? 'text-red-600' : ''}`}>
+                              {b.balance === 0 ? '0.00' : `${formatCurrency(Math.abs(b.balance), b.currency.symbol)} ${b.balance < 0 ? 'CR' : 'DR'}`}
+                            </span>
+                          </td>
+                          <td className="px-2 md:px-3 py-2 whitespace-nowrap hidden md:table-cell">{b.as_of_date ? b.as_of_date.slice(0, 10) : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
 
           {/* Ledger Entries Section */}
-          <div className="mb-8">
-            <div className="mb-4">
+          <div className="mb-4 md:mb-8">
+            <div className="mb-3 md:mb-4">
               <div className="text-xs font-semibold text-gray-700 mb-2">Ledger Entries & Transactions</div>
               <p className="text-xs text-gray-500 mb-4">Transactions affecting this account</p>
             </div>
 
             {/* Filters */}
-            <div className="bg-gray-50 p-4 rounded-lg mb-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-gray-50 p-3 md:p-4 rounded-lg mb-3 md:mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
                   <input
@@ -341,7 +304,7 @@ const ViewCOA = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
-                  <input
+                            <input
                     type="date"
                     value={ledgerFilters.endDate}
                     onChange={(e) => handleLedgerFilterChange('endDate', e.target.value)}
@@ -364,48 +327,52 @@ const ViewCOA = () => {
             </div>
 
             {/* Ledger Entries Table */}
-            <div className="border border-gray-200">
+            <div className="border border-gray-200 overflow-hidden">
               {ledgerLoading ? (
-                <div className="p-4 text-xs text-gray-500">Loading ledger entries...</div>
+                <div className="p-3 md:p-4 text-xs text-gray-500">Loading ledger entries...</div>
               ) : (
-                <table className="min-w-full divide-y divide-gray-200 text-xs">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-medium tracking-wider">Date</th>
-                      <th className="px-3 py-2 text-left font-medium tracking-wider">Description</th>
-                      <th className="px-3 py-2 text-right font-medium tracking-wider">DR</th>
-                      <th className="px-3 py-2 text-right font-medium tracking-wider">CR</th>
-                      <th className="px-3 py-2 text-left font-medium tracking-wider">Reference</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {ledgerEntries.map((entry) => (
-                      <tr key={`${entry.source}-${entry.id}`} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 whitespace-nowrap text-gray-900">
-                          {formatDate(entry.transaction_date)}
-                        </td>
-                        <td className="px-3 py-2 text-gray-900">
-                          <div className="flex items-center">
-                            <FontAwesomeIcon 
-                              icon={getSourceIcon(entry.source)} 
-                              className="mr-2 text-gray-400 h-3 w-3" 
-                            />
-                            {entry.description}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-right font-medium text-red-600">
-                          {entry.debit_amount > 0 ? formatCurrency(entry.debit_amount) : '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-right font-medium text-green-600">
-                          {entry.credit_amount > 0 ? formatCurrency(entry.credit_amount) : '-'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-gray-500">
-                          {entry.reference || entry.receipt_number || entry.reference_number || '-'}
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full divide-y divide-gray-200 text-xs" style={{ minWidth: '500px' }}>
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-2 md:px-3 py-2 text-left font-medium tracking-wider">Date</th>
+                        <th className="px-2 md:px-3 py-2 text-left font-medium tracking-wider">Description</th>
+                        <th className="px-2 md:px-3 py-2 text-right font-medium tracking-wider">DR</th>
+                        <th className="px-2 md:px-3 py-2 text-right font-medium tracking-wider">CR</th>
+                        <th className="px-2 md:px-3 py-2 text-left font-medium tracking-wider">Reference</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {ledgerEntries.map((entry) => (
+                        <tr key={`${entry.source}-${entry.id}`} className="hover:bg-gray-50">
+                          <td className="px-2 md:px-3 py-2 whitespace-nowrap text-gray-900">
+                            {formatDate(entry.transaction_date)}
+                          </td>
+                          <td className="px-2 md:px-3 py-2 text-gray-900">
+                            <div className="flex items-center">
+                              <FontAwesomeIcon 
+                                icon={getSourceIcon(entry.source)} 
+                                className="mr-2 text-gray-400 h-3 w-3 flex-shrink-0" 
+                              />
+                              <div>
+                                <div className="text-xs font-medium">{entry.description}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-2 md:px-3 py-2 whitespace-nowrap text-right font-medium text-red-600">
+                            {entry.debit_amount > 0 ? formatCurrency(entry.debit_amount) : '-'}
+                          </td>
+                          <td className="px-2 md:px-3 py-2 whitespace-nowrap text-right font-medium text-green-600">
+                            {entry.credit_amount > 0 ? formatCurrency(entry.credit_amount) : '-'}
+                          </td>
+                          <td className="px-2 md:px-3 py-2 whitespace-nowrap text-gray-500">
+                            {entry.reference || entry.receipt_number || entry.reference_number || '-'}
+                          </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
 
               {/* Empty State */}
@@ -424,12 +391,12 @@ const ViewCOA = () => {
 
             {/* Pagination */}
             {ledgerPagination.total_pages > 1 && (
-              <div className="mt-4 flex items-center justify-between">
-                <div className="text-xs text-gray-700">
+              <div className="mt-3 md:mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="text-xs text-gray-700 text-center sm:text-left">
                   Showing page {ledgerPagination.current_page} of {ledgerPagination.total_pages} 
                   ({ledgerPagination.total_records} total entries)
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex justify-center sm:justify-end space-x-2">
                   <button
                     onClick={() => handleLedgerPageChange(ledgerPagination.current_page - 1)}
                     disabled={ledgerPagination.current_page === 1}

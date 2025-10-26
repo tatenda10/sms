@@ -381,7 +381,7 @@ class SubjectEnrollmentController {
             
             const [enrollments] = await pool.execute(
                 `SELECT e.*, 
-                        s.Name, s.Surname, s.RegNumber,
+                        s.Name, s.Surname, s.RegNumber, s.Gender,
                         gc.name as gradelevel_class_name
                  FROM enrollments_subject_classes e 
                  JOIN students s ON e.student_regnumber = s.RegNumber 

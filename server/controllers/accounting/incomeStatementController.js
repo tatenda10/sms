@@ -38,34 +38,53 @@ class IncomeStatementController {
         console.log(`  - ${entry.entry_date} | ${entry.reference || 'No Ref'} | ${entry.description}`);
       });
       
-      // Get revenue accounts - use LEFT JOIN to include all accounts even with zero values
+      // Get revenue from student transactions (invoices generated) instead of journal entries (payments received)
       const revenueQuery = `
         SELECT 
-          coa.id as account_id,
-          coa.code as account_code,
-          coa.name as account_name,
-          COALESCE(SUM(jel.credit), 0) as amount
-        FROM chart_of_accounts coa
-        LEFT JOIN journal_entry_lines jel ON jel.account_id = coa.id
-        LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id 
-          AND je.entry_date BETWEEN ? AND ?
-          AND je.description NOT LIKE '%Opening Balances B/D%'
-          AND je.description NOT LIKE '%Close % to Income Summary%'
-          AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
-        WHERE coa.type = 'Revenue' 
-          AND coa.is_active = 1
-        GROUP BY coa.id, coa.code, coa.name
-        ORDER BY coa.code
+          'INVOICE_REVENUE' as account_id,
+          'INV' as account_code,
+          'Tuition Revenue (Invoices Generated)' as account_name,
+          COALESCE(SUM(st.amount), 0) as amount
+        FROM student_transactions st
+        WHERE st.transaction_type = 'DEBIT'
+          AND st.transaction_date BETWEEN ? AND ?
+          AND st.description LIKE '%TUITION INVOICE%'
+        UNION ALL
+        SELECT 
+          'BOARDING_REVENUE' as account_id,
+          'BRD' as account_code,
+          'Boarding Revenue (Invoices Generated)' as account_name,
+          COALESCE(SUM(st.amount), 0) as amount
+        FROM student_transactions st
+        WHERE st.transaction_type = 'DEBIT'
+          AND st.transaction_date BETWEEN ? AND ?
+          AND st.description LIKE '%BOARDING%'
+        UNION ALL
+        SELECT 
+          'OTHER_REVENUE' as account_id,
+          'OTH' as account_code,
+          'Other Revenue (Invoices Generated)' as account_name,
+          COALESCE(SUM(st.amount), 0) as amount
+        FROM student_transactions st
+        WHERE st.transaction_type = 'DEBIT'
+          AND st.transaction_date BETWEEN ? AND ?
+          AND st.description NOT LIKE '%TUITION INVOICE%'
+          AND st.description NOT LIKE '%BOARDING%'
       `;
       
-      const [revenue] = await pool.execute(revenueQuery, [period.start_date, period.end_date]);
+      const [revenue] = await pool.execute(revenueQuery, [
+        period.start_date, period.end_date,  // Tuition revenue
+        period.start_date, period.end_date,  // Boarding revenue  
+        period.start_date, period.end_date   // Other revenue
+      ]);
       
       console.log(`💰 Revenue Query Results (${revenue.length} rows):`);
       revenue.forEach(item => {
         console.log(`  - ${item.account_name} (${item.account_code}): $${item.amount}`);
       });
       
-      // Get expense accounts - use LEFT JOIN to include all accounts even with zero values
+      // Get expenses from the expenses table (source of truth)
+      // Then link to journal entries to get the actual debit amounts
       const expenseQuery = `
         SELECT 
           coa.id as account_id,
@@ -73,14 +92,13 @@ class IncomeStatementController {
           coa.name as account_name,
           COALESCE(SUM(jel.debit), 0) as amount
         FROM chart_of_accounts coa
-        LEFT JOIN journal_entry_lines jel ON jel.account_id = coa.id
-        LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id 
-          AND je.entry_date BETWEEN ? AND ?
-          AND je.description NOT LIKE '%Opening Balances B/D%'
-          AND je.description NOT LIKE '%Close % to Income Summary%'
-          AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
+        INNER JOIN journal_entry_lines jel ON jel.account_id = coa.id
+        INNER JOIN journal_entries je ON je.id = jel.journal_entry_id
+        INNER JOIN expenses e ON e.journal_entry_id = je.id
+          AND e.expense_date BETWEEN ? AND ?
         WHERE coa.type = 'Expense' 
           AND coa.is_active = 1
+          AND jel.debit > 0
         GROUP BY coa.id, coa.code, coa.name
         ORDER BY coa.code
       `;
@@ -363,27 +381,45 @@ class IncomeStatementController {
 
   // Helper method to generate income statement data
   static async generateIncomeStatementData(startDate, endDate) {
-    // Get revenue accounts - use LEFT JOIN to include all accounts even with zero values
+    // Get revenue from student transactions (invoices generated) instead of journal entries (payments received)
     const revenueQuery = `
       SELECT 
-        coa.id as account_id,
-        coa.code as account_code,
-        coa.name as account_name,
-        COALESCE(SUM(jel.credit), 0) as amount
-      FROM chart_of_accounts coa
-      LEFT JOIN journal_entry_lines jel ON jel.account_id = coa.id
-      LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id 
-        AND je.entry_date BETWEEN ? AND ?
-        AND je.description NOT LIKE '%Opening Balances B/D%'
-        AND je.description NOT LIKE '%Close % to Income Summary%'
-        AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
-      WHERE coa.type = 'Revenue' 
-        AND coa.is_active = 1
-      GROUP BY coa.id, coa.code, coa.name
-      ORDER BY coa.code
+        'INVOICE_REVENUE' as account_id,
+        'INV' as account_code,
+        'Tuition Revenue (Invoices Generated)' as account_name,
+        COALESCE(SUM(st.amount), 0) as amount
+      FROM student_transactions st
+      WHERE st.transaction_type = 'DEBIT'
+        AND st.transaction_date BETWEEN ? AND ?
+        AND st.description LIKE '%TUITION INVOICE%'
+      UNION ALL
+      SELECT 
+        'BOARDING_REVENUE' as account_id,
+        'BRD' as account_code,
+        'Boarding Revenue (Invoices Generated)' as account_name,
+        COALESCE(SUM(st.amount), 0) as amount
+      FROM student_transactions st
+      WHERE st.transaction_type = 'DEBIT'
+        AND st.transaction_date BETWEEN ? AND ?
+        AND st.description LIKE '%BOARDING%'
+      UNION ALL
+      SELECT 
+        'OTHER_REVENUE' as account_id,
+        'OTH' as account_code,
+        'Other Revenue (Invoices Generated)' as account_name,
+        COALESCE(SUM(st.amount), 0) as amount
+      FROM student_transactions st
+      WHERE st.transaction_type = 'DEBIT'
+        AND st.transaction_date BETWEEN ? AND ?
+        AND st.description NOT LIKE '%TUITION INVOICE%'
+        AND st.description NOT LIKE '%BOARDING%'
     `;
     
-    const [revenue] = await pool.execute(revenueQuery, [startDate, endDate]);
+    const [revenue] = await pool.execute(revenueQuery, [
+      startDate, endDate,  // Tuition revenue
+      startDate, endDate,  // Boarding revenue  
+      startDate, endDate   // Other revenue
+    ]);
     
     // Get expense accounts - use LEFT JOIN to include all accounts even with zero values
     const expenseQuery = `

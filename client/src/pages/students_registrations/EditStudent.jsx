@@ -73,7 +73,7 @@ const EditStudent = () => {
         nationalIDNumber: studentData.NationalIDNumber || '',
         address: studentData.Address || '',
         gender: studentData.Gender || '',
-        active: studentData.Active || 'Yes',
+        active: studentData.Active === 'Active' ? 'Yes' : studentData.Active === 'Inactive' ? 'No' : (studentData.Active || 'Yes'),
         
         // Guardian Information (from guardians array)
         guardianName: guardian?.Name || '',
@@ -338,8 +338,8 @@ const EditStudent = () => {
                     onChange={handleChange}
                     className="mt-1 block w-full border border-gray-300 px-3 py-1.5 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-xs"
                   >
-                    <option value="Yes">Active</option>
-                    <option value="No">Inactive</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
                   </select>
                 </div>
 

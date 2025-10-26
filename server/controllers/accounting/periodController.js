@@ -313,6 +313,57 @@ class PeriodController {
       res.status(500).json({ error: 'Failed to generate yearly periods' });
     }
   }
+
+  // Auto-generate periods for current year if they don't exist
+  // This is called on server startup
+  static async autoGenerateCurrentYearPeriods() {
+    try {
+      const currentYear = new Date().getFullYear();
+      
+      // Check if periods exist for current year
+      const checkQuery = `
+        SELECT COUNT(*) as count 
+        FROM accounting_periods 
+        WHERE YEAR(start_date) = ?
+      `;
+      const [result] = await pool.execute(checkQuery, [currentYear]);
+      
+      if (result[0].count === 0) {
+        console.log(`📅 No accounting periods found for ${currentYear}. Auto-generating...`);
+        
+        const monthNames = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const insertQuery = `
+          INSERT INTO accounting_periods (period_name, period_type, start_date, end_date, status)
+          VALUES (?, ?, ?, ?, 'open')
+        `;
+
+        let created = 0;
+        for (let month = 0; month < 12; month++) {
+          const startDate = new Date(currentYear, month, 1);
+          const endDate = new Date(currentYear, month + 1, 0);
+          
+          await pool.execute(insertQuery, [
+            `${monthNames[month]} ${currentYear}`,
+            'monthly',
+            startDate.toISOString().split('T')[0],
+            endDate.toISOString().split('T')[0]
+          ]);
+          created++;
+        }
+        
+        console.log(`✅ Auto-generated ${created} accounting periods for ${currentYear}`);
+      } else {
+        console.log(`✓ Accounting periods for ${currentYear} already exist (${result[0].count} periods)`);
+      }
+    } catch (error) {
+      console.error('❌ Error auto-generating periods:', error);
+      // Don't throw - we don't want to crash the server on startup
+    }
+  }
 }
 
 module.exports = PeriodController;

@@ -33,11 +33,32 @@ const AccountsPayable = () => {
   const [selectedPayableForView, setSelectedPayableForView] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
+  
+  // Opening Balance states
+  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
+  const [openingBalanceForm, setOpeningBalanceForm] = useState({
+    supplier_id: '',
+    amount: '',
+    description: '',
+    reference_number: '',
+    due_date: '',
+    opening_balance_date: '',
+    currency_id: 1
+  });
+  const [openingBalanceLoading, setOpeningBalanceLoading] = useState(false);
 
   const fetchCurrencies = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/accounting/currencies`, { headers: { Authorization: `Bearer ${token}` } });
       setCurrencies(res.data.data || []);
+    } catch {}
+  };
+
+  const fetchSuppliers = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/expenses/suppliers`, { headers: { Authorization: `Bearer ${token}` } });
+      setSuppliers(res.data.data || []);
     } catch {}
   };
 
@@ -88,6 +109,7 @@ const AccountsPayable = () => {
 
   useEffect(() => {
     fetchCurrencies();
+    fetchSuppliers();
     fetchPayables();
     fetchSummary();
   }, [page, pageSize, search, statusFilter]);
@@ -111,6 +133,7 @@ const AccountsPayable = () => {
       payment_method: 'cash',
       description: `Payment for ${payable.expense_description}`
     });
+    setError(''); // Clear any previous errors
     setShowPaymentModal(true);
   };
 
@@ -123,6 +146,7 @@ const AccountsPayable = () => {
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     setPaymentLoading(true);
+    setError(''); // Clear previous errors
     try {
       await axios.post(`${BASE_URL}/expenses/accounts-payable/${selectedPayable.id}/pay`, {
         amount: parseFloat(paymentForm.amount),
@@ -133,14 +157,53 @@ const AccountsPayable = () => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      // Only close modal on success
       setShowPaymentModal(false);
+      setError('');
       fetchPayables();
       fetchSummary();
     } catch (err) {
       console.error('Payment error:', err);
-      setError('Failed to make payment: ' + (err.response?.data?.message || err.message));
+      // Keep modal open and show error
+      setError(err.response?.data?.message || err.message);
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handleOpeningBalanceSubmit = async (e) => {
+    e.preventDefault();
+    setOpeningBalanceLoading(true);
+    try {
+      await axios.post(`${BASE_URL}/expenses/accounts-payable/opening-balance`, {
+        supplier_id: openingBalanceForm.supplier_id || null,
+        amount: parseFloat(openingBalanceForm.amount),
+        description: openingBalanceForm.description,
+        reference_number: openingBalanceForm.reference_number,
+        due_date: openingBalanceForm.due_date || null,
+        opening_balance_date: openingBalanceForm.opening_balance_date,
+        currency_id: openingBalanceForm.currency_id
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShowOpeningBalanceModal(false);
+      setOpeningBalanceForm({
+        supplier_id: '',
+        amount: '',
+        description: '',
+        reference_number: '',
+        due_date: '',
+        opening_balance_date: '',
+        currency_id: 1
+      });
+      fetchPayables();
+      fetchSummary();
+      alert('Opening balance created successfully!');
+    } catch (err) {
+      console.error('Opening balance error:', err);
+      setError('Failed to create opening balance: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setOpeningBalanceLoading(false);
     }
   };
 
@@ -160,11 +223,19 @@ const AccountsPayable = () => {
 
   return (
     <div className="p-2">
-      <div className="mb-8">
-        <h1 className="text-base font-bold text-gray-900 mb-2">Accounts Payable</h1>
-        <p className="text-sm text-gray-600">
-          Manage outstanding payments and track transaction history
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-base font-bold text-gray-900 mb-2">Accounts Payable</h1>
+          <p className="text-sm text-gray-600">
+            Manage outstanding payments and track transaction history
+          </p>
+        </div>
+        <button
+          onClick={() => setShowOpeningBalanceModal(true)}
+          className="bg-blue-600 text-white px-4 py-2 text-xs hover:bg-blue-700 flex items-center space-x-2"
+        >
+          <span>+ Add Opening Balance</span>
+        </button>
       </div>
       
       {/* Summary Cards */}
@@ -359,6 +430,13 @@ const AccountsPayable = () => {
       {showPaymentModal && selectedPayable && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 w-full max-w-md">
+            {/* Error Message Above Modal */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs rounded">
+                <strong>Error:</strong> {error}
+              </div>
+            )}
+            
             <h2 className="text-base font-semibold mb-4">Make Payment</h2>
             <form onSubmit={handlePaymentSubmit} className="space-y-4">
               <div>
@@ -367,7 +445,7 @@ const AccountsPayable = () => {
                   type="number"
                   value={paymentForm.amount}
                   onChange={(e) => setPaymentForm(prev => ({ ...prev, amount: e.target.value }))}
-                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   required
                   step="0.01"
                   max={selectedPayable.outstanding_balance}
@@ -407,7 +485,10 @@ const AccountsPayable = () => {
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowPaymentModal(false)}
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setError(''); // Clear error when closing
+                  }}
                   className="px-4 py-1 text-xs text-gray-700 bg-gray-200 hover:bg-gray-300"
                 >
                   Cancel
@@ -525,8 +606,152 @@ const AccountsPayable = () => {
         </div>
       )}
 
-      {error && (
-        <div className="mt-4 text-xs text-red-600">{error}</div>
+      {/* Opening Balance Modal */}
+      {showOpeningBalanceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-base font-semibold">Add Opening Balance</h2>
+                <p className="text-xs text-gray-600 mt-1">Record historical debt or payable</p>
+              </div>
+              <button
+                onClick={() => setShowOpeningBalanceModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleOpeningBalanceSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Supplier <span className="text-gray-400">(Optional)</span>
+                  </label>
+                  <select
+                    value={openingBalanceForm.supplier_id}
+                    onChange={(e) => setOpeningBalanceForm(prev => ({ ...prev, supplier_id: e.target.value }))}
+                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select Supplier (Optional)</option>
+                    {suppliers.map(supplier => (
+                      <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Amount <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={openingBalanceForm.amount}
+                    onChange={(e) => setOpeningBalanceForm(prev => ({ ...prev, amount: e.target.value }))}
+                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    required
+                    placeholder="e.g., 50000.00"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Description <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={openingBalanceForm.description}
+                    onChange={(e) => setOpeningBalanceForm(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    rows="3"
+                    required
+                    placeholder="e.g., City Council - Historical Debt from 2020"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Reference Number
+                  </label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={openingBalanceForm.reference_number}
+                      onChange={(e) => setOpeningBalanceForm(prev => ({ ...prev, reference_number: e.target.value }))}
+                      className="flex-1 border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., CC-2020-DEBT"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const timestamp = Date.now();
+                        const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                        const refNumber = `OB-${new Date().getFullYear()}-${randomNum}-${timestamp.toString().slice(-4)}`;
+                        setOpeningBalanceForm(prev => ({ ...prev, reference_number: refNumber }));
+                      }}
+                      className="px-3 py-1 text-xs bg-gray-600 text-white hover:bg-gray-700 whitespace-nowrap"
+                    >
+                      Auto Generate
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Leave blank or click Auto Generate</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Opening Balance Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={openingBalanceForm.opening_balance_date}
+                    onChange={(e) => setOpeningBalanceForm(prev => ({ ...prev, opening_balance_date: e.target.value }))}
+                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={openingBalanceForm.due_date}
+                    onChange={(e) => setOpeningBalanceForm(prev => ({ ...prev, due_date: e.target.value }))}
+                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 p-3 mt-4">
+                <p className="text-xs text-blue-800">
+                  <strong>Note:</strong> This will create a journal entry debiting Retained Earnings (3998) 
+                  and crediting Accounts Payable (2000). This ensures historical debts don't inflate current 
+                  period expenses. The payable will appear in the list above and can be paid off like any other payable.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowOpeningBalanceModal(false)}
+                  className="px-4 py-2 text-xs text-gray-700 bg-gray-200 hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={openingBalanceLoading}
+                  className="px-4 py-2 text-xs text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {openingBalanceLoading ? 'Creating...' : 'Create Opening Balance'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

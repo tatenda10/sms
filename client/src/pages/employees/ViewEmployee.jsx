@@ -13,11 +13,7 @@ import {
   faUniversity,
   faCreditCard,
   faDollarSign,
-  faStar,
-  faMoneyBillWave,
-  faChartLine,
-  faClipboardList,
-  faGraduationCap
+  faStar
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -117,10 +113,7 @@ const ViewEmployee = () => {
         <nav className="flex space-x-8 border-b border-gray-200">
           {[
             { id: 'personal', label: 'Personal Information', icon: faUser },
-            { id: 'banking', label: 'Banking', icon: faUniversity },
-            { id: 'payroll', label: 'Payroll', icon: faMoneyBillWave },
-            { id: 'performance', label: 'Performance', icon: faChartLine },
-            { id: 'attendance', label: 'Attendance', icon: faClipboardList }
+            { id: 'banking', label: 'Banking', icon: faUniversity }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -166,6 +159,15 @@ const ViewEmployee = () => {
                   <div className="mt-1 text-sm text-gray-900 flex items-center">
                     <FontAwesomeIcon icon={faIdCard} className="mr-2 h-4 w-4 text-gray-400" />
                     {employee.id_number}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-600">Gender</label>
+                  <div className="mt-1">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                      {employee.gender || 'Not specified'}
+                    </span>
                   </div>
                 </div>
                 
@@ -325,59 +327,6 @@ const ViewEmployee = () => {
           </div>
         )}
 
-        {/* Payroll Tab */}
-        {activeTab === 'payroll' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-gray-200 p-6">
-              <h2 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
-                <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2 h-4 w-4 text-gray-400" />
-                Payroll Information
-              </h2>
-              
-              <div className="text-center py-8">
-                <FontAwesomeIcon icon={faMoneyBillWave} className="h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-xs text-gray-500 mb-2">Payroll information coming soon</p>
-                <p className="text-xs text-gray-400">This section will contain salary, benefits, and payment history</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Performance Tab */}
-        {activeTab === 'performance' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-gray-200 p-6">
-              <h2 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
-                <FontAwesomeIcon icon={faChartLine} className="mr-2 h-4 w-4 text-gray-400" />
-                Performance Reviews
-              </h2>
-              
-              <div className="text-center py-8">
-                <FontAwesomeIcon icon={faChartLine} className="h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-xs text-gray-500 mb-2">Performance data coming soon</p>
-                <p className="text-xs text-gray-400">This section will contain performance reviews, goals, and evaluations</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Attendance Tab */}
-        {activeTab === 'attendance' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-gray-200 p-6">
-              <h2 className="text-sm font-medium text-gray-900 mb-4 flex items-center">
-                <FontAwesomeIcon icon={faClipboardList} className="mr-2 h-4 w-4 text-gray-400" />
-                Attendance Records
-              </h2>
-              
-              <div className="text-center py-8">
-                <FontAwesomeIcon icon={faClipboardList} className="h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-xs text-gray-500 mb-2">Attendance data coming soon</p>
-                <p className="text-xs text-gray-400">This section will contain attendance history, time-off requests, and schedules</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

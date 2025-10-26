@@ -9,6 +9,7 @@ const incomeStatementRoutes = require('./incomeStatement');
 const balanceSheetRoutes = require('./balanceSheet');
 const cashFlowRoutes = require('./cashFlow');
 const bankReconciliationRoutes = require('./bankReconciliation');
+const cashBankRoutes = require('./cashBank');
 
 router.use('/chart-of-accounts', chartOfAccountsRoutes);
 router.use('/account-balances', accountBalancesRoutes);
@@ -18,5 +19,6 @@ router.use('/income-statement', incomeStatementRoutes);
 router.use('/balance-sheet', balanceSheetRoutes);
 router.use('/cash-flow', cashFlowRoutes);
 router.use('/bank-reconciliation', bankReconciliationRoutes);
+router.use('/cash-bank', cashBankRoutes);
 
 module.exports = router;

@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faPlus, 
-  faSearch, 
-  faEye, 
-  faEdit, 
-  faTrash,
-  faCalendarAlt,
-  faGraduationCap,
+  faEye,
   faPlay
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,28 +16,11 @@ const ClassTermYear = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearchTerm, setActiveSearchTerm] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
-  const [selectedTerm, setSelectedTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
 
   // Modal states
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-
-  // Form states
-  const [formData, setFormData] = useState({
-    gradelevel_class_id: '',
-    term: '',
-    academic_year: '',
-    start_date: '',
-    end_date: ''
-  });
 
   // Bulk form states
   const [bulkFormData, setBulkFormData] = useState({
@@ -61,26 +38,16 @@ const ClassTermYear = () => {
 
   useEffect(() => {
     fetchClasses();
+    fetchClassTermYears();
   }, []);
-
-  useEffect(() => {
-    if (isSearching) {
-      fetchClassTermYears();
-    }
-  }, [isSearching, activeSearchTerm]);
 
   const fetchClassTermYears = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (activeSearchTerm) params.append('search', activeSearchTerm);
-      if (selectedYear) params.append('academic_year', selectedYear);
-      if (selectedTerm) params.append('term', selectedTerm);
+      console.log('Fetching all class term years...');
+      console.log('URL:', `${BASE_URL}/classes/class-term-years`);
 
-      console.log('Fetching class term years with params:', params.toString());
-      console.log('URL:', `${BASE_URL}/classes/class-term-years?${params}`);
-
-      const response = await axios.get(`${BASE_URL}/classes/class-term-years?${params}`, {
+      const response = await axios.get(`${BASE_URL}/classes/class-term-years`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Response:', response.data);
@@ -116,45 +83,7 @@ const ClassTermYear = () => {
     }
   };
 
-  const handleSearch = () => {
-    setActiveSearchTerm(searchTerm);
-    setIsSearching(true);
-  };
 
-  const handleFilterSearch = () => {
-    setActiveSearchTerm('');
-    setIsSearching(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      if (selectedRecord) {
-        // Update
-        await axios.put(`${BASE_URL}/classes/class-term-years/${selectedRecord.id}`, formData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setSuccessMessage('Class term year updated successfully');
-      } else {
-        // Create
-        await axios.post(`${BASE_URL}/classes/class-term-years`, formData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setSuccessMessage('Class term year created successfully');
-      }
-      
-      setShowSuccessModal(true);
-      setShowAddModal(false);
-      setShowEditModal(false);
-      resetForm();
-      fetchClassTermYears();
-    } catch (error) {
-      console.error('Error saving class term year:', error);
-      setErrorMessage(error.response?.data?.message || 'Failed to save class term year');
-      setShowErrorModal(true);
-    }
-  };
 
   const handleBulkSubmit = async (e) => {
     e.preventDefault();
@@ -189,44 +118,6 @@ const ClassTermYear = () => {
     setShowViewModal(true);
   };
 
-  const handleEdit = (record) => {
-    setSelectedRecord(record);
-    setFormData({
-      gradelevel_class_id: record.gradelevel_class_id,
-      term: record.term,
-      academic_year: record.academic_year,
-      start_date: record.start_date || '',
-      end_date: record.end_date || ''
-    });
-    setShowEditModal(true);
-  };
-
-  const handleDelete = async () => {
-    try {
-      await axios.delete(`${BASE_URL}/classes/class-term-years/${selectedRecord.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSuccessMessage('Class term year deleted successfully');
-      setShowSuccessModal(true);
-      setShowDeleteModal(false);
-      fetchClassTermYears();
-    } catch (error) {
-      console.error('Error deleting class term year:', error);
-      setErrorMessage(error.response?.data?.message || 'Failed to delete class term year');
-      setShowErrorModal(true);
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      gradelevel_class_id: '',
-      term: '',
-      academic_year: '',
-      start_date: '',
-      end_date: ''
-    });
-    setSelectedRecord(null);
-  };
 
   const resetBulkForm = () => {
     setBulkFormData({
@@ -237,20 +128,6 @@ const ClassTermYear = () => {
     });
   };
 
-  const filteredRecords = classTermYears.filter(record => {
-    const searchLower = activeSearchTerm.toLowerCase();
-    const matchesSearch = !activeSearchTerm || (
-      record.class_name?.toLowerCase().includes(searchLower) ||
-      record.stream_name?.toLowerCase().includes(searchLower) ||
-      record.term?.toLowerCase().includes(searchLower) ||
-      record.academic_year?.toLowerCase().includes(searchLower)
-    );
-    
-    const matchesYear = !selectedYear || record.academic_year === selectedYear;
-    const matchesTerm = !selectedTerm || record.term === selectedTerm;
-    
-    return matchesSearch && matchesYear && matchesTerm;
-  });
 
   return (
     <div className="p-6">
@@ -269,71 +146,10 @@ const ClassTermYear = () => {
               <FontAwesomeIcon icon={faPlay} className="mr-1" />
               Bulk Populate
             </button>
-            <button
-              onClick={() => {
-                resetForm();
-                setShowAddModal(true);
-              }}
-              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            >
-              Add Record
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Search and Filter Bar */}
-      <div className="mb-6 space-y-4">
-        {/* Text Search */}
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search by class, stream, term, or year..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <button
-            onClick={handleSearch}
-            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-          >
-            Search
-          </button>
-        </div>
-
-        {/* Year and Term Filters */}
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Enter Year (e.g., 2025)"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex-1">
-            <select
-              value={selectedTerm}
-              onChange={(e) => setSelectedTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select Term</option>
-              <option value="Term 1">Term 1</option>
-              <option value="Term 2">Term 2</option>
-              <option value="Term 3">Term 3</option>
-            </select>
-          </div>
-          <button
-            onClick={handleFilterSearch}
-            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-          >
-            Filter
-          </button>
-        </div>
-      </div>
 
       {/* Class Term Year Table */}
       <div className="bg-white border border-gray-200 overflow-hidden">
@@ -371,14 +187,14 @@ const ClassTermYear = () => {
                     Loading...
                   </td>
                 </tr>
-              ) : filteredRecords.length === 0 ? (
+              ) : classTermYears.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
                     No class term year records found
                   </td>
                 </tr>
               ) : (
-                filteredRecords.map((record) => (
+                classTermYears.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-xs font-medium text-gray-900">
@@ -425,21 +241,6 @@ const ClassTermYear = () => {
                         >
                           <FontAwesomeIcon icon={faEye} />
                         </button>
-                        <button
-                          onClick={() => handleEdit(record)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          <FontAwesomeIcon icon={faEdit} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedRecord(record);
-                            setShowDeleteModal(true);
-                          }}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -450,114 +251,6 @@ const ClassTermYear = () => {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
-      {(showAddModal || showEditModal) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white border border-gray-200 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-sm font-bold mb-4">
-              {selectedRecord ? 'Edit Class Term Year' : 'Add Class Term Year'}
-            </h2>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Class *
-                  </label>
-                  <select
-                    value={formData.gradelevel_class_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, gradelevel_class_id: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select Class</option>
-                    {classes.map((cls) => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Term *
-                  </label>
-                  <select
-                    value={formData.term}
-                    onChange={(e) => setFormData(prev => ({ ...prev, term: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select Term</option>
-                    <option value="Term 1">Term 1</option>
-                    <option value="Term 2">Term 2</option>
-                    <option value="Term 3">Term 3</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Academic Year *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.academic_year}
-                    onChange={(e) => setFormData(prev => ({ ...prev, academic_year: e.target.value }))}
-                    placeholder="e.g., 2025"
-                    className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setShowEditModal(false);
-                    resetForm();
-                  }}
-                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                >
-                  {selectedRecord ? 'Update' : 'Create'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Bulk Populate Modal */}
       {showBulkModal && (
@@ -704,31 +397,6 @@ const ClassTermYear = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && selectedRecord && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white border border-gray-200 p-6 w-full max-w-md">
-            <h2 className="text-sm font-bold mb-4">Delete Class Term Year</h2>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete the class term year record for {selectedRecord.class_name} - {selectedRecord.term} {selectedRecord.academic_year}?
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Success Modal */}
       <SuccessModal

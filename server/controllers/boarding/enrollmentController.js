@@ -2,6 +2,85 @@ const { pool } = require('../../config/database');
 const AuditLogger = require('../../utils/audit');
 const StudentTransactionController = require('../students/studentTransactionController');
 const StudentBalanceService = require('../../services/studentBalanceService');
+const AccountBalanceService = require('../../services/accountBalanceService');
+
+// Helper function to create journal entries for boarding enrollment
+async function createBoardingEnrollmentJournalEntries(conn, student_regnumber, amount, description, term, academic_year, created_by) {
+    try {
+        // Get account IDs
+        const [accountsReceivable] = await conn.execute(
+            'SELECT id FROM chart_of_accounts WHERE code = ? AND type = ?',
+            ['1100', 'Asset'] // Accounts Receivable - Tuition
+        );
+        
+        // Use Tuition Revenue - Boarders account (4002)
+        const [boardingRevenue] = await conn.execute(
+            'SELECT id FROM chart_of_accounts WHERE code = ? AND type = ?',
+            ['4002', 'Revenue'] // Tuition Revenue - Boarders
+        );
+
+        if (accountsReceivable.length === 0 || boardingRevenue.length === 0) {
+            throw new Error('Required accounts not found in chart of accounts (1100 or 4002)');
+        }
+
+        const accountsReceivableId = accountsReceivable[0].id;
+        const boardingRevenueId = boardingRevenue[0].id;
+
+        // Create journal entry (using Fees Journal - ID: 6)
+        const [journalEntry] = await conn.execute(
+            `INSERT INTO journal_entries (journal_id, entry_date, description, reference, created_by) 
+             VALUES (?, CURDATE(), ?, ?, ?)`,
+            [
+                6, // Fees Journal
+                description,
+                `BOARDING-${student_regnumber}-${Date.now()}`,
+                created_by
+            ]
+        );
+
+        const journalEntryId = journalEntry.insertId;
+
+        // Create journal entry lines
+        const journalLines = [
+            {
+                journal_entry_id: journalEntryId,
+                account_id: accountsReceivableId,
+                debit_amount: amount,
+                credit_amount: 0,
+                description: `Accounts Receivable - ${student_regnumber}`
+            },
+            {
+                journal_entry_id: journalEntryId,
+                account_id: boardingRevenueId,
+                debit_amount: 0,
+                credit_amount: amount,
+                description: `Boarding Revenue - ${student_regnumber}`
+            }
+        ];
+
+        for (const line of journalLines) {
+            await conn.execute(
+                `INSERT INTO journal_entry_lines 
+                 (journal_entry_id, account_id, debit, credit, description) 
+                 VALUES (?, ?, ?, ?, ?)`,
+                [
+                    line.journal_entry_id,
+                    line.account_id,
+                    line.debit_amount,
+                    line.credit_amount,
+                    line.description
+                ]
+            );
+        }
+
+        console.log(`Created journal entry ${journalEntryId} for boarding enrollment: ${student_regnumber}, Amount: ${amount}`);
+        return journalEntryId;
+
+    } catch (error) {
+        console.error('Error creating boarding enrollment journal entries:', error);
+        throw error;
+    }
+}
 
 class EnrollmentController {
   // Enroll student in boarding
@@ -254,6 +333,27 @@ class EnrollmentController {
               }
             );
             console.log('DEBIT transaction created successfully with ID:', transactionId);
+
+            // Create journal entries for boarding enrollment
+            try {
+              const journalEntryId = await createBoardingEnrollmentJournalEntries(
+                conn,
+                student_reg_number,
+                boardingFee[0].amount,
+                `BOARDING ENROLLMENT - ${hostel[0].name} (${boardingFee[0].term || formattedTerm} ${academic_year})`,
+                boardingFee[0].term || formattedTerm,
+                academic_year,
+                req.user.id
+              );
+
+              // Update account balances from the journal entries
+              await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId);
+              console.log('Journal entries and account balances updated successfully');
+            } catch (journalError) {
+              console.error('Error creating journal entries for boarding enrollment:', journalError);
+              // Don't fail the enrollment if journal creation fails
+              // The enrollment is already successful, just log the error
+            }
           } catch (transactionError) {
             console.error('Error creating DEBIT transaction after enrollment:', transactionError);
             // Don't fail the enrollment if transaction creation fails
@@ -624,6 +724,41 @@ class EnrollmentController {
         );
         
         console.log(`Deleted DEBIT transaction ${feeTransactions[0].id} for enrollment deletion`);
+      }
+
+      // Find and delete the original boarding enrollment journal entries
+      console.log('🔍 Looking for boarding enrollment journal entries to delete...');
+      const [boardingJournalEntries] = await conn.execute(
+          `SELECT je.id, je.description, je.reference 
+           FROM journal_entries je 
+           WHERE je.reference LIKE ? AND je.description LIKE ?`,
+          [`%BOARDING-${enrollment.student_reg_number}-%`, `%BOARDING ENROLLMENT%`]
+      );
+
+      if (boardingJournalEntries.length > 0) {
+          console.log(`🗑️ Found ${boardingJournalEntries.length} boarding journal entries to delete`);
+          for (const journalEntry of boardingJournalEntries) {
+              // Delete journal entry lines first
+              await conn.execute(
+                  'DELETE FROM journal_entry_lines WHERE journal_entry_id = ?',
+                  [journalEntry.id]
+              );
+              
+              // Delete journal entry
+              await conn.execute(
+                  'DELETE FROM journal_entries WHERE id = ?',
+                  [journalEntry.id]
+              );
+              
+              console.log(`✅ Deleted original boarding enrollment journal entry ${journalEntry.id} for student ${enrollment.student_reg_number}`);
+          }
+          
+          // Recalculate account balances after deletion
+          console.log('🔄 Recalculating account balances after journal entry deletion...');
+          await AccountBalanceService.recalculateAllAccountBalances(conn);
+          console.log('✅ Account balances recalculated');
+      } else {
+          console.log('ℹ️ No boarding enrollment journal entries found to delete');
       }
 
       // Delete boarding fee balance if exists

@@ -38,12 +38,19 @@ class ExpenseAccountPayablesController {
       const limit = Number(pageSize);
       const off = Number(offset);
       const [payables] = await pool.query(
-        `SELECT apb.*, e.description as expense_description, e.expense_date, 
-                s.name as supplier_name, c.code as currency_code,
+        `SELECT apb.*, 
+                COALESCE(apb.description, e.description) as description,
+                e.expense_date, 
+                s.name as supplier_name, 
+                c.code as currency_code,
                 CASE 
                   WHEN apb.supplier_id IS NULL THEN 'Non-Supplier'
                   ELSE s.name 
-                END as payable_to
+                END as payable_to,
+                CASE
+                  WHEN apb.is_opening_balance = TRUE THEN 'Opening Balance'
+                  ELSE 'Expense'
+                END as source_type
          FROM accounts_payable_balances apb
          LEFT JOIN expenses e ON apb.original_expense_id = e.id
          LEFT JOIN suppliers s ON apb.supplier_id = s.id
@@ -97,6 +104,139 @@ class ExpenseAccountPayablesController {
     }
   }
 
+  // Create opening balance payable (historical debt)
+  async createOpeningBalance(req, res) {
+    const conn = await pool.getConnection();
+    
+    try {
+      const {
+        supplier_id,
+        amount,
+        description,
+        reference_number,
+        due_date,
+        opening_balance_date,
+        currency_id = 1, // Default to USD
+        expense_account_code = '5000' // Default to General Expenses
+      } = req.body;
+
+      // Validate required fields
+      if (!amount || !description) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Amount and description are required' 
+        });
+      }
+
+      await conn.beginTransaction();
+
+      // 1. Create journal entry for the opening balance
+      const [journalResult] = await conn.execute(
+        `INSERT INTO journal_entries (journal_id, entry_date, description, reference, created_by) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          6, // General Journal
+          opening_balance_date || new Date(),
+          `Opening Balance: ${description}`,
+          reference_number || `OB-${Date.now()}`,
+          req.user?.id || 1
+        ]
+      );
+      const journalEntryId = journalResult.insertId;
+
+      // 2. Get account IDs
+      // Use Retained Earnings for opening balances, NOT expense accounts
+      const [[retainedEarnings]] = await conn.execute(
+        `SELECT id FROM chart_of_accounts WHERE code = '3998' LIMIT 1` // Retained Earnings
+      );
+      
+      const [[payableAccount]] = await conn.execute(
+        `SELECT id FROM chart_of_accounts WHERE code = '2000' LIMIT 1` // Accounts Payable
+      );
+
+      if (!retainedEarnings || !payableAccount) {
+        throw new Error('Required accounts not found in chart of accounts (3998 - Retained Earnings or 2000 - Accounts Payable)');
+      }
+
+      // 3. Create journal entry lines (double-entry)
+      // DEBIT: Retained Earnings (opening balance equity)
+      // This records the historical liability without affecting current period expenses
+      await conn.execute(
+        `INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, currency_id, description) 
+         VALUES (?, ?, ?, 0, ?, ?)`,
+        [journalEntryId, retainedEarnings.id, amount, currency_id, `Opening Balance - ${description}`]
+      );
+
+      // CREDIT: Accounts Payable (liability increases)
+      await conn.execute(
+        `INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, currency_id, description) 
+         VALUES (?, ?, 0, ?, ?, ?)`,
+        [journalEntryId, payableAccount.id, amount, currency_id, `Opening Balance - ${description}`]
+      );
+
+      // 4. Create accounts payable balance record
+      const [payableResult] = await conn.execute(
+        `INSERT INTO accounts_payable_balances 
+         (supplier_id, currency_id, original_expense_id, original_amount, outstanding_balance, 
+          due_date, status, reference_number, description, is_opening_balance, opening_balance_date) 
+         VALUES (?, ?, NULL, ?, ?, ?, 'outstanding', ?, ?, TRUE, ?)`,
+        [
+          supplier_id || null,
+          currency_id,
+          amount,
+          amount,
+          due_date || null,
+          reference_number || `OB-${Date.now()}`,
+          description,
+          opening_balance_date || new Date()
+        ]
+      );
+
+      // 5. Update account balances
+      const AccountBalanceService = require('../../services/accountBalanceService');
+      await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId, currency_id);
+
+      // 6. Log audit event
+      await AuditLogger.log({
+        action: 'OPENING_BALANCE_PAYABLE_CREATED',
+        table: 'accounts_payable_balances',
+        record_id: payableResult.insertId,
+        user_id: req.user?.id || 1,
+        details: {
+          supplier_id: supplier_id || null,
+          amount,
+          description,
+          reference_number,
+          due_date,
+          opening_balance_date
+        },
+        ip_address: req.ip,
+        user_agent: req.get('User-Agent')
+      });
+
+      await conn.commit();
+      
+      res.status(201).json({ 
+        success: true, 
+        message: 'Opening balance payable created successfully',
+        data: { 
+          id: payableResult.insertId,
+          journal_entry_id: journalEntryId
+        } 
+      });
+    } catch (error) {
+      await conn.rollback();
+      console.error('Error creating opening balance payable:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to create opening balance payable',
+        error: error.message 
+      });
+    } finally {
+      conn.release();
+    }
+  }
+
   // Make a payment against accounts payable
   async makePayment(req, res) {
     const conn = await pool.getConnection();
@@ -126,6 +266,44 @@ class ExpenseAccountPayablesController {
         return res.status(400).json({ success: false, message: 'Payment amount exceeds outstanding balance' });
       }
       
+      // 1.5. Check if sufficient funds are available in the payment account
+      let paymentAccountCode;
+      if (payment_method === 'cash') paymentAccountCode = '1000';  // Cash on Hand
+      else if (payment_method === 'bank') paymentAccountCode = '1010';  // Bank Account
+      else paymentAccountCode = '1000';  // Default to Cash on Hand
+      
+      const [[paymentAccount]] = await conn.execute(
+        `SELECT coa.id, coa.name, coa.code, COALESCE(ab.balance, 0) as balance
+         FROM chart_of_accounts coa
+         LEFT JOIN (
+           SELECT account_id, balance 
+           FROM account_balances 
+           WHERE currency_id = ?
+           ORDER BY as_of_date DESC
+         ) ab ON coa.id = ab.account_id
+         WHERE coa.code = ?
+         LIMIT 1`,
+        [currency_id, paymentAccountCode]
+      );
+      
+      if (!paymentAccount) {
+        await conn.rollback();
+        return res.status(400).json({ 
+          success: false, 
+          message: `Payment account (${paymentAccountCode}) not found` 
+        });
+      }
+      
+      const availableBalance = parseFloat(paymentAccount.balance) || 0;
+      
+      if (availableBalance < amount) {
+        await conn.rollback();
+        return res.status(400).json({ 
+          success: false, 
+          message: `Insufficient funds in ${paymentAccount.name}. Available: ${availableBalance.toFixed(2)}, Required: ${amount}` 
+        });
+      }
+      
       // 2. Create journal entry
       const journalDesc = description || `Payment for ${payable.original_expense_id}`;
       let journalName;
@@ -153,7 +331,7 @@ class ExpenseAccountPayablesController {
       // 4. Create accounts payable payment record
       const [paymentResult] = await conn.execute(
         `INSERT INTO accounts_payable_payments (transaction_id, original_expense_id, supplier_id, amount_paid, payment_date, status) VALUES (?, ?, ?, ?, ?, ?)`,
-        [transactionId, payable.original_expense_id, payable.supplier_id, amount, payment_date, 'completed']
+        [transactionId, payable.original_expense_id || null, payable.supplier_id, amount, payment_date, 'completed']
       );
       
       // 5. Create journal entry lines (double-entry)
@@ -200,9 +378,13 @@ class ExpenseAccountPayablesController {
         [newPaidAmount, newOutstandingBalance, newStatus, payable_id]
       );
       
+      // 7. Update account balances from journal entry
+      const AccountBalanceService = require('../../services/accountBalanceService');
+      await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId, currency_id);
+      
       await conn.commit();
       
-      // 7. Log audit event
+      // 8. Log audit event
       await AuditLogger.log({
         action: 'ACCOUNTS_PAYABLE_PAYMENT_MADE',
         table: 'accounts_payable_payments',

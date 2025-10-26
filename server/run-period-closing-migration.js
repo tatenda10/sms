@@ -1,36 +1,54 @@
-const { pool } = require('./config/database');
+const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
 async function runMigration() {
+  let connection;
+  
   try {
-    console.log('Running period closing tables migration...');
-    
-    const migrationPath = path.join(__dirname, 'migrations', 'period_closing_tables.sql');
-    const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
-    
-    const connection = await pool.getConnection();
-    
-    try {
-      // Split the SQL by semicolons and execute each statement separately
-      const statements = migrationSQL.split(';').filter(stmt => stmt.trim());
-      
-      for (const statement of statements) {
-        if (statement.trim()) {
-          console.log('Executing:', statement.substring(0, 50) + '...');
-          await connection.execute(statement);
-        }
+    // Create connection
+    connection = await mysql.createConnection({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'school_management',
+      multipleStatements: true
+    });
+
+    console.log('✅ Connected to database');
+
+    // Read the SQL file
+    const sqlFile = path.join(__dirname, 'migrations', 'add_period_closing_fields.sql');
+    const sql = fs.readFileSync(sqlFile, 'utf8');
+
+    console.log('\n📄 Executing migration: add_period_closing_fields.sql\n');
+
+    // Split by semicolon and execute each statement
+    const statements = sql
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('--'));
+
+    for (const statement of statements) {
+      if (statement) {
+        console.log(`Executing: ${statement.substring(0, 100)}...`);
+        await connection.execute(statement);
+        console.log('✅ Success\n');
       }
-      
-      console.log('Period closing tables migration completed successfully!');
-    } finally {
-      connection.release();
     }
-    
+
+    console.log('🎉 Migration completed successfully!\n');
+
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error('❌ Migration failed:', error.message);
+    console.error(error);
+    process.exit(1);
   } finally {
-    process.exit(0);
+    if (connection) {
+      await connection.end();
+      console.log('👋 Database connection closed');
+    }
   }
 }
 

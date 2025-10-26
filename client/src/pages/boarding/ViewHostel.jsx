@@ -533,7 +533,6 @@ const RoomsTab = ({ hostelId }) => {
 // Functional EnrollmentsTab component
 const EnrollmentsTab = ({ hostelId }) => {
   const [enrollments, setEnrollments] = useState([]);
-  const [students, setStudents] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -565,7 +564,6 @@ const EnrollmentsTab = ({ hostelId }) => {
   const [foundStudent, setFoundStudent] = useState(null);
 
   useEffect(() => {
-    fetchStudents();
     fetchRooms();
     fetchEnrollments(); // Add initial fetch
   }, [hostelId]);
@@ -596,22 +594,6 @@ const EnrollmentsTab = ({ hostelId }) => {
     }
   }, [hostelId, selectedTerm, selectedAcademicYear, token]);
 
-  const fetchStudents = useCallback(async () => {
-    try {
-      const response = await axios.get(`${BASE_URL}/students`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data && Array.isArray(response.data.data)) {
-        setStudents(response.data.data);
-      } else {
-        setStudents([]);
-      }
-    } catch (error) {
-      console.error('Error fetching students:', error);
-      setStudents([]);
-    }
-  }, [token]);
 
   const fetchRooms = useCallback(async () => {
     try {
@@ -659,11 +641,17 @@ const EnrollmentsTab = ({ hostelId }) => {
      setError('');
      
      try {
-        const requestData = showEditModal ? formData : { ...formData, hostel_id: hostelId };
+        // Convert term format from dropdown (e.g., "Term 3") to database format (e.g., "3")
+        const processedFormData = { ...formData };
+        if (processedFormData.term && processedFormData.term.startsWith('Term ')) {
+          processedFormData.term = processedFormData.term.replace('Term ', '');
+        }
+        
+        const requestData = showEditModal ? processedFormData : { ...processedFormData, hostel_id: hostelId };
         console.log('Sending enrollment data:', requestData);
         
         if (showEditModal) {
-          await axios.put(`${BASE_URL}/boarding/enrollments/${selectedEnrollment.id}`, formData, {
+          await axios.put(`${BASE_URL}/boarding/enrollments/${selectedEnrollment.id}`, processedFormData, {
             headers: { Authorization: `Bearer ${token}` }
           });
         } else {
@@ -675,19 +663,19 @@ const EnrollmentsTab = ({ hostelId }) => {
       
       setShowAddModal(false);
       setShowEditModal(false);
-             setFormData({
-         student_reg_number: '',
-         room_id: '',
-         academic_year: '',
-         term: '',
-         enrollment_date: '',
-         check_in_date: '',
-         check_out_date: '',
-         status: 'enrolled',
-         notes: ''
-       });
-       clearStudentSearch();
-       fetchEnrollments();
+      setFormData({
+        student_reg_number: '',
+        room_id: '',
+        academic_year: '',
+        term: '',
+        enrollment_date: '',
+        check_in_date: '',
+        check_out_date: '',
+        status: 'enrolled',
+        notes: ''
+      });
+      clearStudentSearch();
+      fetchEnrollments();
      } catch (error) {
        console.error('Error saving enrollment:', error);
        if (error.response && error.response.data && error.response.data.message) {
@@ -700,19 +688,47 @@ const EnrollmentsTab = ({ hostelId }) => {
      }
   };
 
-  const handleEdit = (enrollment) => {
+  const handleEdit = async (enrollment) => {
     setSelectedEnrollment(enrollment);
+    
+    // Convert term format from database (e.g., "3") to dropdown format (e.g., "Term 3")
+    let formattedTerm = enrollment.term;
+    if (enrollment.term && !enrollment.term.startsWith('Term ')) {
+      formattedTerm = `Term ${enrollment.term}`;
+    }
+    
     setFormData({
       student_reg_number: enrollment.student_reg_number,
       room_id: enrollment.room_id || '',
       academic_year: enrollment.academic_year,
-      term: enrollment.term,
+      term: formattedTerm,
       enrollment_date: enrollment.enrollment_date,
       check_in_date: enrollment.check_in_date || '',
       check_out_date: enrollment.check_out_date || '',
       status: enrollment.status,
       notes: enrollment.notes || ''
     });
+    
+    // Set the student search field and find the student
+    setStudentSearchReg(enrollment.student_reg_number);
+    
+    // Search for the student to populate the found student state
+    try {
+      const response = await axios.get(`${BASE_URL}/students/search`, {
+        params: { query: enrollment.student_reg_number },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success && response.data.data.length > 0) {
+        const student = response.data.data.find(s => s.RegNumber === enrollment.student_reg_number);
+        if (student) {
+          setFoundStudent(student);
+        }
+      }
+    } catch (error) {
+      console.error('Error searching for student during edit:', error);
+    }
+    
     setShowEditModal(true);
   };
 
@@ -737,7 +753,7 @@ const EnrollmentsTab = ({ hostelId }) => {
 
   const handleCheckIn = async (enrollment) => {
     try {
-      await axios.put(`${BASE_URL}/boarding/enrollments/${enrollment.id}/check-in`, {}, {
+      await axios.post(`${BASE_URL}/boarding/enrollments/${enrollment.id}/checkin`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchEnrollments();
@@ -749,7 +765,7 @@ const EnrollmentsTab = ({ hostelId }) => {
 
   const handleCheckOut = async (enrollment) => {
     try {
-      await axios.put(`${BASE_URL}/boarding/enrollments/${enrollment.id}/check-out`, {}, {
+      await axios.post(`${BASE_URL}/boarding/enrollments/${enrollment.id}/checkout`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchEnrollments();
@@ -759,14 +775,36 @@ const EnrollmentsTab = ({ hostelId }) => {
     }
   };
 
-  const handleStudentSearch = () => {
-    const student = students.find(s => s.RegNumber === studentSearchReg);
-    if (student) {
-      setFoundStudent(student);
-      setFormData({ ...formData, student_reg_number: student.RegNumber });
-    } else {
+  const handleStudentSearch = async () => {
+    if (!studentSearchReg.trim()) {
+      setError('Please enter a registration number');
+      return;
+    }
+
+    try {
+      setError('');
+      const response = await axios.get(`${BASE_URL}/students/search`, {
+        params: { query: studentSearchReg },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success && response.data.data.length > 0) {
+        const student = response.data.data.find(s => s.RegNumber === studentSearchReg);
+        if (student) {
+          setFoundStudent(student);
+          setFormData({ ...formData, student_reg_number: student.RegNumber });
+        } else {
+          setFoundStudent(null);
+          setError('Student not found with this registration number');
+        }
+      } else {
+        setFoundStudent(null);
+        setError('Student not found with this registration number');
+      }
+    } catch (error) {
+      console.error('Error searching for student:', error);
       setFoundStudent(null);
-      setError('Student not found with this registration number');
+      setError('Error searching for student. Please try again.');
     }
   };
 
@@ -777,8 +815,8 @@ const EnrollmentsTab = ({ hostelId }) => {
   };
 
   const getStudentName = (regNumber) => {
-    const student = students.find(s => s.RegNumber === regNumber);
-    return student ? `${student.Name} ${student.Surname}` : 'Unknown Student';
+    // This will be populated from enrollment data
+    return 'Student'; // Will be updated when enrollment data includes student names
   };
 
   const getRoomNumber = (roomId) => {
@@ -1130,22 +1168,22 @@ const EnrollmentsTab = ({ hostelId }) => {
                 <div className="flex justify-end space-x-3 mt-6">
                   <button
                     type="button"
-                                         onClick={() => {
-                       setShowAddModal(false);
-                       setShowEditModal(false);
-                       setFormData({
-                         student_reg_number: '',
-                         room_id: '',
-                         academic_year: '',
-                         term: '',
-                         enrollment_date: '',
-                         check_in_date: '',
-                         check_out_date: '',
-                         status: 'enrolled',
-                         notes: ''
-                       });
-                       clearStudentSearch();
-                     }}
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setShowEditModal(false);
+                      setFormData({
+                        student_reg_number: '',
+                        room_id: '',
+                        academic_year: '',
+                        term: '',
+                        enrollment_date: '',
+                        check_in_date: '',
+                        check_out_date: '',
+                        status: 'enrolled',
+                        notes: ''
+                      });
+                      clearStudentSearch();
+                    }}
                     className="px-3 py-1.5 border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50"
                   >
                     Cancel

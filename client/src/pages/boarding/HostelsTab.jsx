@@ -22,7 +22,7 @@ const HostelsTab = () => {
     name: '',
     description: '',
     location: '',
-    gender: 'Mixed'
+    gender: 'Male'
   });
 
   useEffect(() => {
@@ -83,7 +83,16 @@ const HostelsTab = () => {
       fetchHostels();
     } catch (error) {
       console.error('Error saving hostel:', error);
-      setError('Failed to save hostel');
+      
+      // Extract specific error message from server response
+      let errorMessage = 'Failed to save hostel';
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -297,7 +306,6 @@ const HostelsTab = () => {
                        >
                          <option value="Male">Male</option>
                          <option value="Female">Female</option>
-                         <option value="Mixed">Mixed</option>
                        </select>
                     </div>
                  </div>

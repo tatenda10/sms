@@ -473,6 +473,114 @@ class AnnouncementsController {
       res.status(500).json({ error: 'Failed to fetch dashboard announcements' });
     }
   }
+
+  // Get employee announcements (filtered for employees only)
+  static async getEmployeeAnnouncements(req, res) {
+    try {
+      console.log('📢 Getting employee announcements');
+      console.log('👤 Employee from token:', req.employee);
+      
+      const { 
+        page = 1, 
+        limit = 10, 
+        priority,
+        search 
+      } = req.query;
+
+      const offset = (page - 1) * limit;
+      let whereConditions = [
+        'a.announcement_type = "employee"',
+        'a.status = "published"',
+        '(a.start_date IS NULL OR a.start_date <= NOW())',
+        '(a.end_date IS NULL OR a.end_date >= NOW())'
+      ];
+      let queryParams = [];
+
+      // Filter by employee department if target_type is specific
+      if (req.employee && req.employee.department_id) {
+        whereConditions.push('(a.target_type = "all" OR (a.target_type = "specific" AND a.target_value = ?))');
+        queryParams.push(req.employee.department_id);
+      }
+
+      if (priority) {
+        whereConditions.push('a.priority = ?');
+        queryParams.push(priority);
+      }
+
+      if (search) {
+        whereConditions.push('(a.title LIKE ? OR a.content LIKE ?)');
+        queryParams.push(`%${search}%`, `%${search}%`);
+      }
+
+      const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
+
+      // Get total count
+      const countQuery = `
+        SELECT COUNT(*) as total 
+        FROM announcements a 
+        ${whereClause}
+      `;
+      const [countResult] = await pool.execute(countQuery, queryParams);
+      const total = countResult[0].total;
+
+      // Get announcements with user info
+      const announcementsQuery = `
+        SELECT 
+          a.id,
+          a.title,
+          a.content,
+          a.announcement_type,
+          a.target_type,
+          a.target_value,
+          a.priority,
+          a.status,
+          a.start_date,
+          a.end_date,
+          a.created_at,
+          a.updated_at,
+          u.username as created_by_username,
+          CASE 
+            WHEN a.target_type = 'specific' THEN d.name
+            ELSE 'All Employees'
+          END as target_name
+        FROM announcements a
+        LEFT JOIN users u ON a.created_by = u.id
+        LEFT JOIN departments d ON a.target_type = 'specific' AND a.target_value = d.id
+        ${whereClause}
+        ORDER BY 
+          CASE a.priority 
+            WHEN 'urgent' THEN 1 
+            WHEN 'high' THEN 2 
+            WHEN 'medium' THEN 3 
+            WHEN 'low' THEN 4 
+          END,
+          a.created_at DESC
+        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
+      `;
+
+      const [announcements] = await pool.execute(announcementsQuery, queryParams);
+
+      console.log('📢 Found announcements:', announcements.length);
+
+      res.json({
+        success: true,
+        announcements,
+        pagination: {
+          current_page: parseInt(page),
+          total_pages: Math.ceil(total / limit),
+          total_items: total,
+          items_per_page: parseInt(limit)
+        }
+      });
+
+    } catch (error) {
+      console.error('Error fetching employee announcements:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to fetch employee announcements' 
+      });
+    }
+  }
 }
 
 module.exports = AnnouncementsController;

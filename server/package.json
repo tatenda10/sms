@@ -5,7 +5,14 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "fix-class-term-year": "node scripts/fix_class_term_year_records.js",
+    "generate-2025-periods": "node scripts/generate-2025-periods.js",
+    "add-opening-balance-support": "node run-opening-balance-migration.js",
+    "add-municipal-accounts": "node run-municipal-accounts-migration.js",
+    "fix-payable-payments": "node run-fix-payable-payments.js",
+    "fix-opening-balance": "node fix-opening-balance-entry.js",
+    "add-period-closing-fields": "node run-period-closing-migration.js"
   },
   "author": "",
   "license": "ISC",

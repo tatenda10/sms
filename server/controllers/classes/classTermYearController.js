@@ -368,16 +368,26 @@ class ClassTermYearController {
             let createdCount = 0;
             let skippedCount = 0;
 
-            // Create class term year records for each class
+            // Create or update class term year records for each class
             for (const cls of classes) {
-                // Check if record already exists
+                // Check if class already has a term/year record (any term/year)
                 const [existing] = await conn.execute(
-                    'SELECT id FROM class_term_year WHERE gradelevel_class_id = ? AND term = ? AND academic_year = ?',
-                    [cls.id, term, academic_year]
+                    'SELECT id FROM class_term_year WHERE gradelevel_class_id = ?',
+                    [cls.id]
                 );
 
-                if (existing.length === 0) {
-                    // Create new record
+                if (existing.length > 0) {
+                    // UPDATE existing record to new term/year
+                    await conn.execute(
+                        `UPDATE class_term_year 
+                         SET term = ?, academic_year = ?, start_date = ?, end_date = ?, 
+                             is_active = TRUE, updated_by = ?, updated_at = CURRENT_TIMESTAMP
+                         WHERE gradelevel_class_id = ?`,
+                        [term, academic_year, start_date || null, end_date || null, req.user.id, cls.id]
+                    );
+                    createdCount++; // Count as updated
+                } else {
+                    // CREATE new record
                     await conn.execute(
                         `INSERT INTO class_term_year 
                          (gradelevel_class_id, term, academic_year, start_date, end_date, created_by) 
@@ -385,8 +395,6 @@ class ClassTermYearController {
                         [cls.id, term, academic_year, start_date || null, end_date || null, req.user.id]
                     );
                     createdCount++;
-                } else {
-                    skippedCount++;
                 }
             }
 
@@ -417,10 +425,9 @@ class ClassTermYearController {
 
             res.json({
                 success: true,
-                message: `Bulk population completed. Created: ${createdCount}, Skipped: ${skippedCount}`,
+                message: `Bulk population completed. Updated/Created: ${createdCount}, Total Classes: ${classes.length}`,
                 data: {
-                    created_count: createdCount,
-                    skipped_count: skippedCount,
+                    updated_count: createdCount,
                     total_classes: classes.length
                 }
             });

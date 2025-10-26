@@ -12,9 +12,15 @@ const auditRoutes = require('./routes/audit/audit');
 const studentRoutes = require('./routes/students_registrations/students');
 const classRoutes = require('./routes/classes/index');
 const employeeRoutes = require('./routes/employees/employees');
+const employeeAuthRoutes = require('./routes/employees/employeeAuth');
+const employeeClassRoutes = require('./routes/employees/employeeClasses');
+const studentAuthRoutes = require('./routes/students/studentAuth');
 const configurationRoutes = require('./routes/employees/configurations');
 const accountingRoutes = require('./routes/accounting/index');
 const generalLedgerRoutes = require('./routes/accounting/generalLedger');
+const cashBankRoutes = require('./routes/accounting/cashBank');
+const trialBalanceRoutes = require('./routes/accounting/trialBalance');
+const periodClosingRoutes = require('./routes/accounting/periodClosing');
 const expensesRoutes = require('./routes/expenses/index');
 const resultsRoutes = require('./routes/results/index');
 const boardingRoutes = require('./routes/boarding/index');
@@ -24,10 +30,34 @@ const studentTransactionRoutes = require('./routes/students/transactions');
 const studentFinancialRecordRoutes = require('./routes/students/financialRecords');
 const feePaymentRoutes = require('./routes/fees/payments');
 const payrollRoutes = require('./routes/payroll/index');
+const employeePayrollRoutes = require('./routes/payroll/employeePayslips');
 const transportRoutes = require('./routes/transport/index');
 const inventoryRoutes = require('./routes/inventory/index');
 const announcementsRoutes = require('./routes/announcements');
+const employeeAnnouncementsRoutes = require('./routes/announcements/employeeAnnouncements');
+const employeeGradelevelEnrollmentsRoutes = require('./routes/employees/employeeGradelevelEnrollments');
+const employeeStudentsRoutes = require('./routes/employees/employeeStudents');
+const employeeResultsRoutes = require('./routes/employees/employeeResults');
+const employeeResultsEntryRoutes = require('./routes/employees/employeeResultsEntry');
+const employeeGradingRoutes = require('./routes/employees/employeeGrading');
+const employeeTestMarksRoutes = require('./routes/employees/employeeTestMarks');
+const employeeTestsRoutes = require('./routes/employees/employeeTests');
+const employeeSubjectEnrollmentsRoutes = require('./routes/employees/employeeSubjectEnrollments');
 const closeToTermRoutes = require('./routes/classes/closeToTerm');
+const additionalFeesRoutes = require('./routes/fees/additionalFees');
+const studentFinancialRoutes = require('./routes/students/studentFinancial');
+const studentResultsRoutes = require('./routes/students/studentResults');
+const studentEnrollmentRoutes = require('./routes/students/studentEnrollments');
+const studentAnnouncementRoutes = require('./routes/students/studentAnnouncements');
+const studentAttendanceRoutes = require('./routes/students/studentAttendance');
+const employeeAttendanceRoutes = require('./routes/attendance/employeeAttendance');
+const adminAttendanceRoutes = require('./routes/attendance/adminAttendance');
+const timetableRoutes = require('./routes/timetable/timetable');
+const timetableGenerationRoutes = require('./routes/timetable/timetableGeneration');
+const sportsRoutes = require('./routes/sports/index');
+const studentSportsRoutes = require('./routes/students/sports');
+const analyticsRoutes = require('./routes/analytics/index');
+const waiversRoutes = require('./routes/waivers/waivers');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,8 +71,8 @@ app.use(cors());
  
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 1000, // limit each IP to 1000 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use(limiter);
@@ -51,7 +81,7 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging middleware
+// Request logging middleware 
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
@@ -273,9 +303,15 @@ app.use('/api/audit', auditRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/employee-auth', employeeAuthRoutes);
+app.use('/api/employee-classes', employeeClassRoutes);
+app.use('/api/student-auth', studentAuthRoutes);
 app.use('/api/configurations', configurationRoutes);
 app.use('/api/accounting', accountingRoutes);
 app.use('/api/accounting/general-ledger', generalLedgerRoutes);
+app.use('/api/accounting/cash-bank', cashBankRoutes);
+app.use('/api/accounting/trial-balance', trialBalanceRoutes);
+app.use('/api/accounting/period-closing', periodClosingRoutes);
 app.use('/api/expenses', expensesRoutes);
 app.use('/api/results', resultsRoutes);
 app.use('/api/boarding', boardingRoutes);
@@ -285,10 +321,34 @@ app.use('/api/transactions', studentTransactionRoutes);
 app.use('/api/student-financial-records', studentFinancialRecordRoutes);
 app.use('/api/fees/payments', feePaymentRoutes);
 app.use('/api/payroll', payrollRoutes);
+app.use('/api/employee-payroll', employeePayrollRoutes);
 app.use('/api/transport', transportRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/announcements', announcementsRoutes);
+app.use('/api/employee-announcements', employeeAnnouncementsRoutes);
+app.use('/api/employee-gradelevel-enrollments', employeeGradelevelEnrollmentsRoutes);
+app.use('/api/employee-students', employeeStudentsRoutes);
+app.use('/api/employee-results', employeeResultsRoutes);
+app.use('/api/employee-results-entry', employeeResultsEntryRoutes);
+app.use('/api/employee-grading', employeeGradingRoutes);
+app.use('/api/employee-test-marks', employeeTestMarksRoutes);
+app.use('/api/employee-tests', employeeTestsRoutes);
+app.use('/api/employee-subject-enrollments', employeeSubjectEnrollmentsRoutes);
 app.use('/api/close-to-term', closeToTermRoutes);
+app.use('/api/additional-fees', additionalFeesRoutes);
+app.use('/api/student-financial', studentFinancialRoutes);
+app.use('/api/student-results', studentResultsRoutes);
+app.use('/api/student-enrollments', studentEnrollmentRoutes);
+app.use('/api/student-announcements', studentAnnouncementRoutes);
+app.use('/api/student-attendance', studentAttendanceRoutes);
+app.use('/api/student-sports', studentSportsRoutes);
+app.use('/api/employee-attendance', employeeAttendanceRoutes);
+app.use('/api/attendance', adminAttendanceRoutes);
+app.use('/api/timetables', timetableRoutes);
+app.use('/api/timetable-generation', timetableGenerationRoutes);
+app.use('/api/sports', sportsRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/waivers', waiversRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -304,6 +364,10 @@ app.use((error, req, res, next) => {
 // Start server
 const startServer = async () => {
   try {
+    // Auto-generate accounting periods for current year
+    const PeriodController = require('./controllers/accounting/periodController');
+    await PeriodController.autoGenerateCurrentYearPeriods();
+    
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);

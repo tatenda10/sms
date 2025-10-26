@@ -31,7 +31,7 @@ const AddStudent = () => {
     nationalIDNumber: '',
     address: '',
     gender: '',
-    active: 'Active',
+    active: 'Yes',
     
     // Guardian Information
     guardianName: '',
@@ -59,7 +59,7 @@ const AddStudent = () => {
       nationalIDNumber: '',
       address: '',
       gender: '',
-      active: 'Active',
+      active: 'Yes',
       
       // Guardian Information
       guardianName: '',

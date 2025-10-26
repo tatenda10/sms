@@ -153,18 +153,18 @@ const IncomeStatement = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="px-2 md:px-4 lg:px-6 py-3 md:py-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Income Statement</h1>
+              <h1 className="text-lg md:text-xl font-semibold text-gray-900">Income Statement</h1>
               <p className="text-xs text-gray-600 mt-1">Profit & Loss Report</p>
             </div>
-            <div className="flex items-center space-x-3">
-              <button className="bg-gray-600 text-white px-3 py-1.5 hover:bg-gray-700 flex items-center space-x-2 text-xs font-medium">
+            <div className="flex items-center space-x-2 md:space-x-3 w-full sm:w-auto">
+              <button className="bg-gray-600 text-white px-2 md:px-3 py-1.5 hover:bg-gray-700 flex items-center space-x-1 md:space-x-2 text-xs font-medium w-full sm:w-auto justify-center">
                 <FontAwesomeIcon icon={faDownload} />
                 <span>Export</span>
               </button>
-              <button className="bg-gray-600 text-white px-3 py-1.5 hover:bg-gray-700 flex items-center space-x-2 text-xs font-medium">
+              <button className="bg-gray-600 text-white px-2 md:px-3 py-1.5 hover:bg-gray-700 flex items-center space-x-1 md:space-x-2 text-xs font-medium w-full sm:w-auto justify-center">
                 <FontAwesomeIcon icon={faPrint} />
                 <span>Print</span>
               </button>
@@ -175,106 +175,112 @@ const IncomeStatement = () => {
 
       {/* Filters */}
       <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-3">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <FontAwesomeIcon icon={faFilter} className="text-gray-400 text-xs" />
-              <span className="text-xs font-medium text-gray-700">Report Type:</span>
-              <select 
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value)}
-                className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400"
-              >
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="ytd">Year-to-Date</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-            
-            {reportType === 'monthly' && (
+        <div className="px-2 md:px-4 lg:px-6 py-3">
+          <div className="flex flex-col lg:flex-row gap-3 md:gap-4 lg:gap-6">
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-3 flex-1">
               <div className="flex items-center space-x-2">
-                <FontAwesomeIcon icon={faCalendarAlt} className="text-gray-400 text-xs" />
-                <span className="text-xs font-medium text-gray-700">Month:</span>
+                <FontAwesomeIcon icon={faFilter} className="text-gray-400 text-xs" />
+                <span className="text-xs font-medium text-gray-700">Report Type:</span>
                 <select 
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400"
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                  className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400 w-full sm:w-auto"
                 >
-                  <option value={1}>January</option>
-                  <option value={2}>February</option>
-                  <option value={3}>March</option>
-                  <option value={4}>April</option>
-                  <option value={5}>May</option>
-                  <option value={6}>June</option>
-                  <option value={7}>July</option>
-                  <option value={8}>August</option>
-                  <option value={9}>September</option>
-                  <option value={10}>October</option>
-                  <option value={11}>November</option>
-                  <option value={12}>December</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="ytd">Year-to-Date</option>
+                  <option value="custom">Custom</option>
                 </select>
               </div>
-            )}
-            
-            {reportType === 'quarterly' && (
-              <div className="flex items-center space-x-2">
-                <FontAwesomeIcon icon={faCalendarAlt} className="text-gray-400 text-xs" />
-                <span className="text-xs font-medium text-gray-700">Quarter:</span>
-                <select 
-                  value={selectedQuarter}
-                  onChange={(e) => setSelectedQuarter(parseInt(e.target.value))}
-                  className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400"
-                >
-                  <option value={1}>Q1 (Jan - Mar)</option>
-                  <option value={2}>Q2 (Apr - Jun)</option>
-                  <option value={3}>Q3 (Jul - Sep)</option>
-                  <option value={4}>Q4 (Oct - Dec)</option>
-                </select>
-              </div>
-            )}
-            
-            {reportType !== 'custom' && (
-              <div className="flex items-center space-x-2">
-                <FontAwesomeIcon icon={faCalendarAlt} className="text-gray-400 text-xs" />
-                <span className="text-xs font-medium text-gray-700">Year:</span>
-                <select 
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400"
-                >
-                  <option value={2025}>2025</option>
-                  <option value={2024}>2024</option>
-                  <option value={2023}>2023</option>
-                </select>
-              </div>
-            )}
+              
+              {reportType === 'monthly' && (
+                <div className="flex items-center space-x-2">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="text-gray-400 text-xs" />
+                  <span className="text-xs font-medium text-gray-700">Month:</span>
+                  <select 
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                    className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400 w-full sm:w-auto"
+                  >
+                    <option value={1}>January</option>
+                    <option value={2}>February</option>
+                    <option value={3}>March</option>
+                    <option value={4}>April</option>
+                    <option value={5}>May</option>
+                    <option value={6}>June</option>
+                    <option value={7}>July</option>
+                    <option value={8}>August</option>
+                    <option value={9}>September</option>
+                    <option value={10}>October</option>
+                    <option value={11}>November</option>
+                    <option value={12}>December</option>
+                  </select>
+                </div>
+              )}
+              
+              {reportType === 'quarterly' && (
+                <div className="flex items-center space-x-2">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="text-gray-400 text-xs" />
+                  <span className="text-xs font-medium text-gray-700">Quarter:</span>
+                  <select 
+                    value={selectedQuarter}
+                    onChange={(e) => setSelectedQuarter(parseInt(e.target.value))}
+                    className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400 w-full sm:w-auto"
+                  >
+                    <option value={1}>Q1 (Jan - Mar)</option>
+                    <option value={2}>Q2 (Apr - Jun)</option>
+                    <option value={3}>Q3 (Jul - Sep)</option>
+                    <option value={4}>Q4 (Oct - Dec)</option>
+                  </select>
+                </div>
+              )}
+              
+              {reportType !== 'custom' && (
+                <div className="flex items-center space-x-2">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="text-gray-400 text-xs" />
+                  <span className="text-xs font-medium text-gray-700">Year:</span>
+                  <select 
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400 w-full sm:w-auto"
+                  >
+                    <option value={2025}>2025</option>
+                    <option value={2024}>2024</option>
+                    <option value={2023}>2023</option>
+                  </select>
+                </div>
+              )}
 
-            {reportType === 'custom' && (
-              <div className="flex items-center space-x-2">
-                <FontAwesomeIcon icon={faCalendarAlt} className="text-gray-400 text-xs" />
-                <span className="text-xs font-medium text-gray-700">Start:</span>
-                <input
-                  type="date"
-                  value={customStart}
-                  onChange={(e) => setCustomStart(e.target.value)}
-                  className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400"
-                />
-                <span className="text-xs font-medium text-gray-700 ml-2">End:</span>
-                <input
-                  type="date"
-                  value={customEnd}
-                  onChange={(e) => setCustomEnd(e.target.value)}
-                  className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400"
-                />
-              </div>
-            )}
+              {reportType === 'custom' && (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex items-center space-x-2">
+                    <FontAwesomeIcon icon={faCalendarAlt} className="text-gray-400 text-xs" />
+                    <span className="text-xs font-medium text-gray-700">Start:</span>
+                    <input
+                      type="date"
+                      value={customStart}
+                      onChange={(e) => setCustomStart(e.target.value)}
+                      className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400 w-full sm:w-auto"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-medium text-gray-700">End:</span>
+                    <input
+                      type="date"
+                      value={customEnd}
+                      onChange={(e) => setCustomEnd(e.target.value)}
+                      className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400 w-full sm:w-auto"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
             
             <div className="flex items-center">
               <button
                 onClick={handleSearch}
                 disabled={loading}
-                className="bg-gray-900 text-white px-4 py-1.5 hover:bg-gray-800 disabled:opacity-50 flex items-center space-x-2 text-xs font-medium"
+                className="bg-gray-900 text-white px-3 md:px-4 py-1.5 hover:bg-gray-800 disabled:opacity-50 flex items-center space-x-2 text-xs font-medium w-full sm:w-auto justify-center"
               >
                 <FontAwesomeIcon icon={faFilter} />
                 <span>{loading ? 'Loading...' : 'Search'}</span>
@@ -285,67 +291,67 @@ const IncomeStatement = () => {
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-2 md:p-4 lg:p-6">
         {/* Loading and Error States */}
         {loading && (
-          <div className="flex items-center justify-center py-8">
-            <FontAwesomeIcon icon={faSpinner} className="text-blue-500 text-2xl animate-spin mr-2" />
-            <span className="text-gray-600">Loading income statement...</span>
+          <div className="flex items-center justify-center py-6 md:py-8">
+            <FontAwesomeIcon icon={faSpinner} className="text-blue-500 text-xl md:text-2xl animate-spin mr-2" />
+            <span className="text-gray-600 text-xs md:text-sm">Loading income statement...</span>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 md:p-4 mb-4 md:mb-6">
             <div className="flex items-center">
-              <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-400 mr-2" />
-              <span className="text-red-800">{error}</span>
+              <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-400 mr-2 text-xs" />
+              <span className="text-red-800 text-xs md:text-sm">{error}</span>
             </div>
           </div>
         )}
 
         {/* Summary Cards */}
         {!loading && !error && incomeStatementData && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white border border-gray-200 p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
+            <div className="bg-white border border-gray-200 p-3 md:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">Total Revenue</p>
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-sm md:text-lg font-semibold text-gray-900">
                     {formatCurrency(incomeStatementData.totals?.total_revenue)}
                   </p>
                 </div>
                 <div className="bg-gray-100 p-2">
-                  <FontAwesomeIcon icon={faArrowUp} className="text-gray-600 text-sm" />
+                  <FontAwesomeIcon icon={faArrowUp} className="text-gray-600 text-xs md:text-sm" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 p-4">
+            <div className="bg-white border border-gray-200 p-3 md:p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">Total Expenses</p>
-                  <p className="text-lg font-semibold text-red-600">
+                  <p className="text-sm md:text-lg font-semibold text-red-600">
                     {formatCurrency(incomeStatementData.totals?.total_expenses)}
                   </p>
                 </div>
                 <div className="bg-red-100 p-2">
-                  <FontAwesomeIcon icon={faArrowDown} className="text-red-600 text-sm" />
+                  <FontAwesomeIcon icon={faArrowDown} className="text-red-600 text-xs md:text-sm" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 p-4">
+            <div className="bg-white border border-gray-200 p-3 md:p-4 sm:col-span-2 lg:col-span-1">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-medium text-gray-600">Net Income</p>
-                  <p className={`text-lg font-semibold ${(incomeStatementData.totals?.net_income || 0) >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                  <p className={`text-sm md:text-lg font-semibold ${(incomeStatementData.totals?.net_income || 0) >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                     {formatCurrency(incomeStatementData.totals?.net_income)}
                   </p>
                 </div>
                 <div className={`p-2 ${(incomeStatementData.totals?.net_income || 0) >= 0 ? 'bg-gray-100' : 'bg-red-100'}`}>
                   <FontAwesomeIcon 
                     icon={(incomeStatementData.totals?.net_income || 0) >= 0 ? faArrowUp : faArrowDown} 
-                    className={`text-sm ${(incomeStatementData.totals?.net_income || 0) >= 0 ? 'text-gray-600' : 'text-red-600'}`} 
+                    className={`text-xs md:text-sm ${(incomeStatementData.totals?.net_income || 0) >= 0 ? 'text-gray-600' : 'text-red-600'}`} 
                   />
                 </div>
               </div>
@@ -356,8 +362,8 @@ const IncomeStatement = () => {
         {/* Income Statement Details */}
         {!loading && !error && incomeStatementData && (
           <div className="bg-white border border-gray-200">
-            <div className="px-6 py-3 border-b border-gray-200">
-              <h2 className="text-base font-semibold text-gray-900">Income Statement</h2>
+            <div className="px-3 md:px-6 py-3 border-b border-gray-200">
+              <h2 className="text-sm md:text-base font-semibold text-gray-900">Income Statement</h2>
               <p className="text-xs text-gray-600">
                 {reportType === 'monthly' && `${new Date(selectedYear, selectedMonth - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
                 {reportType === 'quarterly' && `Q${selectedQuarter} ${selectedYear}`}
@@ -366,20 +372,20 @@ const IncomeStatement = () => {
               </p>
             </div>
 
-            <div className="p-6">
+            <div className="p-3 md:p-6">
               {/* Revenue Section */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Revenue</h3>
+              <div className="mb-4 md:mb-6">
+                <h3 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Revenue</h3>
                 <div className="space-y-0">
                   {incomeStatementData.revenue && incomeStatementData.revenue.length > 0 ? (
                     <>
                       {incomeStatementData.revenue.map((item, index) => (
                         <div key={index} className={`flex justify-between items-center py-1.5 px-2 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                          <div className="flex-1">
-                            <span className="text-xs text-gray-700">{item.account_name}</span>
-                            <span className="text-xs text-gray-500 ml-2">({item.account_code})</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs text-gray-700 block truncate">{item.account_name}</span>
+                            <span className="text-xs text-gray-500">({item.account_code})</span>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex-shrink-0 ml-2">
                             <span className={`text-xs font-medium ${parseFloat(item.amount || 0) > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
                               {formatCurrency(item.amount)}
                             </span>
@@ -400,18 +406,18 @@ const IncomeStatement = () => {
               </div>
 
               {/* Expenses Section */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Expenses</h3>
+              <div className="mb-4 md:mb-6">
+                <h3 className="text-xs md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Expenses</h3>
                 <div className="space-y-0">
                   {incomeStatementData.expenses && incomeStatementData.expenses.length > 0 ? (
                     <>
                       {incomeStatementData.expenses.map((item, index) => (
                         <div key={index} className={`flex justify-between items-center py-1.5 px-2 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                          <div className="flex-1">
-                            <span className="text-xs text-gray-700">{item.account_name}</span>
-                            <span className="text-xs text-gray-500 ml-2">({item.account_code})</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs text-gray-700 block truncate">{item.account_name}</span>
+                            <span className="text-xs text-gray-500">({item.account_code})</span>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex-shrink-0 ml-2">
                             <span className={`text-xs font-medium ${parseFloat(item.amount || 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
                               {formatCurrency(item.amount)}
                             </span>
@@ -432,8 +438,8 @@ const IncomeStatement = () => {
               </div>
 
               {/* Net Income */}
-              <div className="border-t border-gray-300 pt-4">
-                <div className="flex justify-between items-center py-3 px-3 bg-gray-100 border-b border-gray-300">
+              <div className="border-t border-gray-300 pt-3 md:pt-4">
+                <div className="flex justify-between items-center py-2 md:py-3 px-2 md:px-3 bg-gray-100 border-b border-gray-300">
                   <span className="text-xs font-bold text-gray-900">Net Income</span>
                   <span className={`text-xs font-bold ${(incomeStatementData.totals?.net_income || 0) >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                     {formatCurrency(incomeStatementData.totals?.net_income)}
@@ -447,10 +453,10 @@ const IncomeStatement = () => {
 
         {/* No Data State */}
         {!loading && !error && !incomeStatementData && (
-          <div className="bg-white border border-gray-200 p-8 text-center">
-            <FontAwesomeIcon icon={faChartLine} className="text-gray-400 text-4xl mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Income Statement Data</h3>
-            <p className="text-gray-500 text-sm">
+          <div className="bg-white border border-gray-200 p-6 md:p-8 text-center">
+            <FontAwesomeIcon icon={faChartLine} className="text-gray-400 text-3xl md:text-4xl mb-3 md:mb-4" />
+            <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">No Income Statement Data</h3>
+            <p className="text-gray-500 text-xs md:text-sm">
               Select a period to view the income statement data.
             </p>
           </div>

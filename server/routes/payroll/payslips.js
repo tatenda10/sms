@@ -24,4 +24,7 @@ router.delete('/:id', PayslipController.deletePayslip);
 // Get payroll summary
 router.get('/summary', PayslipController.getPayrollSummary);
 
+// Get payslips for a specific employee
+router.get('/employee/:employeeId', PayslipController.getEmployeePayslips);
+
 module.exports = router;

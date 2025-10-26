@@ -51,11 +51,12 @@ class ResultsController {
       const resultId = result.insertId;
       
       // Log audit event
+      const userId = req.user?.id || req.employeeId;
       await AuditLogger.log({
         action: 'RESULT_CREATED',
         table: 'results',
         record_id: resultId,
-        user_id: req.user.id,
+        user_id: userId,
         details: { reg_number, subject_class_id, gradelevel_class_id, academic_year, term },
         ip_address: req.ip,
         user_agent: req.get('User-Agent')
@@ -220,7 +221,10 @@ class ResultsController {
     try {
       const { gradelevel_class_id, subject_class_id, term, academic_year } = req.query;
       
+      console.log('🔍 Results query params:', { gradelevel_class_id, subject_class_id, term, academic_year });
+      
       if (!gradelevel_class_id || !term || !academic_year) {
+        console.log('❌ Missing required parameters');
         return res.status(400).json({ 
           success: false, 
           message: 'Gradelevel class ID, term, and academic year are required' 
@@ -247,10 +251,17 @@ class ResultsController {
       
       query += ' ORDER BY s.Surname, s.Name';
       
+      console.log('📊 Final query:', query);
+      console.log('📊 Query params:', params);
+      
       const [results] = await pool.execute(query, params);
       
-      // Get paper marks for each result
+      console.log('📊 Query executed, found results:', results.length);
+      console.log('📊 Sample result:', results[0]);
+      
+      // Get paper marks and coursework marks for each result
       for (let result of results) {
+        // Get paper marks
         const [paperMarks] = await pool.execute(
           `SELECT pm.*, p.name as paper_name 
            FROM paper_marks pm
@@ -259,8 +270,19 @@ class ResultsController {
           [result.id]
         );
         result.paper_marks = paperMarks;
+
+        // Get coursework mark
+        const [coursework] = await pool.execute(
+          `SELECT coursework_mark 
+           FROM mid_term_coursework 
+           WHERE reg_number = ? AND subject_class_id = ? AND gradelevel_class_id = ? AND academic_year = ? AND term = ?`,
+          [result.reg_number, result.subject_class_id, result.gradelevel_class_id, result.academic_year, result.term]
+        );
+        result.coursework_mark = coursework.length > 0 ? coursework[0].coursework_mark : null;
       }
       
+      console.log('📊 Final results with paper marks and coursework:', results.length);
+      console.log('📊 Sample result with coursework:', results[0]);
       res.json({ success: true, data: results });
     } catch (error) {
       console.error('Error fetching results:', error);
@@ -396,11 +418,12 @@ class ResultsController {
       );
       
       // Log audit event
+      const userId = req.user?.id || req.employeeId;
       await AuditLogger.log({
         action: 'RESULT_UPDATED',
         table: 'results',
         record_id: id,
-        user_id: req.user.id,
+        user_id: userId,
         details: { total_mark, grade, points },
         ip_address: req.ip,
         user_agent: req.get('User-Agent')
@@ -452,11 +475,12 @@ class ResultsController {
       );
       
       // Log audit event
+      const userId = req.user?.id || req.employeeId;
       await AuditLogger.log({
         action: 'RESULT_DELETED',
         table: 'results',
         record_id: id,
-        user_id: req.user.id,
+        user_id: userId,
         details: { result_id: id },
         ip_address: req.ip,
         user_agent: req.get('User-Agent')

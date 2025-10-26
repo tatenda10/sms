@@ -52,11 +52,12 @@ class MidTermCourseworkController {
         );
         
         // Log audit event
+        const userId = req.user?.id || req.employeeId;
         await AuditLogger.log({
           action: 'COURSEWORK_UPDATED',
           table: 'mid_term_coursework',
           record_id: existing[0].id,
-          user_id: req.user.id,
+          user_id: userId,
           details: { reg_number, subject_class_id, gradelevel_class_id, academic_year, term, coursework_mark },
           ip_address: req.ip,
           user_agent: req.get('User-Agent')
@@ -77,11 +78,12 @@ class MidTermCourseworkController {
         );
         
         // Log audit event
+        const userId = req.user?.id || req.employeeId;
         await AuditLogger.log({
           action: 'COURSEWORK_CREATED',
           table: 'mid_term_coursework',
           record_id: result.insertId,
-          user_id: req.user.id,
+          user_id: userId,
           details: { reg_number, subject_class_id, gradelevel_class_id, academic_year, term, coursework_mark },
           ip_address: req.ip,
           user_agent: req.get('User-Agent')
@@ -227,11 +229,12 @@ class MidTermCourseworkController {
       );
       
       // Log audit event
+      const userId = req.user?.id || req.employeeId;
       await AuditLogger.log({
         action: 'COURSEWORK_UPDATED',
         table: 'mid_term_coursework',
         record_id: id,
-        user_id: req.user.id,
+        user_id: userId,
         details: { coursework_mark },
         ip_address: req.ip,
         user_agent: req.get('User-Agent')
@@ -277,11 +280,12 @@ class MidTermCourseworkController {
       );
       
       // Log audit event
+      const userId = req.user?.id || req.employeeId;
       await AuditLogger.log({
         action: 'COURSEWORK_DELETED',
         table: 'mid_term_coursework',
         record_id: id,
-        user_id: req.user.id,
+        user_id: userId,
         details: { coursework_id: id },
         ip_address: req.ip,
         user_agent: req.get('User-Agent')
@@ -370,11 +374,12 @@ class MidTermCourseworkController {
       }
       
       // Log audit event
+      const userId = req.user?.id || req.employeeId;
       await AuditLogger.log({
         action: 'COURSEWORK_BULK_ADDED',
         table: 'mid_term_coursework',
         record_id: null,
-        user_id: req.user.id,
+        user_id: userId,
         details: { count: coursework_data.length, results },
         ip_address: req.ip,
         user_agent: req.get('User-Agent')

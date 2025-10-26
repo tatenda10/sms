@@ -9,7 +9,7 @@ class EmployeeController {
   // Get all employees with pagination and search
   static async getAllEmployees(req, res) {
     try {
-      const { page = 1, limit = 10, search = '', department = '', jobTitle = '' } = req.query;
+      const { page = 1, limit = 10, search = '', department = '', jobTitle = '', gender = '' } = req.query;
       const offset = (parseInt(page) - 1) * parseInt(limit);
 
       let searchCondition = 'WHERE e.is_active = TRUE';
@@ -34,6 +34,11 @@ class EmployeeController {
         searchParams.push(jobTitle);
       }
 
+      if (gender) {
+        conditions.push('e.gender = ?');
+        searchParams.push(gender);
+      }
+
       if (conditions.length > 0) {
         searchCondition += ' AND ' + conditions.join(' AND ');
       }
@@ -50,6 +55,7 @@ class EmployeeController {
           e.address,
           e.email,
           e.phone_number,
+          e.gender,
           e.hire_date,
           e.is_active,
           e.created_at,
@@ -116,6 +122,7 @@ class EmployeeController {
           e.id_number,
           e.email,
           e.phone_number,
+          e.gender,
           d.name as department_name,
           jt.title as job_title
         FROM employees e
@@ -204,6 +211,7 @@ class EmployeeController {
         address,
         email,
         phoneNumber,
+        gender,
         departmentId,
         jobTitleId,
         hireDate,
@@ -285,7 +293,8 @@ class EmployeeController {
         let finalEmployeeId = employeeId;
         if (!finalEmployeeId) {
           const [maxId] = await connection.execute(
-            'SELECT MAX(CAST(SUBSTRING(employee_id, 4) AS UNSIGNED)) as max_num FROM employees WHERE employee_id LIKE "EMP%"'
+            'SELECT MAX(CAST(SUBSTRING(employee_id, 4) AS UNSIGNED)) as max_num FROM employees WHERE employee_id LIKE ?',
+            ['EMP%']
           );
           const nextNum = (maxId[0].max_num || 0) + 1;
           finalEmployeeId = `EMP${nextNum.toString().padStart(4, '0')}`;
@@ -294,9 +303,9 @@ class EmployeeController {
         // Insert employee
         const [result] = await connection.execute(`
           INSERT INTO employees (
-            employee_id, full_name, id_number, address, email, phone_number,
+            employee_id, full_name, id_number, address, email, phone_number, gender,
             department_id, job_title_id, hire_date
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
           finalEmployeeId,
           fullName.trim(),
@@ -304,6 +313,7 @@ class EmployeeController {
           address?.trim() || null,
           email?.trim() || null,
           phoneNumber?.trim() || null,
+          gender || null,
           departmentId || null,
           jobTitleId || null,
           hireDate || null
@@ -401,6 +411,7 @@ class EmployeeController {
         address,
         email,
         phoneNumber,
+        gender,
         departmentId,
         jobTitleId,
         hireDate,
@@ -464,7 +475,7 @@ class EmployeeController {
         // Update employee
         await connection.execute(`
           UPDATE employees 
-          SET full_name = ?, id_number = ?, address = ?, email = ?, phone_number = ?,
+          SET full_name = ?, id_number = ?, address = ?, email = ?, phone_number = ?, gender = ?,
               department_id = ?, job_title_id = ?, hire_date = ?, is_active = ?
           WHERE id = ?
         `, [
@@ -473,6 +484,7 @@ class EmployeeController {
           address?.trim() || null,
           email?.trim() || null,
           phoneNumber?.trim() || null,
+          gender || null,
           departmentId || null,
           jobTitleId || null,
           hireDate || null,

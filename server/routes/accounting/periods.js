@@ -17,16 +17,7 @@ router.put('/:id/status', requireRole('ACCOUNTING_MANAGEMENT'), PeriodController
 router.delete('/:id', requireRole('ACCOUNTING_MANAGEMENT'), PeriodController.deletePeriod);
 router.post('/generate-yearly', requireRole('ACCOUNTING_MANAGEMENT'), PeriodController.generateYearlyPeriods);
 
-// Period Closing Routes
-router.get('/:periodId/trial-balance', requireRole('ACCOUNTING_MANAGEMENT'), PeriodClosingController.getTrialBalance);
-router.get('/:periodId/income-statement', requireRole('ACCOUNTING_MANAGEMENT'), PeriodClosingController.getIncomeStatement);
-router.get('/:periodId/balance-sheet', requireRole('ACCOUNTING_MANAGEMENT'), PeriodClosingController.getBalanceSheet);
-router.get('/:periodId/closing-entries', requireRole('ACCOUNTING_MANAGEMENT'), PeriodClosingController.getClosingEntries);
-router.get('/:periodId/opening-balances', requireRole('ACCOUNTING_MANAGEMENT'), PeriodClosingController.getOpeningBalances);
-router.post('/:periodId/close', requireRole('ACCOUNTING_MANAGEMENT'), PeriodClosingController.closePeriod);
-
-// Dynamic Period Routes (by month/year)
-router.get('/month/:month/year/:year', requireRole('ACCOUNTING_MANAGEMENT'), PeriodClosingController.getOrCreatePeriod);
-router.get('/month/:month/year/:year/trial-balance', requireRole('ACCOUNTING_MANAGEMENT'), PeriodClosingController.getTrialBalanceByMonthYear);
+// Note: Trial Balance, Income Statement, and Balance Sheet routes are handled by their respective controllers
+// Period closing is now handled by the separate period-closing routes
 
 module.exports = router;

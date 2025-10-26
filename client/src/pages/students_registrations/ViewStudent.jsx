@@ -14,9 +14,7 @@ import {
   faTimesCircle,
   faUser,
   faUsers,
-  faCreditCard,
-  faClipboardCheck,
-  faGraduationCap
+  faArrowLeft
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import BASE_URL from '../../contexts/Api';
@@ -180,10 +178,7 @@ const ViewStudent = () => {
         <nav className="flex space-x-8 border-b border-gray-200">
           {[
             { id: 'personal', label: 'Personal Information', icon: faUser },
-            { id: 'guardian', label: 'Guardian Information', icon: faUsers },
-            { id: 'billing', label: 'Billing', icon: faCreditCard },
-            { id: 'attendance', label: 'Attendance', icon: faClipboardCheck },
-            { id: 'academics', label: 'Academics', icon: faGraduationCap }
+            { id: 'guardian', label: 'Guardian Information', icon: faUsers }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -333,53 +328,6 @@ const ViewStudent = () => {
           </div>
         )}
 
-        {activeTab === 'billing' && (
-          <div className="bg-white border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 sm:px-6">
-              <h3 className="text-sm leading-6 font-medium text-gray-900 flex items-center">
-                <FontAwesomeIcon icon={faCreditCard} className="mr-2 text-blue-600" />
-                Billing Information
-              </h3>
-            </div>
-            <div className="border-t border-gray-200">
-              <div className="px-4 py-8 text-center text-xs text-gray-500">
-                Billing information - Stand by
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'attendance' && (
-          <div className="bg-white border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 sm:px-6">
-              <h3 className="text-sm leading-6 font-medium text-gray-900 flex items-center">
-                <FontAwesomeIcon icon={faClipboardCheck} className="mr-2 text-green-600" />
-                Attendance Records
-              </h3>
-            </div>
-            <div className="border-t border-gray-200">
-              <div className="px-4 py-8 text-center text-xs text-gray-500">
-                Attendance records - Stand by
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'academics' && (
-          <div className="bg-white border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 sm:px-6">
-              <h3 className="text-sm leading-6 font-medium text-gray-900 flex items-center">
-                <FontAwesomeIcon icon={faGraduationCap} className="mr-2 text-purple-600" />
-                Academic Records
-              </h3>
-            </div>
-            <div className="border-t border-gray-200">
-              <div className="px-4 py-8 text-center text-xs text-gray-500">
-                Academic records - Stand by
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

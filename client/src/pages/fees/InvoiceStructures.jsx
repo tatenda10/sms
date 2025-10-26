@@ -241,20 +241,20 @@ const InvoiceStructures = () => {
   });
 
   return (
-    <div className="p-6">
+    <div className="p-2 md:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
+      <div className="mb-4 md:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-sm font-bold text-gray-900">Invoice Structures</h1>
-            <p className="text-xs text-gray-500">Manage tuition fee structures with itemized breakdowns</p>
+            <h1 className="text-lg md:text-xl font-bold text-gray-900">Invoice Structures</h1>
+            <p className="text-xs md:text-sm text-gray-500">Manage tuition fee structures with itemized breakdowns</p>
           </div>
           <button
             onClick={() => {
               resetForm();
               setShowAddModal(true);
             }}
-            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            className="inline-flex items-center px-3 py-2 border border-gray-300 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 w-full sm:w-auto justify-center"
           >
             Add Invoice Structure
           </button>
@@ -262,22 +262,22 @@ const InvoiceStructures = () => {
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="mb-6 space-y-4">
-         <div className="flex gap-4">
+      <div className="mb-4 md:mb-6 space-y-3 md:space-y-4">
+         <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
            <div className="flex-1">
              <input
                type="text"
                placeholder="Enter Year (e.g., 2025)"
                value={selectedYear}
                onChange={(e) => setSelectedYear(e.target.value)}
-               className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+               className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
              />
            </div>
            <div className="flex-1">
              <select
                value={selectedTerm}
                onChange={(e) => setSelectedTerm(e.target.value)}
-               className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+               className="w-full px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
              >
                <option value="">Select Term</option>
                <option value="Term 1">Term 1</option>
@@ -287,7 +287,7 @@ const InvoiceStructures = () => {
            </div>
            <button
              onClick={handleFilterSearch}
-             className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+             className="inline-flex items-center px-3 py-2 border border-gray-300 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 w-full sm:w-auto justify-center"
            >
              Filter
            </button>
@@ -300,19 +300,19 @@ const InvoiceStructures = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Class
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                   Term
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
                   Year
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-2 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Total Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-2 md:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -320,50 +320,55 @@ const InvoiceStructures = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan="5" className="px-2 md:px-6 py-4 text-center text-gray-500">
                     Loading...
                   </td>
                 </tr>
               ) : filteredStructures.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan="5" className="px-2 md:px-6 py-4 text-center text-gray-500">
                     No invoice structures found
                   </td>
                 </tr>
               ) : (
                 filteredStructures.map((structure) => (
                   <tr key={structure.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 md:px-6 py-4 whitespace-nowrap">
                       <div className="text-xs font-medium text-gray-900">
                         {structure.class_name}
                       </div>
+                      <div className="text-xs text-gray-500 sm:hidden">
+                        {structure.term} • {structure.academic_year}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 md:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                       <div className="text-xs font-medium text-gray-900">
                         {structure.term}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 md:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <div className="text-xs font-medium text-gray-900">
                         {structure.academic_year}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-2 md:px-6 py-4 whitespace-nowrap">
                       <div className="text-xs font-medium text-gray-900">
                         {structure.total_amount} {structure.currency_symbol}
                       </div>
                     </td>
-                                         <td className="px-6 py-4 whitespace-nowrap text-xs font-medium">
-                       <div className="flex space-x-2">
+                    <td className="px-2 md:px-6 py-4 whitespace-nowrap text-xs font-medium text-center">
+                       <div className="flex justify-center space-x-1">
                          <button
                            onClick={() => handleView(structure)}
-                           className="text-blue-600 hover:text-blue-900"
+                           className="text-blue-600 hover:text-blue-900 p-1"
+                           title="View"
                          >
                            <FontAwesomeIcon icon={faEye} />
                          </button>
                          <button
                            onClick={() => handleEdit(structure)}
-                           className="text-indigo-600 hover:text-indigo-900"
+                           className="text-indigo-600 hover:text-indigo-900 p-1"
+                           title="Edit"
                          >
                            <FontAwesomeIcon icon={faEdit} />
                          </button>
@@ -372,7 +377,8 @@ const InvoiceStructures = () => {
                              setSelectedStructure(structure);
                              setShowDeleteModal(true);
                            }}
-                           className="text-red-600 hover:text-red-900"
+                           className="text-red-600 hover:text-red-900 p-1"
+                           title="Delete"
                          >
                            <FontAwesomeIcon icon={faTrash} />
                          </button>
@@ -388,14 +394,14 @@ const InvoiceStructures = () => {
 
              {/* Add/Edit Modal */}
        {(showAddModal || showEditModal) && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-           <div className="bg-white border border-gray-200 p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-             <h2 className="text-sm font-bold mb-4">
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+           <div className="bg-white border border-gray-200 p-3 md:p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+             <h2 className="text-sm md:text-base font-bold mb-3 md:mb-4">
                {selectedStructure ? 'Edit Invoice Structure' : 'Add Invoice Structure'}
              </h2>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div>
                                      <label className="block text-xs font-medium text-gray-700 mb-1">
                      Class *
@@ -403,7 +409,7 @@ const InvoiceStructures = () => {
                    <select
                      value={formData.gradelevel_class_id}
                      onChange={(e) => setFormData(prev => ({ ...prev, gradelevel_class_id: e.target.value }))}
-                     className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                     className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm"
                      required
                    >
                     <option value="">Select Class</option>
@@ -422,7 +428,7 @@ const InvoiceStructures = () => {
                    <select
                      value={formData.term}
                      onChange={(e) => setFormData(prev => ({ ...prev, term: e.target.value }))}
-                     className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                     className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm"
                      required
                    >
                     <option value="">Select Term</option>
@@ -441,7 +447,7 @@ const InvoiceStructures = () => {
                      value={formData.academic_year}
                      onChange={(e) => setFormData(prev => ({ ...prev, academic_year: e.target.value }))}
                      placeholder="e.g., 2025"
-                     className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                     className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm"
                      required
                    />
                 </div>
@@ -453,7 +459,7 @@ const InvoiceStructures = () => {
                    <select
                      value={formData.currency_id}
                      onChange={(e) => setFormData(prev => ({ ...prev, currency_id: e.target.value }))}
-                     className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                     className="w-full border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm"
                      required
                    >
                     <option value="">Select Currency</option>
@@ -487,13 +493,13 @@ const InvoiceStructures = () => {
                  
                  <div className="space-y-2">
                    {formData.invoice_items.map((item, index) => (
-                     <div key={index} className="flex gap-2 items-start">
+                     <div key={index} className="flex flex-col sm:flex-row gap-2 items-start">
                        <input
                          type="text"
                          value={item.item_name}
                          onChange={(e) => handleItemChange(index, 'item_name', e.target.value)}
                          placeholder="Item name (e.g., Levy)"
-                         className="flex-1 border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                         className="flex-1 border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm"
                          required
                        />
                        <input
@@ -502,7 +508,7 @@ const InvoiceStructures = () => {
                          value={item.amount}
                          onChange={(e) => handleItemChange(index, 'amount', e.target.value)}
                          placeholder="Amount"
-                         className="w-32 border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                         className="w-full sm:w-32 border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 text-sm"
                          required
                        />
 
@@ -510,7 +516,7 @@ const InvoiceStructures = () => {
                          <button
                            type="button"
                            onClick={() => handleRemoveItem(index)}
-                           className="text-red-600 hover:text-red-800 px-2 py-2"
+                           className="text-red-600 hover:text-red-800 px-2 py-2 w-full sm:w-auto"
                          >
                            ×
                          </button>
@@ -532,7 +538,7 @@ const InvoiceStructures = () => {
                  </div>
                </div>
 
-                             <div className="flex justify-end space-x-3 pt-4">
+                             <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
                  <button
                    type="button"
                    onClick={() => {
@@ -540,13 +546,13 @@ const InvoiceStructures = () => {
                      setShowEditModal(false);
                      resetForm();
                    }}
-                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                   className="inline-flex items-center px-3 py-2 border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 w-full sm:w-auto justify-center"
                  >
                    Cancel
                  </button>
                  <button
                    type="submit"
-                   className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                   className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 w-full sm:w-auto justify-center"
                  >
                    {selectedStructure ? 'Update' : 'Create'}
                  </button>
@@ -558,12 +564,12 @@ const InvoiceStructures = () => {
 
              {/* View Modal */}
        {showViewModal && selectedStructure && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-           <div className="bg-white border border-gray-200 p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-             <h2 className="text-sm font-bold mb-4">Invoice Structure Details</h2>
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+           <div className="bg-white border border-gray-200 p-3 md:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+             <h2 className="text-sm md:text-base font-bold mb-3 md:mb-4">Invoice Structure Details</h2>
             
-            <div className="space-y-4">
-                             <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 md:space-y-4">
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                  <div>
                    <label className="block text-xs font-medium text-gray-700">Class</label>
                    <p className="text-xs text-gray-900">{selectedStructure.class_name}</p>
@@ -627,7 +633,7 @@ const InvoiceStructures = () => {
                          <div className="flex justify-end pt-4">
                <button
                  onClick={() => setShowViewModal(false)}
-                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                 className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 w-full sm:w-auto justify-center"
                >
                  Close
                </button>
@@ -638,22 +644,22 @@ const InvoiceStructures = () => {
 
              {/* Delete Confirmation Modal */}
        {showDeleteModal && selectedStructure && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-           <div className="bg-white border border-gray-200 p-6 w-full max-w-md">
-             <h2 className="text-sm font-bold mb-4">Delete Invoice Structure</h2>
-            <p className="text-gray-600 mb-4">
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+           <div className="bg-white border border-gray-200 p-3 md:p-6 w-full max-w-md">
+             <h2 className="text-sm md:text-base font-bold mb-3 md:mb-4">Delete Invoice Structure</h2>
+            <p className="text-sm text-gray-600 mb-4">
               Are you sure you want to delete the invoice structure for {selectedStructure.class_name} - {selectedStructure.term} {selectedStructure.academic_year}?
             </p>
-                         <div className="flex justify-end space-x-3">
+                         <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                <button
                  onClick={() => setShowDeleteModal(false)}
-                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                 className="inline-flex items-center px-3 py-2 border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 w-full sm:w-auto justify-center"
                >
                  Cancel
                </button>
                <button
                  onClick={handleDelete}
-                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                 className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 w-full sm:w-auto justify-center"
                >
                  Delete
                </button>

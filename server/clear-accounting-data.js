@@ -1,102 +1,83 @@
 const { pool } = require('./config/database');
 
-async function clearAllAccountingData() {
-  const connection = await pool.getConnection();
-  
+async function clearAccountingData() {
+  let connection;
   try {
-    console.log('🧹 Starting comprehensive accounting data cleanup...');
+    console.log('🧹 Starting accounting data cleanup...\n');
     
-    // Start transaction
+    // Connect to database
+    console.log('📡 Connecting to database...');
+    connection = await pool.getConnection();
+    console.log('✅ Connected to database successfully\n');
+    
     await connection.beginTransaction();
     
-    // Clear data in the correct order (respecting foreign key constraints)
-    const tablesToClear = [
-      'period_closing_entries',
-      'period_opening_balances', 
-      'trial_balance',
-      'period_closing_audit',
-      'journal_entry_lines',
-      'journal_entries',
-      'accounting_periods'
-    ];
+    console.log('🗑️ Step 1: Clearing account balances...');
+    await connection.execute('DELETE FROM account_balances');
+    console.log('✅ Account balances cleared\n');
     
-    console.log('\n📋 Clearing tables in order:');
+    console.log('🗑️ Step 2: Clearing journal entry lines...');
+    await connection.execute('DELETE FROM journal_entry_lines');
+    console.log('✅ Journal entry lines cleared\n');
     
-    for (const table of tablesToClear) {
-      try {
-        const [result] = await connection.execute(`DELETE FROM ${table}`);
-        console.log(`✅ Cleared ${table}: ${result.affectedRows} records deleted`);
-      } catch (error) {
-        console.log(`⚠️  Warning clearing ${table}:`, error.message);
-      }
-    }
+    console.log('🗑️ Step 3: Clearing journal entries...');
+    await connection.execute('DELETE FROM journal_entries');
+    console.log('✅ Journal entries cleared\n');
     
-    // Reset auto-increment counters
-    console.log('\n🔄 Resetting auto-increment counters...');
-    const tablesWithAutoIncrement = [
-      'period_closing_entries',
-      'period_opening_balances',
-      'trial_balance', 
-      'period_closing_audit',
-      'journal_entry_lines',
-      'journal_entries',
-      'accounting_periods'
-    ];
+    console.log('🗑️ Step 4: Clearing student transactions...');
+    await connection.execute('DELETE FROM student_transactions');
+    console.log('✅ Student transactions cleared\n');
     
-    for (const table of tablesWithAutoIncrement) {
-      try {
-        await connection.execute(`ALTER TABLE ${table} AUTO_INCREMENT = 1`);
-        console.log(`✅ Reset auto-increment for ${table}`);
-      } catch (error) {
-        console.log(`⚠️  Warning resetting ${table}:`, error.message);
-      }
-    }
+    console.log('🗑️ Step 5: Clearing student balances...');
+    await connection.execute('DELETE FROM student_balances');
+    console.log('✅ Student balances cleared\n');
     
-    // Verify cleanup
-    console.log('\n🔍 Verifying cleanup...');
-    for (const table of tablesToClear) {
-      try {
-        const [result] = await connection.execute(`SELECT COUNT(*) as count FROM ${table}`);
-        const count = result[0].count;
-        console.log(`📊 ${table}: ${count} records remaining`);
-      } catch (error) {
-        console.log(`⚠️  Could not verify ${table}:`, error.message);
-      }
-    }
+    console.log('🗑️ Step 6: Clearing boarding fee balances...');
+    await connection.execute('DELETE FROM boarding_fee_balances');
+    console.log('✅ Boarding fee balances cleared\n');
     
-    // Commit the transaction
+    console.log('🗑️ Step 7: Clearing boarding enrollments...');
+    await connection.execute('DELETE FROM boarding_enrollments');
+    console.log('✅ Boarding enrollments cleared\n');
+    
+    console.log('🗑️ Step 8: Clearing grade-level enrollments...');
+    await connection.execute('DELETE FROM enrollments_gradelevel_classes');
+    console.log('✅ Grade-level enrollments cleared\n');
+    
+    console.log('🗑️ Step 9: Clearing subject enrollments...');
+    await connection.execute('DELETE FROM enrollments_subject_classes');
+    console.log('✅ Subject enrollments cleared\n');
+    
     await connection.commit();
-    
-    console.log('\n🎉 SUCCESS: All accounting data has been cleared!');
-    console.log('\n📝 Summary:');
-    console.log('- All journal entries and lines deleted');
-    console.log('- All accounting periods deleted');
-    console.log('- All trial balance data deleted');
-    console.log('- All period closing entries deleted');
-    console.log('- All opening balances deleted');
-    console.log('- All audit trails deleted');
-    console.log('- Auto-increment counters reset');
-    
-    console.log('\n✨ You can now start fresh with a clean accounting system!');
-    console.log('\n💡 This script has been saved as "clear-accounting-data.js" for future use.');
+    console.log('✅ All accounting data cleared successfully!');
+    console.log('\n📊 Summary of cleared data:');
+    console.log('   - Account balances');
+    console.log('   - Journal entries and lines');
+    console.log('   - Student transactions and balances');
+    console.log('   - Boarding enrollments and fee balances');
+    console.log('   - Grade-level and subject enrollments');
+    console.log('\n🎯 Ready for fresh testing!');
     
   } catch (error) {
-    await connection.rollback();
-    console.error('❌ Error during cleanup:', error);
+    if (connection) {
+      await connection.rollback();
+    }
+    console.error('❌ Error clearing accounting data:', error);
     throw error;
   } finally {
-    connection.release();
-    pool.end();
+    if (connection) {
+      await connection.end();
+      console.log('📡 Database connection closed');
+    }
   }
 }
 
-// Run the cleanup
-clearAllAccountingData()
+clearAccountingData()
   .then(() => {
-    console.log('\n🏁 Cleanup completed successfully!');
+    console.log('\n✅ Accounting data cleanup completed successfully!');
     process.exit(0);
   })
   .catch((error) => {
-    console.error('\n💥 Cleanup failed:', error);
+    console.error('\n❌ Accounting data cleanup failed:', error);
     process.exit(1);
   });

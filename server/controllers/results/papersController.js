@@ -61,11 +61,12 @@ class PapersController {
       );
       
       // Log audit event
+      const userId = req.user?.id || req.employeeId;
       await AuditLogger.log({
         action: 'PAPER_CREATED',
         table: 'papers',
         record_id: result.insertId,
-        user_id: req.user.id,
+        user_id: userId,
         details: { name, description },
         ip_address: req.ip,
         user_agent: req.get('User-Agent')
@@ -122,11 +123,12 @@ class PapersController {
       }
       
       // Log audit event
+      const userId = req.user?.id || req.employeeId;
       await AuditLogger.log({
         action: 'PAPER_UPDATED',
         table: 'papers',
         record_id: id,
-        user_id: req.user.id,
+        user_id: userId,
         details: { name, description, is_active },
         ip_address: req.ip,
         user_agent: req.get('User-Agent')
@@ -170,11 +172,12 @@ class PapersController {
       }
       
       // Log audit event
+      const userId = req.user?.id || req.employeeId;
       await AuditLogger.log({
         action: 'PAPER_DELETED',
         table: 'papers',
         record_id: id,
-        user_id: req.user.id,
+        user_id: userId,
         details: { paper_id: id },
         ip_address: req.ip,
         user_agent: req.get('User-Agent')

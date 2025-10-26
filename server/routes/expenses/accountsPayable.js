@@ -13,6 +13,9 @@ router.get('/', expenseAccountPayablesController.getAllAccountsPayable);
 // Get accounts payable summary statistics
 router.get('/summary', expenseAccountPayablesController.getSummary);
 
+// Create opening balance payable (historical debt)
+router.post('/opening-balance', expenseAccountPayablesController.createOpeningBalance);
+
 // Get accounts payable by ID
 router.get('/:id', expenseAccountPayablesController.getAccountsPayableById);
 

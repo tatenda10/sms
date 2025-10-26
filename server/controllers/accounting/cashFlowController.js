@@ -84,47 +84,39 @@ class CashFlowController {
     }
   }
 
-  // Generate cash flow data for a given date range
+  // Generate cash flow data for a given date range - DIRECT METHOD
   static async generateCashFlowData(startDate, endDate) {
     try {
       console.log(`Generating cash flow data from ${startDate} to ${endDate}`);
 
-      // Get operating activities (revenues and expenses)
-      const operatingActivities = await CashFlowController.getOperatingActivities(startDate, endDate);
+      // Get cash inflows (money received)
+      const cashInflows = await CashFlowController.getCashInflows(startDate, endDate);
       
-      // Get investing activities (asset purchases/sales)
-      const investingActivities = await CashFlowController.getInvestingActivities(startDate, endDate);
+      // Get cash outflows (money paid)
+      const cashOutflows = await CashFlowController.getCashOutflows(startDate, endDate);
       
-      // Get financing activities (loans, equity, dividends)
-      const financingActivities = await CashFlowController.getFinancingActivities(startDate, endDate);
+      // Calculate totals
+      const totalInflows = cashInflows.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+      const totalOutflows = cashOutflows.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+      const netCashFlow = totalInflows - totalOutflows;
       
-      // Calculate net cash flow
-      const netOperatingCash = operatingActivities.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
-      const netInvestingCash = investingActivities.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
-      const netFinancingCash = financingActivities.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
-      
-      const netCashFlow = netOperatingCash + netInvestingCash + netFinancingCash;
-      
-      // Get beginning and ending cash balances
-      const beginningCash = await CashFlowController.getCashBalance(startDate, true);
+      // Get beginning and ending cash balances (Cash + Bank)
+      const beginningCash = await CashFlowController.getCashAndBankBalance(startDate, true);
       const endingCash = beginningCash + netCashFlow;
       
       console.log(`Cash Flow Summary:
-        Operating: $${netOperatingCash}
-        Investing: $${netInvestingCash}
-        Financing: $${netFinancingCash}
+        Total Inflows: $${totalInflows}
+        Total Outflows: $${totalOutflows}
         Net Cash Flow: $${netCashFlow}
         Beginning Cash: $${beginningCash}
         Ending Cash: $${endingCash}`);
 
       return {
-        operating_activities: operatingActivities,
-        investing_activities: investingActivities,
-        financing_activities: financingActivities,
+        cash_inflows: cashInflows,
+        cash_outflows: cashOutflows,
         totals: {
-          net_operating_cash: netOperatingCash,
-          net_investing_cash: netInvestingCash,
-          net_financing_cash: netFinancingCash,
+          total_inflows: totalInflows,
+          total_outflows: totalOutflows,
           net_cash_flow: netCashFlow,
           beginning_cash: beginningCash,
           ending_cash: endingCash
@@ -136,183 +128,101 @@ class CashFlowController {
     }
   }
 
-  // Get operating activities (indirect method)
-  static async getOperatingActivities(startDate, endDate) {
+  // Get all cash inflows (money received) - DEBITS to Cash/Bank accounts
+  // Aggregated by source account (contra account)
+  static async getCashInflows(startDate, endDate) {
     try {
-      // Start with net income
-      const [netIncomeRows] = await pool.execute(`
+      // Get the contra accounts (where the credit is from) for cash/bank debits
+      const [inflowRows] = await pool.execute(`
         SELECT 
-          COALESCE(SUM(CASE WHEN coa.type = 'Revenue' THEN jel.credit ELSE 0 END), 0) -
-          COALESCE(SUM(CASE WHEN coa.type = 'Expense' THEN jel.debit ELSE 0 END), 0) as net_income
+          contra_coa.code as account_code,
+          contra_coa.name as account_name,
+          SUM(contra_jel.credit) as amount
         FROM journal_entries je
         INNER JOIN journal_entry_lines jel ON je.id = jel.journal_entry_id
         INNER JOIN chart_of_accounts coa ON jel.account_id = coa.id
-        WHERE je.entry_date BETWEEN ? AND ?
-          AND coa.type IN ('Revenue', 'Expense')
-          AND je.description NOT LIKE '%Opening Balances B/D%'
-          AND je.description NOT LIKE '%Close % to Income Summary%'
-          AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
-      `, [startDate, endDate]);
-
-      const netIncome = parseFloat(netIncomeRows[0]?.net_income || 0);
-
-      // Get changes in working capital accounts
-      const [workingCapitalRows] = await pool.execute(`
-        SELECT 
-          coa.name as account_name,
-          coa.type,
-          COALESCE(SUM(
-            CASE 
-              WHEN coa.type = 'Asset' THEN -(jel.debit - jel.credit)  -- Increase in assets is cash outflow
-              WHEN coa.type = 'Liability' THEN (jel.credit - jel.debit)  -- Increase in liabilities is cash inflow
-              ELSE 0 
-            END
-          ), 0) as amount
-        FROM journal_entries je
-        INNER JOIN journal_entry_lines jel ON je.id = jel.journal_entry_id
-        INNER JOIN chart_of_accounts coa ON jel.account_id = coa.id
-        WHERE je.entry_date BETWEEN ? AND ?
-          AND coa.type IN ('Asset', 'Liability')
-          AND coa.name NOT LIKE '%Cash%'
-          AND coa.name NOT LIKE '%Fixed Asset%'
-          AND coa.name NOT LIKE '%Equipment%'
-          AND coa.name NOT LIKE '%Building%'
-          AND je.description NOT LIKE '%Opening Balances B/D%'
-          AND je.description NOT LIKE '%Close % to Income Summary%'
-          AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
-        GROUP BY coa.id, coa.name, coa.type
-        HAVING ABS(amount) > 0.01
-        ORDER BY coa.type, coa.name
-      `, [startDate, endDate]);
-
-      // Get depreciation (non-cash expense)
-      const [depreciationRows] = await pool.execute(`
-        SELECT 
-          COALESCE(SUM(jel.debit), 0) as depreciation
-        FROM journal_entries je
-        INNER JOIN journal_entry_lines jel ON je.id = jel.journal_entry_id
-        INNER JOIN chart_of_accounts coa ON jel.account_id = coa.id
-        WHERE je.entry_date BETWEEN ? AND ?
-          AND (coa.name LIKE '%Depreciation%' OR je.description LIKE '%depreciation%')
-          AND je.description NOT LIKE '%Opening Balances B/D%'
-          AND je.description NOT LIKE '%Close % to Income Summary%'
-          AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
-      `, [startDate, endDate]);
-
-      const depreciation = parseFloat(depreciationRows[0]?.depreciation || 0);
-
-      let operatingActivities = [
-        { activity_name: 'Net Income', amount: netIncome }
-      ];
-
-      if (depreciation > 0) {
-        operatingActivities.push({ activity_name: 'Depreciation Expense', amount: depreciation });
-      }
-
-      // Add working capital changes
-      workingCapitalRows.forEach(row => {
-        if (Math.abs(row.amount) > 0.01) {
-          operatingActivities.push({
-            activity_name: `Change in ${row.account_name}`,
-            amount: parseFloat(row.amount)
-          });
-        }
-      });
-
-      return operatingActivities;
-    } catch (error) {
-      console.error('Error getting operating activities:', error);
-      throw error;
-    }
-  }
-
-  // Get investing activities
-  static async getInvestingActivities(startDate, endDate) {
-    try {
-      const [investingRows] = await pool.execute(`
-        SELECT 
-          coa.name as account_name,
-          COALESCE(SUM(-(jel.debit - jel.credit)), 0) as amount  -- Net increase in fixed assets is cash outflow
-        FROM journal_entries je
-        INNER JOIN journal_entry_lines jel ON je.id = jel.journal_entry_id
-        INNER JOIN chart_of_accounts coa ON jel.account_id = coa.id
+        INNER JOIN journal_entry_lines contra_jel ON je.id = contra_jel.journal_entry_id AND contra_jel.id != jel.id
+        INNER JOIN chart_of_accounts contra_coa ON contra_jel.account_id = contra_coa.id
         WHERE je.entry_date BETWEEN ? AND ?
           AND coa.type = 'Asset'
-          AND (coa.name LIKE '%Fixed Asset%' OR coa.name LIKE '%Equipment%' OR coa.name LIKE '%Building%' OR coa.name LIKE '%Investment%')
+          AND (coa.code = '1000' OR coa.code = '1010')
+          AND jel.debit > 0
+          AND contra_jel.credit > 0
           AND je.description NOT LIKE '%Opening Balances B/D%'
+          AND je.description NOT LIKE '%Opening Balance:%'
           AND je.description NOT LIKE '%Close % to Income Summary%'
           AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
-        GROUP BY coa.id, coa.name
-        HAVING ABS(amount) > 0.01
-        ORDER BY coa.name
+        GROUP BY contra_coa.code, contra_coa.name
+        ORDER BY contra_coa.code
       `, [startDate, endDate]);
 
-      return investingRows.map(row => ({
-        activity_name: `Purchase of ${row.account_name}`,
+      return inflowRows.map(row => ({
+        account_code: row.account_code,
+        account_name: row.account_name,
         amount: parseFloat(row.amount)
       }));
     } catch (error) {
-      console.error('Error getting investing activities:', error);
+      console.error('Error getting cash inflows:', error);
       throw error;
     }
   }
 
-  // Get financing activities
-  static async getFinancingActivities(startDate, endDate) {
+  // Get all cash outflows (money paid) - CREDITS to Cash/Bank accounts
+  // Aggregated by destination account (contra account)
+  static async getCashOutflows(startDate, endDate) {
     try {
-      const [financingRows] = await pool.execute(`
+      // Get the contra accounts (where the debit is to) for cash/bank credits
+      const [outflowRows] = await pool.execute(`
         SELECT 
-          coa.name as account_name,
-          coa.type,
-          COALESCE(SUM(
-            CASE 
-              WHEN coa.type = 'Liability' AND (coa.name LIKE '%Loan%' OR coa.name LIKE '%Note%') THEN (jel.credit - jel.debit)  -- Loan proceeds net
-              WHEN coa.type = 'Equity' THEN (jel.credit - jel.debit)  -- Equity contributions net
-              ELSE 0 
-            END
-          ), 0) as amount
+          contra_coa.code as account_code,
+          contra_coa.name as account_name,
+          SUM(contra_jel.debit) as amount
         FROM journal_entries je
         INNER JOIN journal_entry_lines jel ON je.id = jel.journal_entry_id
         INNER JOIN chart_of_accounts coa ON jel.account_id = coa.id
+        INNER JOIN journal_entry_lines contra_jel ON je.id = contra_jel.journal_entry_id AND contra_jel.id != jel.id
+        INNER JOIN chart_of_accounts contra_coa ON contra_jel.account_id = contra_coa.id
         WHERE je.entry_date BETWEEN ? AND ?
-          AND (
-            (coa.type = 'Liability' AND (coa.name LIKE '%Loan%' OR coa.name LIKE '%Note%')) OR
-            (coa.type = 'Equity')
-          )
+          AND coa.type = 'Asset'
+          AND (coa.code = '1000' OR coa.code = '1010')
+          AND jel.credit > 0
+          AND contra_jel.debit > 0
           AND je.description NOT LIKE '%Opening Balances B/D%'
+          AND je.description NOT LIKE '%Opening Balance:%'
           AND je.description NOT LIKE '%Close % to Income Summary%'
           AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
-        GROUP BY coa.id, coa.name, coa.type
-        HAVING ABS(amount) > 0.01
-        ORDER BY coa.type, coa.name
+        GROUP BY contra_coa.code, contra_coa.name
+        ORDER BY contra_coa.code
       `, [startDate, endDate]);
 
-      return financingRows.map(row => ({
-        activity_name: row.type === 'Equity' ? `Equity Contribution - ${row.account_name}` : `Loan Proceeds - ${row.account_name}`,
+      return outflowRows.map(row => ({
+        account_code: row.account_code,
+        account_name: row.account_name,
         amount: parseFloat(row.amount)
       }));
     } catch (error) {
-      console.error('Error getting financing activities:', error);
+      console.error('Error getting cash outflows:', error);
       throw error;
     }
   }
 
-  // Get cash balance at a specific date
-  static async getCashBalance(date, isBeginning = false) {
+  // Get cash and bank balance at a specific date
+  static async getCashAndBankBalance(date, isBeginning = false) {
     try {
       const dateCondition = isBeginning ? '< ?' : '<= ?';
       
       const [cashRows] = await pool.execute(`
         SELECT 
-          COALESCE(SUM(jel.debit - jel.credit), 0) as cash_balance
+          COALESCE(SUM(jel.debit - jel.credit), 0) as balance
         FROM journal_entries je
         INNER JOIN journal_entry_lines jel ON je.id = jel.journal_entry_id
         INNER JOIN chart_of_accounts coa ON jel.account_id = coa.id
         WHERE je.entry_date ${dateCondition}
-          AND coa.name LIKE '%Cash%'
+          AND coa.type = 'Asset'
+          AND (coa.code = '1000' OR coa.code = '1010')
       `, [date]);
 
-      return parseFloat(cashRows[0]?.cash_balance || 0);
+      return parseFloat(cashRows[0]?.balance || 0);
     } catch (error) {
       console.error('Error getting cash balance:', error);
       throw error;

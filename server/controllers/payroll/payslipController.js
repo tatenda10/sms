@@ -404,6 +404,95 @@ class PayslipController {
       });
     }
   }
+
+  // Get payslips for a specific employee (for employee portal)
+  static async getEmployeePayslips(req, res) {
+    try {
+      console.log('🔍 getEmployeePayslips called');
+      console.log('📝 Request params:', req.params);
+      console.log('📝 Request query:', req.query);
+      console.log('👤 Request user:', req.user);
+      
+      const { employeeId } = req.params;
+      const { pay_period, status, page = 1, limit = 10 } = req.query;
+
+      console.log('🆔 Employee ID from params:', employeeId);
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const offset = (pageNum - 1) * limitNum;
+      
+      let whereClause = 'WHERE p.employee_id = ?';
+      const params = [employeeId];
+
+      if (pay_period) {
+        whereClause += ' AND p.pay_period = ?';
+        params.push(pay_period);
+      }
+
+      if (status) {
+        whereClause += ' AND p.status = ?';
+        params.push(status);
+      }
+
+      console.log('🔍 Where clause:', whereClause);
+      console.log('📊 Query params:', params);
+
+      // Get total count
+      console.log('🔢 Getting total count...');
+      const countQuery = `SELECT COUNT(*) as total
+         FROM payslips p
+         JOIN employees e ON p.employee_id = e.id
+         LEFT JOIN departments d ON e.department_id = d.id
+         LEFT JOIN job_titles jt ON e.job_title_id = jt.id
+         ${whereClause}`;
+      console.log('📊 Count query:', countQuery);
+      
+      const [countResult] = await pool.execute(countQuery, params);
+      console.log('📊 Count result:', countResult);
+
+      const total = countResult[0].total;
+      console.log('📊 Total payslips found:', total);
+
+      // Get payslips
+      console.log('📋 Getting payslips...');
+      const payslipsQuery = `SELECT p.*, e.full_name as employee_name, e.employee_id, d.name as department_name, jt.title as job_title
+         FROM payslips p
+         JOIN employees e ON p.employee_id = e.id
+         LEFT JOIN departments d ON e.department_id = d.id
+         LEFT JOIN job_titles jt ON e.job_title_id = jt.id
+         ${whereClause}
+         ORDER BY p.created_at DESC
+         LIMIT ${limitNum} OFFSET ${offset}`;
+      console.log('📋 Payslips query:', payslipsQuery);
+      
+      const [payslips] = await pool.execute(payslipsQuery, params);
+      console.log('📋 Payslips found:', payslips.length);
+      console.log('📋 Payslips data:', payslips);
+
+      const response = {
+        success: true,
+        data: payslips,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages: Math.ceil(total / limitNum)
+        }
+      };
+      
+      console.log('✅ Sending response:', response);
+      res.json(response);
+
+    } catch (error) {
+      console.error('Error fetching employee payslips:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch employee payslips',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = PayslipController;

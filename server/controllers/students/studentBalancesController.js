@@ -224,7 +224,7 @@ class StudentBalancesController {
             
             // Create student transaction record
             const transactionType = adjustment_type.toUpperCase();
-            const transactionDescription = `MANUAL BALANCE ADJUSTMENT - ${description} - ${finalReference}`;
+            const transactionDescription = `${description} - ${finalReference}`;
             
             await connection.execute(`
                 INSERT INTO student_transactions (

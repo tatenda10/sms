@@ -18,6 +18,7 @@ import EditEmployee from './pages/employees/EditEmployee';
 import Configurations from './pages/configurations/Configurations';
 import Classes from './pages/classes/Classes';
 import AddGradelevelClass from './pages/classes/gradelevel/AddGradelevelClass';
+import EditGradelevelClass from './pages/classes/gradelevel/EditGradelevelClass';
 import ViewGradelevelClass from './pages/classes/gradelevel/ViewGradelevelClass';
 import CloseToTerm from './pages/classes/CloseToTerm';
 import StudentsTab from './pages/classes/gradelevel/StudentsTab';
@@ -25,6 +26,8 @@ import ViewSubjectClass from './pages/classes/subject/ViewSubjectClass';
 import SubjectClassesTab from './pages/classes/subject/SubjectClassesTab';
 import ChartOfAccounts from './pages/accounting/chart_of_accounts/ChartOfAccounts';
 import ViewCOA from './pages/accounting/chart_of_accounts/ViewCOA';
+import CashBank from './pages/accounting/CashBank';
+import TrialBalance from './pages/accounting/TrialBalance';
 import Suppliers from './pages/expenses/Suppliers';
 import Expenses from './pages/expenses/Expenses';
 import AddExpense from './pages/expenses/AddExpense';
@@ -52,9 +55,14 @@ import StudentFinancialRecord from './pages/fees/StudentFinancialRecord';
 import GeneralLedger from './pages/accounting/GeneralLedger';
 import BankReconciliation from './pages/accounting/BankReconciliation';
 import PeriodEndClosing from './pages/accounting/PeriodEndClosing';
+import AccountingPeriods from './pages/accounting/AccountingPeriods';
 import IncomeStatement from './pages/reports/IncomeStatement';
 import BalanceSheet from './pages/reports/BalanceSheet';
 import CashFlow from './pages/reports/CashFlow';
+import ExpenseAnalysis from './pages/reports/ExpenseAnalysis';
+import RevenueAnalysis from './pages/reports/RevenueAnalysis';
+import StudentFinancialAnalytics from './pages/reports/StudentFinancialAnalytics';
+import StudentResultsAnalytics from './pages/reports/StudentResultsAnalytics';
 // Procurement Pages
 import Procurement from './pages/procurement/Procurement';
 import PurchaseRequests from './pages/procurement/PurchaseRequests';
@@ -82,6 +90,13 @@ import InventoryConfigurations from './pages/inventory/Configurations';
 import Announcements from './pages/Announcements';
 import AddAnnouncement from './pages/AddAnnouncement';
 import EditAnnouncement from './pages/EditAnnouncement';
+import AdditionalFees from './pages/billing/AdditionalFees';
+import Waivers from './pages/waivers/Waivers';
+import Timetables from './pages/timetables/Timetables';
+import TemplateView from './pages/timetables/TemplateView';
+import TemplateEdit from './pages/timetables/TemplateEdit';
+import TestTimetable from './pages/timetables/TestTimetable';
+import Sports from './pages/sports/Sports';
 
 function App() {
   return (
@@ -126,6 +141,7 @@ function AppRoutes() {
         <Route path="employees/view/:id" element={<ViewEmployee />} />
         <Route path="classes" element={<Classes />} />
         <Route path="classes/gradelevel-classes/add" element={<AddGradelevelClass />} />
+        <Route path="classes/gradelevel-classes/edit/:id" element={<EditGradelevelClass />} />
         <Route path="classes/gradelevel-classes/view/:id" element={<ViewGradelevelClass />} />
         <Route path="classes/subject-classes/view/:id" element={<ViewSubjectClass />} />
         <Route path="classes/class-term-year" element={<ClassTermYear />} />
@@ -135,8 +151,11 @@ function AppRoutes() {
         <Route path="settings" element={<Settings />} />
         <Route path="accounting/chart-of-accounts" element={<ChartOfAccounts />} />
         <Route path="accounting/chart-of-accounts/view/:id" element={<ViewCOA />} />
+        <Route path="accounting/cash-bank" element={<CashBank />} />
         <Route path="accounting/general-ledger" element={<GeneralLedger />} />
+        <Route path="accounting/trial-balance" element={<TrialBalance />} />
         <Route path="accounting/bank-reconciliation" element={<BankReconciliation />} />
+        <Route path="accounting/periods" element={<AccountingPeriods />} />
         <Route path="accounting/period-closing" element={<PeriodEndClosing />} />
         <Route path="expenses/suppliers" element={<Suppliers />} />
         <Route path="expenses/expenses" element={<Expenses />} />
@@ -162,11 +181,18 @@ function AppRoutes() {
         <Route path="students/manual-balance-update" element={<ManualBalanceUpdate />} />
         <Route path="fees/unified-payment" element={<UnifiedFeePayment />} />
         <Route path="financial-records" element={<StudentFinancialRecord />} />
+        <Route path="waivers" element={<Waivers />} />
         
         {/* Reports Routes */}
         <Route path="reports/income-statement" element={<IncomeStatement />} />
         <Route path="reports/balance-sheet" element={<BalanceSheet />} />
         <Route path="reports/cash-flow" element={<CashFlow />} />
+        
+        {/* Analytics Routes */}
+        <Route path="analytics/expense-analysis" element={<ExpenseAnalysis />} />
+        <Route path="analytics/revenue-analysis" element={<RevenueAnalysis />} />
+        <Route path="analytics/student-financial-analytics" element={<StudentFinancialAnalytics />} />
+        <Route path="analytics/student-results-analytics" element={<StudentResultsAnalytics />} />
         
         {/* Procurement Routes */}
         <Route path="procurement" element={<Procurement />} />
@@ -180,7 +206,7 @@ function AppRoutes() {
         <Route path="payroll/payslips" element={<Payslips />} />
         
         {/* Transport Routes */}
-        <Route path="transport" element={<TransportSimplified />} />
+        <Route path="transport" element={<Navigate to="/dashboard/transport/routes" replace />} />
         <Route path="transport/routes" element={<ManageRoutes />} />
         <Route path="transport/registrations" element={<StudentRegistration />} />
         <Route path="transport/registrations/add" element={<AddStudentRegistration />} />
@@ -198,6 +224,18 @@ function AppRoutes() {
         <Route path="announcements" element={<Announcements />} />
         <Route path="announcements/add" element={<AddAnnouncement />} />
         <Route path="announcements/edit/:id" element={<EditAnnouncement />} />
+        
+        {/* Additional Fees Routes */}
+        <Route path="billing/additional-fees" element={<AdditionalFees />} />
+        
+        {/* Timetable Routes */}
+        <Route path="timetables" element={<Timetables />} />
+        <Route path="timetables/template/:id" element={<TemplateView />} />
+        <Route path="timetables/template/:id/edit" element={<TemplateEdit />} />
+        <Route path="timetables/test" element={<TestTimetable />} />
+        
+        {/* Sports Routes */}
+        <Route path="sports" element={<Sports />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

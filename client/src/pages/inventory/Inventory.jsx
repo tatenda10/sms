@@ -240,34 +240,34 @@ const Inventory = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-2 md:py-6">
+      <div className="w-full px-2 md:px-4 lg:px-8">
         {/* Header */}
-        <div className="mb-4">
-          <div className="flex justify-between items-center">
+        <div className="mb-4 md:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Inventory Management</h1>
-              <p className="text-xs text-gray-600">Manage uniforms, track stock levels, and issue items to students</p>
+              <h1 className="text-lg md:text-xl font-bold text-gray-900">Inventory Management</h1>
+              <p className="text-xs md:text-sm text-gray-600">Manage uniforms, track stock levels, and issue items to students</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <button
                 onClick={() => loadInventoryData(pagination.page)}
                 disabled={loading}
-                className="bg-gray-600 text-white px-4 py-2 text-xs hover:bg-gray-700 flex items-center disabled:opacity-50"
+                className="bg-gray-600 text-white px-3 md:px-4 py-2 text-xs hover:bg-gray-700 flex items-center justify-center disabled:opacity-50 w-full sm:w-auto"
               >
                 <FontAwesomeIcon icon={faSearch} className="mr-2" />
                 {loading ? 'Loading...' : 'Refresh'}
               </button>
               <Link
                 to="/dashboard/inventory/add-item"
-                className="bg-gray-900 text-white px-4 py-2 text-xs hover:bg-gray-800 flex items-center"
+                className="bg-gray-900 text-white px-3 md:px-4 py-2 text-xs hover:bg-gray-800 flex items-center justify-center w-full sm:w-auto"
               >
                 <FontAwesomeIcon icon={faPlus} className="mr-2" />
                 Add Item
               </Link>
               <Link
                 to="/dashboard/inventory/issue-uniform"
-                className="bg-blue-600 text-white px-4 py-2 text-xs hover:bg-blue-700 flex items-center"
+                className="bg-blue-600 text-white px-3 md:px-4 py-2 text-xs hover:bg-blue-700 flex items-center justify-center w-full sm:w-auto"
               >
                 <FontAwesomeIcon icon={faUserGraduate} className="mr-2" />
                 Issue Uniform
@@ -277,80 +277,80 @@ const Inventory = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-          <div className="bg-white border border-gray-200 p-4 shadow">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 mb-4 md:mb-6">
+          <div className="bg-white border border-gray-200 p-3 md:p-4 shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-gray-600">Total Items</p>
-                <p className="text-lg font-semibold text-gray-900">{inventoryStats.total_items?.toLocaleString() || 0}</p>
+                <p className="text-sm md:text-lg font-semibold text-gray-900">{inventoryStats.total_items?.toLocaleString() || 0}</p>
               </div>
               <div className="bg-blue-100 p-2">
-                <FontAwesomeIcon icon={faBoxes} className="text-blue-600 text-sm" />
+                <FontAwesomeIcon icon={faBoxes} className="text-blue-600 text-xs md:text-sm" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 p-4 shadow">
+          <div className="bg-white border border-gray-200 p-3 md:p-4 shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-gray-600">Low Stock</p>
-                <p className="text-lg font-semibold text-yellow-600">{inventoryStats.low_stock_items || 0}</p>
+                <p className="text-sm md:text-lg font-semibold text-yellow-600">{inventoryStats.low_stock_items || 0}</p>
               </div>
               <div className="bg-yellow-100 p-2">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="text-yellow-600 text-sm" />
+                <FontAwesomeIcon icon={faExclamationTriangle} className="text-yellow-600 text-xs md:text-sm" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 p-4 shadow">
+          <div className="bg-white border border-gray-200 p-3 md:p-4 shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-gray-600">Out of Stock</p>
-                <p className="text-lg font-semibold text-red-600">{inventoryStats.out_of_stock_items || 0}</p>
+                <p className="text-sm md:text-lg font-semibold text-red-600">{inventoryStats.out_of_stock_items || 0}</p>
               </div>
               <div className="bg-red-100 p-2">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-600 text-sm" />
+                <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-600 text-xs md:text-sm" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 p-4 shadow">
+          <div className="bg-white border border-gray-200 p-3 md:p-4 shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-gray-600">Monthly Issues</p>
-                <p className="text-lg font-semibold text-green-600">{inventoryStats.monthly_issues || 0}</p>
+                <p className="text-sm md:text-lg font-semibold text-green-600">{inventoryStats.monthly_issues || 0}</p>
               </div>
               <div className="bg-green-100 p-2">
-                <FontAwesomeIcon icon={faUserGraduate} className="text-green-600 text-sm" />
+                <FontAwesomeIcon icon={faUserGraduate} className="text-green-600 text-xs md:text-sm" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 p-4 shadow">
+          <div className="bg-white border border-gray-200 p-3 md:p-4 shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-gray-600">Categories</p>
-                <p className="text-lg font-semibold text-purple-600">{inventoryStats.total_categories || 0}</p>
+                <p className="text-sm md:text-lg font-semibold text-purple-600">{inventoryStats.total_categories || 0}</p>
               </div>
               <div className="bg-purple-100 p-2">
-                <FontAwesomeIcon icon={faBoxes} className="text-purple-600 text-sm" />
+                <FontAwesomeIcon icon={faBoxes} className="text-purple-600 text-xs md:text-sm" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
           <Link
             to="/dashboard/inventory/uniforms"
-            className="bg-white border border-gray-200 p-4 hover:border-blue-300 hover:shadow-md transition-all"
+            className="bg-white border border-gray-200 p-3 md:p-4 hover:border-blue-300 hover:shadow-md transition-all"
           >
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 md:space-x-3">
               <div className="bg-blue-100 p-2">
-                <FontAwesomeIcon icon={faTshirt} className="text-blue-600" />
+                <FontAwesomeIcon icon={faTshirt} className="text-blue-600 text-xs md:text-sm" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-900">Uniforms</h3>
+                <h3 className="text-xs md:text-sm font-medium text-gray-900">Uniforms</h3>
                 <p className="text-xs text-gray-500">School & sports uniforms</p>
               </div>
             </div>
@@ -358,14 +358,14 @@ const Inventory = () => {
 
           <Link
             to="/dashboard/inventory/issue-uniform"
-            className="bg-white border border-gray-200 p-4 hover:border-green-300 hover:shadow-md transition-all"
+            className="bg-white border border-gray-200 p-3 md:p-4 hover:border-green-300 hover:shadow-md transition-all"
           >
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 md:space-x-3">
               <div className="bg-green-100 p-2">
-                <FontAwesomeIcon icon={faUserGraduate} className="text-green-600" />
+                <FontAwesomeIcon icon={faUserGraduate} className="text-green-600 text-xs md:text-sm" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-900">Issue Uniform</h3>
+                <h3 className="text-xs md:text-sm font-medium text-gray-900">Issue Uniform</h3>
                 <p className="text-xs text-gray-500">Give uniforms to students</p>
               </div>
             </div>
@@ -373,14 +373,14 @@ const Inventory = () => {
 
           <Link
             to="/dashboard/inventory/payments"
-            className="bg-white border border-gray-200 p-4 hover:border-purple-300 hover:shadow-md transition-all"
+            className="bg-white border border-gray-200 p-3 md:p-4 hover:border-purple-300 hover:shadow-md transition-all"
           >
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 md:space-x-3">
               <div className="bg-purple-100 p-2">
-                <FontAwesomeIcon icon={faCreditCard} className="text-purple-600" />
+                <FontAwesomeIcon icon={faCreditCard} className="text-purple-600 text-xs md:text-sm" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-900">Payments</h3>
+                <h3 className="text-xs md:text-sm font-medium text-gray-900">Payments</h3>
                 <p className="text-xs text-gray-500">Track uniform payments</p>
               </div>
             </div>
@@ -388,14 +388,14 @@ const Inventory = () => {
 
           <Link
             to="/dashboard/inventory/reports"
-            className="bg-white border border-gray-200 p-4 hover:border-orange-300 hover:shadow-md transition-all"
+            className="bg-white border border-gray-200 p-3 md:p-4 hover:border-orange-300 hover:shadow-md transition-all"
           >
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 md:space-x-3">
               <div className="bg-orange-100 p-2">
-                <FontAwesomeIcon icon={faChartBar} className="text-orange-600" />
+                <FontAwesomeIcon icon={faChartBar} className="text-orange-600 text-xs md:text-sm" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-900">Reports</h3>
+                <h3 className="text-xs md:text-sm font-medium text-gray-900">Reports</h3>
                 <p className="text-xs text-gray-500">Analytics & insights</p>
               </div>
             </div>
@@ -403,20 +403,20 @@ const Inventory = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white border border-gray-200 p-4 mb-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="bg-white border border-gray-200 p-3 md:p-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             <div className="flex-1">
               <div className="relative">
                 <FontAwesomeIcon 
                   icon={faSearch} 
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" 
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" 
                 />
                 <input
                   type="text"
                   placeholder="Search items by name or SKU..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                  className="w-full pl-8 md:pl-10 pr-4 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                 />
               </div>
             </div>
@@ -424,7 +424,7 @@ const Inventory = () => {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+              className="px-3 md:px-4 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 w-full sm:w-auto"
             >
               <option value="">All Categories</option>
               {categories.map(category => (
@@ -435,7 +435,7 @@ const Inventory = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+              className="px-3 md:px-4 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 w-full sm:w-auto"
             >
               <option value="">All Status</option>
               {statuses.map(status => (
@@ -448,19 +448,19 @@ const Inventory = () => {
         {/* Inventory Table */}
         <div className="bg-white border border-gray-200 overflow-hidden shadow mb-4">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="w-full divide-y divide-gray-200" style={{ minWidth: '400px' }}>
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Item Name
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Stock
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -468,9 +468,9 @@ const Inventory = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
-                      <FontAwesomeIcon icon={faBoxes} className="text-2xl mb-2" />
-                      <p className="text-sm">No inventory items found</p>
+                    <td colSpan="4" className="px-2 md:px-4 py-6 md:py-8 text-center text-gray-500">
+                      <FontAwesomeIcon icon={faBoxes} className="text-xl md:text-2xl mb-2" />
+                      <p className="text-xs md:text-sm">No inventory items found</p>
                       <p className="text-xs text-gray-400 mt-1">
                         {inventoryItems.length === 0 
                           ? "Add your first item to get started" 
@@ -482,22 +482,22 @@ const Inventory = () => {
                 ) : (
                   filteredItems.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                      <div className="text-xs md:text-sm font-medium text-gray-900">{item.name}</div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{item.current_stock || 0}</div>
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
+                      <div className="text-xs md:text-sm text-gray-900">{item.current_stock || 0}</div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap">
                       {getStatusBadge(getStockStatus(item.current_stock))}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                    <td className="px-2 md:px-4 py-2 md:py-3 whitespace-nowrap text-center">
                       <button 
                         onClick={() => viewItemDetails(item)}
-                        className="text-blue-600 hover:text-blue-900 text-xs"
+                        className="text-blue-600 hover:text-blue-900 text-xs p-1 rounded hover:bg-blue-50 transition-colors"
+                        title="View Details"
                       >
-                        <FontAwesomeIcon icon={faEye} className="mr-1" />
-                        View
+                        <FontAwesomeIcon icon={faEye} className="h-3 w-3 md:h-4 md:w-4" />
                       </button>
                     </td>
                   </tr>
@@ -510,16 +510,16 @@ const Inventory = () => {
 
         {/* Pagination Controls */}
         {pagination.pages > 1 && (
-          <div className="bg-white border border-gray-200 p-4 mb-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
+          <div className="bg-white border border-gray-200 p-3 md:p-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="text-xs md:text-sm text-gray-700 text-center sm:text-left">
                 Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} items
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-center space-x-1 md:space-x-2">
                 <button
                   onClick={() => loadInventoryData(pagination.page - 1)}
                   disabled={pagination.page <= 1}
-                  className="px-3 py-1 text-xs border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 md:px-3 py-1 text-xs border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
@@ -533,7 +533,7 @@ const Inventory = () => {
                     <button
                       key={pageNum}
                       onClick={() => loadInventoryData(pageNum)}
-                      className={`px-3 py-1 text-xs border ${
+                      className={`px-2 md:px-3 py-1 text-xs border ${
                         pageNum === pagination.page
                           ? 'bg-gray-900 text-white border-gray-900'
                           : 'border-gray-300 hover:bg-gray-50'
@@ -547,7 +547,7 @@ const Inventory = () => {
                 <button
                   onClick={() => loadInventoryData(pagination.page + 1)}
                   disabled={pagination.page >= pagination.pages}
-                  className="px-3 py-1 text-xs border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 md:px-3 py-1 text-xs border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -558,10 +558,10 @@ const Inventory = () => {
 
         {/* Item Details Modal */}
         {showItemModal && selectedItem && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-            <div className="relative mx-auto p-6 border w-96 shadow-lg bg-white">
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+            <div className="relative mx-auto p-4 md:p-6 border w-full max-w-md shadow-lg bg-white">
               <div className="mb-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-2">Item Details</h3>
+                <h3 className="text-sm md:text-base font-medium text-gray-900 mb-2">Item Details</h3>
                 <button
                   onClick={() => setShowItemModal(false)}
                   className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
@@ -570,7 +570,7 @@ const Inventory = () => {
                 </button>
               </div>
               
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3 text-xs md:text-sm">
                 <div>
                   <span className="text-gray-600">Name:</span>
                   <span className="ml-2 font-medium text-gray-900">{selectedItem.name}</span>
@@ -615,16 +615,16 @@ const Inventory = () => {
                 </div>
               </div>
               
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-6 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowItemModal(false)}
-                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                  className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 w-full sm:w-auto"
                 >
                   Close
                 </button>
                 <Link
                   to={`/dashboard/inventory/issue-uniform?item=${selectedItem.id}`}
-                  className="px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  className="px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 text-center w-full sm:w-auto"
                 >
                   Issue Item
                 </Link>

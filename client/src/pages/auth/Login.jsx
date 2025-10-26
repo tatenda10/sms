@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, Lock, User, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import backgroundImage from '../../assets/background.jpg';
+import backgroundImage from '../../assets/background.jpeg';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +11,7 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
   
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setShowErrorModal(false);
 
     try {
       console.log('🚀 Attempting login...');
@@ -29,6 +31,7 @@ const Login = () => {
     } catch (err) {
       console.log('💥 Login error:', err);
       setError('Username or password is wrong');
+      setShowErrorModal(true);
     }
   };
 
@@ -55,8 +58,7 @@ const Login = () => {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-300 to-green-300 bg-clip-text text-transparent">
-              Ubuntu Learn
-            </h1>
+Learning Ladder            </h1>
             <h2 className="text-2xl font-semibold text-gray-200">
               SCHOOL MANAGEMENT SYSTEM
             </h2>
@@ -74,7 +76,7 @@ const Login = () => {
           <div className="lg:hidden text-center mb-8">
             <div className="inline-flex items-center space-x-3 p-3 bg-blue-600 rounded-lg">
               <Building2 className="h-8 w-8 text-white" />
-              <span className="text-xl font-bold text-white">Ubuntu Learn</span>
+              <span className="text-xl font-bold text-white">Learning Ladder </span>
             </div>
           </div>
 
@@ -144,22 +146,6 @@ const Login = () => {
                 </div>
               </div>
 
-              {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800">
-                        {error}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div>
                 <button
@@ -181,6 +167,31 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Login Failed</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                {error}
+              </p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="w-full bg-red-600 text-white px-4 py-2 text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

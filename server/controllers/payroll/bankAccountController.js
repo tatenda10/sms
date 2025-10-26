@@ -11,7 +11,8 @@ class BankAccountController {
 
       // First, find the main Bank account (parent account)
       const [bankParent] = await pool.execute(
-        'SELECT id, code, name FROM chart_of_accounts WHERE name LIKE "%Bank%" AND parent_id IS NULL AND is_active = TRUE LIMIT 1'
+        'SELECT id, code, name FROM chart_of_accounts WHERE name LIKE ? AND parent_id IS NULL AND is_active = TRUE LIMIT 1',
+        ['%Bank%']
       );
 
       if (bankParent.length === 0) {

@@ -33,6 +33,7 @@ const Employees = () => {
   const [jobTitles, setJobTitles] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedJobTitle, setSelectedJobTitle] = useState('');
+  const [selectedGender, setSelectedGender] = useState('');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,7 +44,7 @@ const Employees = () => {
   useEffect(() => {
     fetchEmployees();
     fetchDropdownData();
-  }, [currentPage, activeSearchTerm, selectedDepartment, selectedJobTitle]);
+  }, [currentPage, activeSearchTerm, selectedDepartment, selectedJobTitle, selectedGender]);
 
   const fetchEmployees = async () => {
     try {
@@ -65,6 +66,10 @@ const Employees = () => {
 
       if (selectedJobTitle) {
         params.jobTitle = selectedJobTitle;
+      }
+
+      if (selectedGender) {
+        params.gender = selectedGender;
       }
 
       const response = await axios.get(`${BASE_URL}/employees`, {
@@ -112,6 +117,7 @@ const Employees = () => {
     setActiveSearchTerm('');
     setSelectedDepartment('');
     setSelectedJobTitle('');
+    setSelectedGender('');
     setCurrentPage(1);
   };
 
@@ -187,7 +193,7 @@ const Employees = () => {
             >
               <FontAwesomeIcon icon={faSearch} className="h-3 w-3" />
             </button>
-            {(searchTerm || selectedDepartment || selectedJobTitle) && (
+            {(searchTerm || selectedDepartment || selectedJobTitle || selectedGender) && (
               <button
                 onClick={handleClearSearch}
                 className="ml-2 text-gray-500 hover:text-gray-700 text-xs"
@@ -236,6 +242,19 @@ const Employees = () => {
               </option>
             ))}
           </select>
+
+          <select
+            value={selectedGender}
+            onChange={(e) => {
+              setSelectedGender(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:ring-gray-500 focus:border-gray-500"
+          >
+            <option value="">All Genders</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
         </div>
       </div>
 
@@ -247,15 +266,12 @@ const Employees = () => {
       )}
 
       {/* Employees Table */}
-      <div className="bg-white border border-gray-200">
+      <div className="bg-white border border-gray-200 overflow-x-auto">
         <table className="min-w-full">
           <thead className="bg-gray-100/30">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-b border-gray-200">
                 Employee
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-b border-gray-200">
-                ID Number
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-b border-gray-200">
                 Department
@@ -264,10 +280,7 @@ const Employees = () => {
                 Job Title
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-b border-gray-200">
-                Contact
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-b border-gray-200">
-                Hire Date
+                Gender
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-b border-gray-200">
                 Actions
@@ -277,13 +290,13 @@ const Employees = () => {
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan="7" className="px-6 py-4 text-center text-xs text-gray-500">
+                <td colSpan="5" className="px-6 py-4 text-center text-xs text-gray-500">
                   Loading employees...
                 </td>
               </tr>
             ) : employees.length === 0 ? (
               <tr>
-                <td colSpan="7" className="px-6 py-4 text-center text-xs text-gray-500">
+                <td colSpan="5" className="px-6 py-4 text-center text-xs text-gray-500">
                   No employees found
                 </td>
               </tr>
@@ -299,9 +312,6 @@ const Employees = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
-                    {employee.id_number}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-xs">
                     <div className="flex items-center text-gray-500">
                       <FontAwesomeIcon icon={faBuilding} className="h-3 w-3 mr-1" />
@@ -314,12 +324,10 @@ const Employees = () => {
                       {employee.job_title || 'Not assigned'}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-xs text-gray-500">
-                    <div>{employee.email || 'No email'}</div>
-                    <div>{employee.phone_number || 'No phone'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
-                    {formatDate(employee.hire_date)}
+                  <td className="px-6 py-4 whitespace-nowrap text-xs">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                      {employee.gender || 'Not specified'}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-xs">
                     <div className="flex items-center space-x-3">

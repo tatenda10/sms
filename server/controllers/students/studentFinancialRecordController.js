@@ -55,6 +55,46 @@ class StudentFinancialRecordController {
                 [student_reg_number]
             );
 
+            // Get boarding enrollments (DEBIT transactions - invoices)
+            const [boardingEnrollmentsDebit] = await pool.execute(
+                `SELECT 
+                    COUNT(*) as total_boarding_debits,
+                    COALESCE(SUM(COALESCE(bf.amount, 0)), 0) as total_boarding_debit_amount
+                 FROM boarding_enrollments be
+                 LEFT JOIN boarding_fees bf ON be.hostel_id = bf.hostel_id 
+                    AND (be.term = bf.term OR be.term = REGEXP_REPLACE(bf.term, 'Term\\s*', '') OR CONCAT('Term ', be.term) = bf.term)
+                    AND be.academic_year = bf.academic_year 
+                    AND bf.is_active = TRUE
+                 WHERE be.student_reg_number = ?`,
+                [student_reg_number]
+            );
+
+            // Get class enrollments (DEBIT transactions - invoices)
+            const [classEnrollmentsDebit] = await pool.execute(
+                `SELECT 
+                    COUNT(*) as total_class_debits,
+                    COALESCE(SUM(COALESCE((
+                        SELECT total_amount 
+                        FROM invoice_structures 
+                        WHERE gradelevel_class_id = e.gradelevel_class_id 
+                        ORDER BY academic_year DESC, term DESC 
+                        LIMIT 1
+                    ), 0)), 0) as total_class_debit_amount
+                 FROM enrollments_gradelevel_classes e
+                 WHERE e.student_regnumber = ?`,
+                [student_reg_number]
+            );
+
+            // Get student transactions for CREDIT amounts (reversals, refunds, etc.)
+            const [creditTransactions] = await pool.execute(
+                `SELECT 
+                    COUNT(*) as total_credits,
+                    COALESCE(SUM(amount), 0) as total_credit_amount
+                 FROM student_transactions 
+                 WHERE student_reg_number = ? AND transaction_type = 'CREDIT'`,
+                [student_reg_number]
+            );
+
             // Get current balance from student_balances table
             const [studentBalance] = await pool.execute(
                 `SELECT current_balance, last_updated 
@@ -66,13 +106,19 @@ class StudentFinancialRecordController {
             const currentBalance = studentBalance.length > 0 ? studentBalance[0].current_balance : 0;
             const lastUpdated = studentBalance.length > 0 ? studentBalance[0].last_updated : null;
 
-            // Calculate totals for frontend
-            const totalDebit = parseFloat(debitTransactions[0].total_debit_amount || 0);
+            // Calculate totals for frontend - include ALL sources
+            const totalDebit = parseFloat(debitTransactions[0].total_debit_amount || 0) +
+                              parseFloat(boardingEnrollmentsDebit[0].total_boarding_debit_amount || 0) +
+                              parseFloat(classEnrollmentsDebit[0].total_class_debit_amount || 0);
             const totalCredit = parseFloat(feePaymentsSummary[0].total_paid_amount || 0) + 
-                               parseFloat(boardingPaymentsSummary[0].total_paid_amount || 0);
+                               parseFloat(boardingPaymentsSummary[0].total_paid_amount || 0) +
+                               parseFloat(creditTransactions[0].total_credit_amount || 0);
             
-            // Use the current balance from student_balances table as the authoritative source
-            const outstandingBalance = currentBalance;
+            // Calculate the actual balance from all transactions (more reliable than student_balances table)
+            const calculatedBalance = totalCredit - totalDebit;
+            
+            // Use the calculated balance as the authoritative source
+            const outstandingBalance = calculatedBalance;
 
             const financialData = {
                 student_info: studentInfo[0],
@@ -80,7 +126,7 @@ class StudentFinancialRecordController {
                 total_outstanding: outstandingBalance,
                 total_paid: totalCredit,
                 total_invoiced: totalDebit,
-                balance: currentBalance, // Use the current balance from student_balances table
+                balance: calculatedBalance, // Use the calculated balance from all transactions
                 // Additional data for reference
                 total_debit: totalDebit,
                 total_credit: totalCredit,
@@ -278,8 +324,8 @@ class StudentFinancialRecordController {
                         LIMIT 1
                     ), 0) as amount,
                     CONCAT('TUITION INVOICE - ', gc.name, ' (', s.name, ')') as notes,
-                    e.enrollment_date as payment_date,
-                    e.enrollment_date as created_at,
+                    e.created_at as payment_date,
+                    e.created_at as created_at,
                     CONCAT('TUITION-', e.id) as reference_number,
                     'Enrollment' as payment_method,
                     'pending' as status,
@@ -320,8 +366,8 @@ class StudentFinancialRecordController {
             );
 
             // Get student transactions (DEBIT transactions) - exclude those that are already covered by enrollments
-            let debitTransactionsWhere = 'WHERE st.student_reg_number = ? AND st.transaction_type = "DEBIT"';
-            let debitTransactionsParams = [student_reg_number];
+            let debitTransactionsWhere = 'WHERE st.student_reg_number = ? AND st.transaction_type = ?';
+            let debitTransactionsParams = [student_reg_number, 'DEBIT'];
 
             if (start_date) {
                 debitTransactionsWhere += ' AND DATE(st.transaction_date) >= ?';
@@ -358,14 +404,13 @@ class StudentFinancialRecordController {
                     NULL as class_name
                  FROM student_transactions st
                  ${debitTransactionsWhere}
-                 AND st.enrollment_id IS NULL  -- Only get transactions not linked to enrollments
                  ORDER BY st.transaction_date DESC`,
                 debitTransactionsParams
             );
 
             // Get student transactions (CREDIT transactions) - includes transport payments and other payments
-            let creditTransactionsWhere = 'WHERE st.student_reg_number = ? AND st.transaction_type = "CREDIT"';
-            let creditTransactionsParams = [student_reg_number];
+            let creditTransactionsWhere = 'WHERE st.student_reg_number = ? AND st.transaction_type = ?';
+            let creditTransactionsParams = [student_reg_number, 'CREDIT'];
 
             if (start_date) {
                 creditTransactionsWhere += ' AND DATE(st.transaction_date) >= ?';
@@ -430,10 +475,10 @@ class StudentFinancialRecordController {
                 return true;
             });
             
-            // Sort by date
-            allTransactions.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
+            // Sort by date (oldest first for correct balance calculation)
+            allTransactions.sort((a, b) => new Date(a.payment_date) - new Date(b.payment_date));
 
-            // Calculate running balance
+            // Calculate running balance starting from oldest transaction
             let runningBalance = 0;
             allTransactions = allTransactions.map(t => {
                 if (t.transaction_type === 'CREDIT') {
@@ -446,6 +491,9 @@ class StudentFinancialRecordController {
                     running_balance: runningBalance
                 };
             });
+
+            // Sort by date again (newest first for display)
+            allTransactions.sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date));
 
             // Apply pagination
             const total = allTransactions.length;

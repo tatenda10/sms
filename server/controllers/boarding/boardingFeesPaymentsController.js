@@ -1,6 +1,7 @@
 const { pool } = require('../../config/database');
 const AuditLogger = require('../../utils/audit');
 const StudentTransactionController = require('../students/studentTransactionController');
+const AccountBalanceService = require('../../services/accountBalanceService');
 
 class BoardingFeesPaymentsController {
   // Create new boarding fees payment
@@ -79,21 +80,27 @@ class BoardingFeesPaymentsController {
         }
       }
 
+      // Generate receipt number
+      const [countResult] = await conn.execute(
+        'SELECT COUNT(*) as count FROM boarding_fees_payments WHERE DATE(created_at) = CURDATE()'
+      );
+      const receiptNumber = `BF${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(countResult[0].count + 1).padStart(4, '0')}`;
+
       // Create boarding fees payment
       const [paymentResult] = await conn.execute(
         `INSERT INTO boarding_fees_payments 
          (student_reg_number, academic_year, term, hostel_id, amount_paid, 
           currency_id, base_currency_amount, base_currency_id, exchange_rate,
-          payment_method, payment_date, reference_number, notes, created_by) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          payment_method, payment_date, receipt_number, reference_number, notes, created_by) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [student_reg_number, academic_year, term, hostel_id || null, amount_paid,
          currency_id, base_currency_amount, base_currency_id, exchange_rate,
-         payment_method, payment_date, reference_number || null, notes || null, req.user.id]
+         payment_method, payment_date, receiptNumber, reference_number || null, notes || null, req.user.id]
       );
 
       const paymentId = paymentResult.insertId;
 
-      // Get the generated receipt number
+      // Get the generated receipt number (should be the one we just created)
       const [paymentRecord] = await conn.execute(
         'SELECT receipt_number FROM boarding_fees_payments WHERE id = ?',
         [paymentId]
@@ -115,7 +122,7 @@ class BoardingFeesPaymentsController {
       );
 
       // Create journal entries for the payment
-      await BoardingFeesPaymentsController.createJournalEntries(conn, {
+      const journalEntryId = await BoardingFeesPaymentsController.createJournalEntries(conn, {
         paymentId,
         amount_paid,
         currency_id,
@@ -125,9 +132,13 @@ class BoardingFeesPaymentsController {
         payment_date,
         student_reg_number,
         student_name: `${student[0].Name} ${student[0].Surname}`,
-        receipt_number: paymentRecord[0].receipt_number,
+        reference_number: reference_number || receiptNumber,
         created_by: req.user.id
       });
+
+      // Update account balances from the journal entry
+      await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId);
+      console.log(`✅ Updated account balances for journal entry ${journalEntryId}`);
 
       await conn.commit();
 
@@ -177,7 +188,7 @@ class BoardingFeesPaymentsController {
   static async createJournalEntries(conn, paymentData) {
     const { paymentId, amount_paid, currency_id, base_currency_amount, base_currency_id,
             payment_method, payment_date, student_reg_number, student_name, 
-            receipt_number, created_by } = paymentData;
+            reference_number, created_by } = paymentData;
 
     // Get account IDs from COA
     const [cashAccount] = await conn.execute(
@@ -195,12 +206,7 @@ class BoardingFeesPaymentsController {
       ['1100'] // Accounts Receivable - Tuition (using this for boarding fees receivable)
     );
 
-    const [boardingFeesRevenue] = await conn.execute(
-      'SELECT id FROM chart_of_accounts WHERE code = ? AND is_active = TRUE',
-      ['4040'] // Boarding Fees Revenue
-    );
-
-    if (!cashAccount.length || !bankAccount.length || !boardingFeesReceivable.length || !boardingFeesRevenue.length) {
+    if (!cashAccount.length || !bankAccount.length || !boardingFeesReceivable.length) {
       throw new Error('Required chart of accounts not found');
     }
 
@@ -229,7 +235,7 @@ class BoardingFeesPaymentsController {
       `INSERT INTO journal_entries 
        (journal_id, entry_date, reference, description) 
        VALUES (?, ?, ?, ?)`,
-      [journalId, payment_date, receipt_number, `Boarding Fees Payment - ${student_name} (${student_reg_number})`]
+      [journalId, payment_date, reference_number, `Boarding Fees Payment - ${student_name} (${student_reg_number})`]
     );
 
     const journalEntryId = journalResult.insertId;
@@ -244,13 +250,13 @@ class BoardingFeesPaymentsController {
         credit_amount: 0,
         description: `Payment received for boarding fees - ${student_name} (${student_reg_number})`
       },
-      // Credit: Boarding Fees Revenue (in payment currency)
+      // Credit: Accounts Receivable (reduce receivable when payment received)
       {
         journal_entry_id: journalEntryId,
-        account_id: boardingFeesRevenue[0].id,
+        account_id: boardingFeesReceivable[0].id,
         debit_amount: 0,
         credit_amount: amount_paid,
-        description: `Boarding fees revenue - ${student_name} (${student_reg_number})`
+        description: `Reduce receivable for payment - ${student_name} (${student_reg_number})`
       }
     ];
 
@@ -271,6 +277,9 @@ class BoardingFeesPaymentsController {
       ['payment', amount_paid, currency_id, payment_date, payment_method, 
        `Boarding Fees Payment - ${student_name} (${student_reg_number})`, journalEntryId]
     );
+
+    // Return the journal entry ID so account balances can be updated
+    return journalEntryId;
   }
 
   // Get a single payment by ID
@@ -972,25 +981,29 @@ class BoardingFeesPaymentsController {
       );
 
       // Find and update the corresponding journal entry
+      const existingReference = existingPayment[0].reference_number;
+      console.log(`🔍 Looking for journal entry with reference: ${existingReference}`);
       const [journalEntries] = await conn.query(
         'SELECT id FROM journal_entries WHERE reference = ?',
-        [existingPayment[0].receipt_number]
+        [existingReference]
       );
 
       if (journalEntries.length > 0) {
         const journalEntryId = journalEntries[0].id;
+        console.log(`📝 Found journal entry ${journalEntryId}, updating amounts to ${base_currency_amount}`);
 
-        // Update journal entry description
+        // Update journal entry reference and description
         await conn.query(
           `UPDATE journal_entries SET
+           reference = ?,
            description = ?,
            updated_at = NOW()
            WHERE id = ?`,
-          [`Boarding Fees Payment - ${reference_number || existingPayment[0].receipt_number}`, journalEntryId]
+          [reference_number, `Boarding Fees Payment - Updated`, journalEntryId]
         );
 
         // Update journal entry lines (debit and credit amounts)
-        await conn.query(
+        const [debitUpdate] = await conn.query(
           `UPDATE journal_entry_lines SET
            debit = ?,
            credit = ?,
@@ -998,8 +1011,9 @@ class BoardingFeesPaymentsController {
            WHERE journal_entry_id = ? AND debit > 0`,
           [base_currency_amount, 0, journalEntryId]
         );
+        console.log(`📊 Updated ${debitUpdate.affectedRows} debit line(s)`);
 
-        await conn.query(
+        const [creditUpdate] = await conn.query(
           `UPDATE journal_entry_lines SET
            debit = ?,
            credit = ?,
@@ -1007,6 +1021,7 @@ class BoardingFeesPaymentsController {
            WHERE journal_entry_id = ? AND credit > 0`,
           [0, base_currency_amount, journalEntryId]
         );
+        console.log(`📊 Updated ${creditUpdate.affectedRows} credit line(s)`);
 
         // Update transactions
         await conn.query(
@@ -1023,10 +1038,17 @@ class BoardingFeesPaymentsController {
             currency_id,
             payment_date,
             payment_method,
-            `Boarding Fees Payment - ${reference_number || existingPayment[0].receipt_number}`,
+            `Boarding Fees Payment - ${reference_number}`,
             journalEntryId
           ]
         );
+
+        // Recalculate all account balances after updating journal entry
+        console.log(`🔄 Recalculating account balances...`);
+        await AccountBalanceService.recalculateAllAccountBalances(conn);
+        console.log(`✅ Recalculated account balances after updating journal entry ${journalEntryId}`);
+      } else {
+        console.log(`⚠️ No journal entry found for reference ${existingReference}`);
       }
 
       await conn.commit();
@@ -1070,11 +1092,39 @@ class BoardingFeesPaymentsController {
         });
       }
 
+      // Find and delete the journal entries for this payment
+      const paymentReference = existingPayment[0].reference_number;
+      const [journalEntries] = await conn.query(
+        'SELECT id FROM journal_entries WHERE reference = ?',
+        [paymentReference]
+      );
+
+      if (journalEntries.length > 0) {
+        const journalEntryId = journalEntries[0].id;
+
+        // Delete transactions first (foreign key constraint)
+        await conn.query('DELETE FROM transactions WHERE journal_entry_id = ?', [journalEntryId]);
+
+        // Delete journal entry lines
+        await conn.query('DELETE FROM journal_entry_lines WHERE journal_entry_id = ?', [journalEntryId]);
+
+        // Delete journal entry
+        await conn.query('DELETE FROM journal_entries WHERE id = ?', [journalEntryId]);
+
+        console.log(`🗑️ Deleted journal entry ${journalEntryId} for payment reference ${paymentReference}`);
+      } else {
+        console.log(`⚠️ No journal entry found for payment reference ${paymentReference}`);
+      }
+
       // Soft delete payment
       await conn.execute(
         'UPDATE boarding_fees_payments SET is_active = FALSE, updated_by = ?, updated_at = NOW() WHERE id = ?',
         [req.user.id, id]
       );
+
+      // Recalculate all account balances after deleting journal entry
+      await AccountBalanceService.recalculateAllAccountBalances(conn);
+      console.log(`✅ Recalculated account balances after deleting payment`);
 
       await conn.commit();
 
