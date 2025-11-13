@@ -58,7 +58,7 @@ const Login = () => {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-300 to-green-300 bg-clip-text text-transparent">
-Learning Ladder            </h1>
+Brooklyn            </h1>
             <h2 className="text-2xl font-semibold text-gray-200">
               SCHOOL MANAGEMENT SYSTEM
             </h2>
@@ -76,7 +76,7 @@ Learning Ladder            </h1>
           <div className="lg:hidden text-center mb-8">
             <div className="inline-flex items-center space-x-3 p-3 bg-blue-600 rounded-lg">
               <Building2 className="h-8 w-8 text-white" />
-              <span className="text-xl font-bold text-white">Learning Ladder </span>
+              <span className="text-xl font-bold text-white">Brooklyn </span>
             </div>
           </div>
 

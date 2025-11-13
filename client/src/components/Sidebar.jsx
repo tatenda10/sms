@@ -314,7 +314,7 @@ const Sidebar = ({ open, setOpen }) => {
                    <div className="h-5 w-5 rounded-lg bg-purple-600 flex items-center justify-center">
                     <span className="text-white text-xs font-bold">U</span>
                    </div>
-                  <h1 className="text-sm font-bold text-gray-900">Learning Ladder</h1>
+                  <h1 className="text-sm font-bold text-gray-900">Brooklyn</h1>
                  </div>
                  <button 
                    onClick={() => setOpen(false)}
@@ -358,7 +358,7 @@ const Sidebar = ({ open, setOpen }) => {
               <div className="h-5 w-5 rounded-lg bg-purple-600 flex items-center justify-center">
                 <span className="text-white text-xs font-bold">U</span>
               </div>
-              <h1 className="text-sm font-bold text-gray-900">Learning Ladder</h1>
+              <h1 className="text-sm font-bold text-gray-900">Brooklyn</h1>
             </div>
           </div>
           

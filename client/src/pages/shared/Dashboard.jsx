@@ -166,7 +166,7 @@ const Dashboard = () => {
     return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="max-w-5xl w-full">
-        <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Welcome to Learning Ladder</h3>
+        <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Welcome to Brooklyn</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filteredNavigationTabs.map((tab) => (
             <button
