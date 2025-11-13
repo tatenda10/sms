@@ -301,24 +301,35 @@ class EnrollmentController {
             user_agent: req.get('User-Agent')
           });
 
-          await conn.commit();
-          console.log(`Enrollment successful on attempt ${retryCount + 1}`);
-
-          // Create DEBIT transaction for boarding fee AFTER the main transaction is committed
+          // Create journal entries for boarding enrollment WITHIN the transaction
+          let journalEntryId = null;
           try {
-            console.log('Creating DEBIT transaction after enrollment commit...');
-            console.log('Transaction details:', {
+            journalEntryId = await createBoardingEnrollmentJournalEntries(
+              conn,
               student_reg_number,
-              amount: boardingFee[0].amount,
-              description: `Boarding Enrollment - ${hostel[0].name} (${boardingFee[0].term || formattedTerm} ${academic_year})`,
-              metadata: {
-                term: boardingFee[0].term || formattedTerm,
-                academic_year,
-                hostel_id,
-                enrollment_id: enrollmentId,
-                created_by: req.user.id
-              }
+              boardingFee[0].amount,
+              `BOARDING ENROLLMENT - ${hostel[0].name} (${boardingFee[0].term || formattedTerm} ${academic_year})`,
+              boardingFee[0].term || formattedTerm,
+              academic_year,
+              req.user.id
+            );
+
+            // Update account balances from the journal entries
+            await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId);
+            console.log('Journal entries and account balances updated successfully');
+          } catch (journalError) {
+            console.error('Error creating journal entries for boarding enrollment:', journalError);
+            await conn.rollback();
+            conn.release();
+            return res.status(500).json({ 
+              success: false, 
+              message: 'Failed to create journal entries for enrollment. Enrollment was not completed.' 
             });
+          }
+
+          // Create DEBIT transaction for boarding fee WITHIN the transaction and link to journal entry
+          try {
+            console.log('Creating DEBIT transaction with journal entry link...');
             const transactionId = await StudentTransactionController.createTransactionHelper(
               student_reg_number,
               'DEBIT',
@@ -329,36 +340,23 @@ class EnrollmentController {
                 academic_year,
                 hostel_id,
                 enrollment_id: enrollmentId,
-                created_by: req.user.id
+                created_by: req.user.id,
+                journal_entry_id: journalEntryId // Link transaction to journal entry
               }
             );
             console.log('DEBIT transaction created successfully with ID:', transactionId);
-
-            // Create journal entries for boarding enrollment
-            try {
-              const journalEntryId = await createBoardingEnrollmentJournalEntries(
-                conn,
-                student_reg_number,
-                boardingFee[0].amount,
-                `BOARDING ENROLLMENT - ${hostel[0].name} (${boardingFee[0].term || formattedTerm} ${academic_year})`,
-                boardingFee[0].term || formattedTerm,
-                academic_year,
-                req.user.id
-              );
-
-              // Update account balances from the journal entries
-              await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId);
-              console.log('Journal entries and account balances updated successfully');
-            } catch (journalError) {
-              console.error('Error creating journal entries for boarding enrollment:', journalError);
-              // Don't fail the enrollment if journal creation fails
-              // The enrollment is already successful, just log the error
-            }
           } catch (transactionError) {
-            console.error('Error creating DEBIT transaction after enrollment:', transactionError);
-            // Don't fail the enrollment if transaction creation fails
-            // The enrollment is already successful, just log the error
+            console.error('Error creating DEBIT transaction:', transactionError);
+            await conn.rollback();
+            conn.release();
+            return res.status(500).json({ 
+              success: false, 
+              message: 'Failed to create transaction for enrollment. Enrollment was not completed.' 
+            });
           }
+
+          await conn.commit();
+          console.log(`Enrollment successful on attempt ${retryCount + 1}`);
 
           res.status(201).json({ 
             success: true, 
@@ -676,6 +674,7 @@ class EnrollmentController {
     const conn = await pool.getConnection();
     try {
       const { id } = req.params;
+      console.log(`🗑️ Attempting to delete enrollment ID: ${id}`);
 
       await conn.beginTransaction();
 
@@ -686,47 +685,89 @@ class EnrollmentController {
       );
 
       if (existing.length === 0) {
+        await conn.rollback();
+        conn.release();
+        console.log(`❌ Enrollment ${id} not found`);
         return res.status(404).json({ success: false, message: 'Enrollment not found' });
       }
 
       const enrollment = existing[0];
+      console.log(`📋 Enrollment found:`, {
+        id: enrollment.id,
+        student: enrollment.student_reg_number,
+        status: enrollment.status,
+        hostel_id: enrollment.hostel_id
+      });
 
       // Check if enrollment can be deleted (not checked in or checked out)
       if (enrollment.status === 'checked_in' || enrollment.status === 'checked_out') {
+        await conn.rollback();
+        conn.release();
+        console.log(`❌ Cannot delete enrollment ${id} - status is '${enrollment.status}'`);
         return res.status(400).json({ 
           success: false, 
           message: `Cannot delete enrollment with status '${enrollment.status}'. Please check out the student first.` 
         });
       }
 
-      // Check for associated fee transactions and delete them
-      const [feeTransactions] = await conn.execute(
-        `SELECT id, amount FROM student_transactions 
-         WHERE student_reg_number = ? AND hostel_id = ? AND transaction_type = 'DEBIT' 
-         AND description LIKE '%Boarding Enrollment%'
-         ORDER BY transaction_date DESC LIMIT 1`,
-        [enrollment.student_reg_number, enrollment.hostel_id]
-      );
+      // Find associated fee transactions and their linked journal entries
+      console.log(`🔍 Searching for transactions for student ${enrollment.student_reg_number}, hostel ${enrollment.hostel_id}`);
+      
+      // Build query based on whether hostel_id exists
+      let feeTransactions;
+      if (enrollment.hostel_id) {
+        [feeTransactions] = await conn.execute(
+          `SELECT id, amount, journal_entry_id FROM student_transactions 
+           WHERE student_reg_number = ? AND hostel_id = ? AND transaction_type = 'DEBIT' 
+           AND description LIKE '%Boarding Enrollment%'
+           ORDER BY transaction_date DESC`,
+          [enrollment.student_reg_number, enrollment.hostel_id]
+        );
+      } else {
+        // If no hostel_id, search by student and description only
+        [feeTransactions] = await conn.execute(
+          `SELECT id, amount, journal_entry_id FROM student_transactions 
+           WHERE student_reg_number = ? AND transaction_type = 'DEBIT' 
+           AND description LIKE '%Boarding Enrollment%'
+           ORDER BY transaction_date DESC`,
+          [enrollment.student_reg_number]
+        );
+      }
+      console.log(`📊 Found ${feeTransactions.length} associated transactions`);
 
+      // Collect all journal entry IDs from transactions
+      const journalEntryIds = [];
       if (feeTransactions.length > 0) {
-        // Delete the original DEBIT transaction instead of creating a CREDIT reversal
-        await conn.execute(
-          'DELETE FROM student_transactions WHERE id = ?',
-          [feeTransactions[0].id]
-        );
-        
-        // Update the student balance to reflect the deletion
-        await StudentBalanceService.updateBalanceOnTransactionDelete(
-          enrollment.student_reg_number,
-          'DEBIT',
-          feeTransactions[0].amount,
-          conn
-        );
-        
-        console.log(`Deleted DEBIT transaction ${feeTransactions[0].id} for enrollment deletion`);
+        for (const tx of feeTransactions) {
+          // Update the student balance BEFORE deleting the transaction
+          // This reverses the effect of the original transaction
+          await StudentBalanceService.updateBalanceOnTransactionDelete(
+            enrollment.student_reg_number,
+            'DEBIT',
+            tx.amount,
+            conn
+          );
+          
+          // Delete the student transaction
+          await conn.execute(
+            'DELETE FROM student_transactions WHERE id = ?',
+            [tx.id]
+          );
+          
+          console.log(`Deleted DEBIT transaction ${tx.id} for enrollment deletion`);
+          
+          // Collect journal entry ID if linked
+          if (tx.journal_entry_id) {
+            journalEntryIds.push(tx.journal_entry_id);
+          }
+        }
+      } else {
+        // If no transactions found, recalculate balance anyway to ensure it's correct
+        console.log('No transactions found, recalculating balance from all transactions...');
+        await StudentBalanceService.recalculateBalance(enrollment.student_reg_number, conn);
       }
 
-      // Find and delete the original boarding enrollment journal entries
+      // Also search for journal entries by reference pattern (in case transaction wasn't linked)
       console.log('🔍 Looking for boarding enrollment journal entries to delete...');
       const [boardingJournalEntries] = await conn.execute(
           `SELECT je.id, je.description, je.reference 
@@ -735,28 +776,72 @@ class EnrollmentController {
           [`%BOARDING-${enrollment.student_reg_number}-%`, `%BOARDING ENROLLMENT%`]
       );
 
-      if (boardingJournalEntries.length > 0) {
-          console.log(`🗑️ Found ${boardingJournalEntries.length} boarding journal entries to delete`);
-          for (const journalEntry of boardingJournalEntries) {
-              // Delete journal entry lines first
+      // Combine journal entry IDs from transactions and search
+      const allJournalEntryIds = new Set(journalEntryIds);
+      boardingJournalEntries.forEach(je => allJournalEntryIds.add(je.id));
+
+      if (allJournalEntryIds.size > 0) {
+          console.log(`🗑️ Found ${allJournalEntryIds.size} boarding journal entries to delete`);
+          
+          // Reverse account balances for each journal entry before deletion
+          for (const journalEntryId of allJournalEntryIds) {
+              // Get journal entry lines to reverse balances
+              const [journalLines] = await conn.execute(
+                  `SELECT jel.account_id, jel.debit, jel.credit, coa.type as account_type, COALESCE(jel.currency_id, 1) as currency_id
+                   FROM journal_entry_lines jel
+                   INNER JOIN chart_of_accounts coa ON jel.account_id = coa.id
+                   WHERE jel.journal_entry_id = ?`,
+                  [journalEntryId]
+              );
+              
+              // Reverse each account balance
+              for (const line of journalLines) {
+                  // Calculate original balance change
+                  const balanceChange = (line.account_type === 'Asset' || line.account_type === 'Expense')
+                      ? parseFloat(line.debit || 0) - parseFloat(line.credit || 0)
+                      : parseFloat(line.credit || 0) - parseFloat(line.debit || 0);
+                  
+                  // Reverse the balance change
+                  const reverseChange = -balanceChange;
+                  
+                  if (Math.abs(reverseChange) >= 0.01) {
+                      // Get current balance
+                      const [currentBalance] = await conn.execute(
+                          `SELECT id, balance FROM account_balances 
+                           WHERE account_id = ? AND currency_id = ? 
+                           ORDER BY as_of_date DESC LIMIT 1`,
+                          [line.account_id, line.currency_id]
+                      );
+                      
+                      if (currentBalance.length > 0) {
+                          const newBalance = parseFloat(currentBalance[0].balance) + reverseChange;
+                          await conn.execute(
+                              `UPDATE account_balances 
+                               SET balance = ?, as_of_date = CURRENT_DATE 
+                               WHERE id = ?`,
+                              [newBalance, currentBalance[0].id]
+                          );
+                          console.log(`✅ Reversed balance for account ${line.account_id}: ${currentBalance[0].balance} → ${newBalance}`);
+                      }
+                  }
+              }
+              
+              // Delete journal entry lines first (foreign key constraint)
               await conn.execute(
                   'DELETE FROM journal_entry_lines WHERE journal_entry_id = ?',
-                  [journalEntry.id]
+                  [journalEntryId]
               );
               
               // Delete journal entry
               await conn.execute(
                   'DELETE FROM journal_entries WHERE id = ?',
-                  [journalEntry.id]
+                  [journalEntryId]
               );
               
-              console.log(`✅ Deleted original boarding enrollment journal entry ${journalEntry.id} for student ${enrollment.student_reg_number}`);
+              console.log(`✅ Deleted boarding enrollment journal entry ${journalEntryId} for student ${enrollment.student_reg_number}`);
           }
           
-          // Recalculate account balances after deletion
-          console.log('🔄 Recalculating account balances after journal entry deletion...');
-          await AccountBalanceService.recalculateAllAccountBalances(conn);
-          console.log('✅ Account balances recalculated');
+          console.log('✅ All journal entries and account balances reversed');
       } else {
           console.log('ℹ️ No boarding enrollment journal entries found to delete');
       }
@@ -801,8 +886,13 @@ class EnrollmentController {
       });
     } catch (error) {
       await conn.rollback();
-      console.error('Error deleting enrollment:', error);
-      res.status(500).json({ success: false, message: 'Failed to delete enrollment' });
+      console.error('❌ Error deleting enrollment:', error);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message || 'Failed to delete enrollment',
+        error: error.message 
+      });
     } finally {
       conn.release();
     }

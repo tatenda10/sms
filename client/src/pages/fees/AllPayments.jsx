@@ -148,37 +148,51 @@ const AllPayments = () => {
 
   const handleViewPayment = async (payment) => {
     try {
+      setLoading(true);
       const response = await axios.get(`${BASE_URL}/boarding/payments/${payment.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (response.data.success) {
+      if (response.data && response.data.success && response.data.data) {
         setSelectedPayment(response.data.data);
         setShowViewModal(true);
+      } else {
+        setErrorMessage('Invalid response from server');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Error fetching payment details:', error);
-      setErrorMessage('Failed to fetch payment details');
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to fetch payment details';
+      setErrorMessage(errorMsg);
       setShowErrorModal(true);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleEditPayment = async (payment) => {
     try {
+      setLoading(true);
       const response = await axios.get(`${BASE_URL}/boarding/payments/${payment.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (response.data.success) {
+      if (response.data && response.data.success && response.data.data) {
         console.log('Payment details for edit:', response.data.data);
         console.log('Available currencies:', currencies);
         setSelectedPayment(response.data.data);
         setShowEditModal(true);
+      } else {
+        setErrorMessage('Invalid response from server');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Error fetching payment details:', error);
-      setErrorMessage('Failed to fetch payment details');
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to fetch payment details';
+      setErrorMessage(errorMsg);
       setShowErrorModal(true);
+    } finally {
+      setLoading(false);
     }
   };
 

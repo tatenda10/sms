@@ -19,7 +19,8 @@ class StudentTransactionController {
                 academic_year,
                 class_id,
                 hostel_id,
-                enrollment_id
+                enrollment_id,
+                currency_id
             } = req.body;
 
             // Validation
@@ -28,6 +29,15 @@ class StudentTransactionController {
                     success: false,
                     message: 'Student registration number, transaction type, amount, and description are required'
                 });
+            }
+            
+            // Get currency_id (default to base currency if not provided)
+            let finalCurrencyId = currency_id;
+            if (!finalCurrencyId) {
+                const [currencies] = await conn.execute(
+                    'SELECT id FROM currencies WHERE base_currency = TRUE LIMIT 1'
+                );
+                finalCurrencyId = currencies.length > 0 ? currencies[0].id : 1;
             }
 
             if (!['DEBIT', 'CREDIT'].includes(transaction_type)) {
@@ -53,10 +63,10 @@ class StudentTransactionController {
             // Create transaction
             const [result] = await conn.execute(
                 `INSERT INTO student_transactions 
-                 (student_reg_number, transaction_type, amount, description, term, academic_year, 
+                 (student_reg_number, transaction_type, amount, currency_id, description, term, academic_year, 
                   class_id, hostel_id, enrollment_id, created_by) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [student_reg_number, transaction_type, amount, description, term || null, 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [student_reg_number, transaction_type, amount, finalCurrencyId, description, term || null, 
                  academic_year || null, class_id || null, hostel_id || null, 
                  enrollment_id || null, req.user.id]
             );
@@ -71,6 +81,7 @@ class StudentTransactionController {
                 student_reg_number,
                 transaction_type,
                 amount,
+                currency_id: finalCurrencyId,
                 description,
                 term,
                 academic_year,
@@ -81,7 +92,7 @@ class StudentTransactionController {
             });
 
             // Update account balances
-            await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId);
+            await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId, finalCurrencyId);
 
             // Log audit event
             try {
@@ -333,18 +344,19 @@ class StudentTransactionController {
                 class_id,
                 hostel_id,
                 enrollment_id,
-                created_by
+                created_by,
+                journal_entry_id
             } = options;
 
             // Create transaction
             const [result] = await conn.execute(
                 `INSERT INTO student_transactions 
                  (student_reg_number, transaction_type, amount, description, term, academic_year, 
-                  class_id, hostel_id, enrollment_id, created_by) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                  class_id, hostel_id, enrollment_id, created_by, journal_entry_id) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [student_reg_number, transaction_type, amount, description, term || null, 
                  academic_year || null, class_id || null, hostel_id || null, 
-                 enrollment_id || null, created_by]
+                 enrollment_id || null, created_by, journal_entry_id || null]
             );
 
             const transactionId = result.insertId;

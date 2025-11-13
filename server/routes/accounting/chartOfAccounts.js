@@ -10,6 +10,8 @@ router.use(requireRole('ACCOUNTING_MANAGEMENT'));
 
 // Get all accounts
 router.get('/', chartOfAccountsController.getAllAccounts);
+// Create opening balance for an account
+router.post('/opening-balance', chartOfAccountsController.createOpeningBalance);
 // Get account by ID
 router.get('/:id', chartOfAccountsController.getAccountById);
 // Create account

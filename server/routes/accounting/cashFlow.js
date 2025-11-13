@@ -11,4 +11,7 @@ router.get('/month/:month/year/:year', CashFlowController.getCashFlowByMonthYear
 // Get cash flow statement by custom date range
 router.get('/range', CashFlowController.getCashFlowByDateRange);
 
+// Get multi-month cash flow statement for comparison
+router.get('/multi-month', CashFlowController.getMultiMonthCashFlow);
+
 module.exports = router;

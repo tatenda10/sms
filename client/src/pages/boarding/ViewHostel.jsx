@@ -740,13 +740,18 @@ const EnrollmentsTab = ({ hostelId }) => {
   const handleDelete = async (enrollment) => {
     if (window.confirm('Are you sure you want to delete this enrollment?')) {
       try {
-        await axios.delete(`${BASE_URL}/boarding/enrollments/${enrollment.id}`, {
+        const response = await axios.delete(`${BASE_URL}/boarding/enrollments/${enrollment.id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        fetchEnrollments();
+        if (response.data.success) {
+          fetchEnrollments();
+        } else {
+          setError(response.data.message || 'Failed to delete enrollment');
+        }
       } catch (error) {
         console.error('Error deleting enrollment:', error);
-        setError('Failed to delete enrollment');
+        const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to delete enrollment';
+        setError(errorMessage);
       }
     }
   };

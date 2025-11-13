@@ -98,6 +98,12 @@ import TemplateEdit from './pages/timetables/TemplateEdit';
 import TestTimetable from './pages/timetables/TestTimetable';
 import Sports from './pages/sports/Sports';
 
+// Fixed Assets Pages
+import FixedAssets from './pages/assets/FixedAssets';
+import AddAsset from './pages/assets/AddAsset';
+import AssetDetails from './pages/assets/AssetDetails';
+import AssetTypesConfig from './pages/assets/AssetTypesConfig';
+
 function App() {
   return (
     <AuthProvider>
@@ -182,6 +188,12 @@ function AppRoutes() {
         <Route path="fees/unified-payment" element={<UnifiedFeePayment />} />
         <Route path="financial-records" element={<StudentFinancialRecord />} />
         <Route path="waivers" element={<Waivers />} />
+        
+        {/* Fixed Assets Routes */}
+        <Route path="assets" element={<FixedAssets />} />
+        <Route path="assets/add" element={<AddAsset />} />
+        <Route path="assets/configurations" element={<AssetTypesConfig />} />
+        <Route path="assets/:id" element={<AssetDetails />} />
         
         {/* Reports Routes */}
         <Route path="reports/income-statement" element={<IncomeStatement />} />

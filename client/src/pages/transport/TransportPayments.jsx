@@ -16,6 +16,7 @@ const TransportPayments = () => {
   const [payments, setPayments] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [students, setStudents] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
   const [showStudentResults, setShowStudentResults] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -37,6 +38,7 @@ const TransportPayments = () => {
     student_reg_number: '',
     payment_date: '',
     amount: '',
+    currency_id: '',
     payment_method: '',
     reference: '',
     notes: ''
@@ -47,6 +49,7 @@ const TransportPayments = () => {
   useEffect(() => {
     loadRoutes();
     loadPayments();
+    loadCurrencies();
   }, []);
 
   useEffect(() => {
@@ -78,6 +81,26 @@ const TransportPayments = () => {
       }
     } catch (err) {
       console.error('Error loading routes:', err);
+    }
+  };
+
+  const loadCurrencies = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/accounting/currencies`, {
+        headers: authHeaders
+      });
+      
+      const currencyList = response.data.data || [];
+      setCurrencies(currencyList);
+      
+      // Set default currency to base currency
+      const baseCurrency = currencyList.find(c => c.base_currency);
+      if (baseCurrency && !formData.currency_id) {
+        setFormData(prev => ({ ...prev, currency_id: baseCurrency.id }));
+      }
+    } catch (err) {
+      console.error('Error loading currencies:', err);
+      setError('Failed to load currencies');
     }
   };
 
@@ -185,11 +208,13 @@ const TransportPayments = () => {
   };
 
   const resetForm = () => {
+    const baseCurrency = currencies.find(c => c.base_currency);
     setFormData({
       route_id: '',
       student_reg_number: '',
       payment_date: '',
       amount: '',
+      currency_id: baseCurrency?.id || '',
       payment_method: '',
       reference: '',
       notes: ''
@@ -207,6 +232,7 @@ const TransportPayments = () => {
         student_reg_number: payment.student_reg_number || '',
         payment_date: payment.payment_date,
         amount: payment.amount,
+        currency_id: payment.currency_id || '',
         payment_method: payment.payment_method,
         reference: payment.reference_number || '',
         notes: payment.notes || ''
@@ -240,6 +266,7 @@ const TransportPayments = () => {
         student_reg_number: formData.student_reg_number,
         payment_date: formData.payment_date,
         amount: parseFloat(formData.amount),
+        currency_id: formData.currency_id,
         payment_method: formData.payment_method,
         reference: formData.reference.trim() || null,
         notes: formData.notes.trim() || null
@@ -631,6 +658,24 @@ const TransportPayments = () => {
                     required
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                   />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-medium text-gray-700">Currency</label>
+                  <select
+                    name="currency_id"
+                    value={formData.currency_id}
+                    onChange={handleInputChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                  >
+                    <option value="">Select Currency</option>
+                    {currencies.map((currency) => (
+                      <option key={currency.id} value={currency.id}>
+                        {currency.code} - {currency.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div>

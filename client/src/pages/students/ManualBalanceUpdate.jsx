@@ -26,9 +26,9 @@ const ManualBalanceUpdate = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [currentBalance, setCurrentBalance] = useState(0);
   const [formData, setFormData] = useState({
-    adjustment_type: 'debit', // debit or credit
+    adjustment_type: 'debit', // Only debit for opening balances (student owes money)
     amount: '',
-    description: '',
+    description: 'Opening Balance - Historical Debt',
     reference: ''
   });
 
@@ -71,7 +71,7 @@ const ManualBalanceUpdate = () => {
       setFormData({
         adjustment_type: 'debit',
         amount: '',
-        description: '',
+        description: 'Opening Balance - Historical Debt',
         reference: ''
       });
       setSearchResults([]);
@@ -136,7 +136,7 @@ const ManualBalanceUpdate = () => {
       
       await axios.post(`${BASE_URL}/students/manual-balance-adjustment`, adjustmentData, { headers: authHeaders });
       
-      setSuccess('Balance adjustment recorded successfully!');
+      setSuccess('Opening balance recorded successfully! This historical debt has been added to the student account.');
       
       // Small delay to ensure database is updated
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -154,7 +154,7 @@ const ManualBalanceUpdate = () => {
       setFormData({
         adjustment_type: 'debit',
         amount: '',
-        description: '',
+        description: 'Opening Balance - Historical Debt',
         reference: ''
       });
       
@@ -172,7 +172,7 @@ const ManualBalanceUpdate = () => {
     setFormData({
       adjustment_type: 'debit',
       amount: '',
-      description: '',
+      description: 'Opening Balance - Historical Debt',
       reference: ''
     });
     setError(null);
@@ -186,8 +186,24 @@ const ManualBalanceUpdate = () => {
         <div className="mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Manual Balance Update</h1>
-              <p className="text-xs text-gray-600">Manually adjust student account balances</p>
+              <h1 className="text-lg font-bold text-gray-900">Student Opening Balance Entry</h1>
+              <p className="text-xs text-gray-600">Record historical student debts from before system implementation</p>
+            </div>
+          </div>
+          {/* Warning Banner */}
+          <div className="mt-3 bg-yellow-50 border border-yellow-200 px-4 py-3">
+            <div className="flex items-start">
+              <FontAwesomeIcon icon={faExclamationTriangle} className="text-yellow-600 mr-3 mt-0.5" />
+              <div className="text-xs text-yellow-800">
+                <p className="font-semibold mb-1">⚠️ Use This ONLY for Opening Balances</p>
+                <p className="mb-1">This feature is designed ONLY for recording historical debts that existed BEFORE your system went live.</p>
+                <p className="font-medium">For mid-term adjustments:</p>
+                <ul className="list-disc ml-4 mt-1">
+                  <li>Use the <strong>Waivers</strong> module to forgive fees</li>
+                  <li>Use the <strong>Payments</strong> module to record payments</li>
+                  <li>Contact the accounting team for other corrections</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
@@ -273,10 +289,10 @@ const ManualBalanceUpdate = () => {
             </div>
           </div>
 
-          {/* Right Column - Balance Adjustment Form */}
+          {/* Right Column - Opening Balance Form */}
           <div className="bg-white border border-gray-200 shadow">
             <div className="px-4 py-3 border-b border-gray-200">
-              <h3 className="text-sm font-medium text-gray-900">Balance Adjustment</h3>
+              <h3 className="text-sm font-medium text-gray-900">Opening Balance Entry</h3>
             </div>
             
             <form onSubmit={handleSubmit} className="p-4">
@@ -305,7 +321,7 @@ const ManualBalanceUpdate = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Adjustment Type *
+                    Balance Type *
                   </label>
                   <select
                     name="adjustment_type"
@@ -314,9 +330,12 @@ const ManualBalanceUpdate = () => {
                     required
                     className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                   >
-                    <option value="debit">Debit (Increase what student owes)</option>
-                    <option value="credit">Credit (Decrease what student owes)</option>
+                    <option value="debit">Student Owes Money (Debit - Most Common)</option>
+                    <option value="credit">Student Has Credit (Rare - use payment module instead)</option>
                   </select>
+                  <p className="text-xs text-gray-500 mt-1 italic">
+                    💡 In most cases, you'll use "Student Owes Money" for historical unpaid fees
+                  </p>
                 </div>
 
                 <div>
@@ -346,9 +365,12 @@ const ManualBalanceUpdate = () => {
                     onChange={handleInputChange}
                     required
                     rows={3}
-                    placeholder="Enter reason for this adjustment"
+                    placeholder="e.g., Opening Balance - Unpaid fees from 2023 Term 1"
                     className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                   />
+                  <p className="text-xs text-gray-500 mt-1 italic">
+                    📝 Describe what this historical debt is for (year, term, reason)
+                  </p>
                 </div>
 
                 <div>

@@ -137,7 +137,7 @@ class BoardingFeesPaymentsController {
       });
 
       // Update account balances from the journal entry
-      await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId);
+      await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId, currency_id);
       console.log(`✅ Updated account balances for journal entry ${journalEntryId}`);
 
       await conn.commit();

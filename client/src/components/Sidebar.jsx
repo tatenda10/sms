@@ -40,7 +40,8 @@ import {
   faBullhorn,
   faDollarSign,
   faTrophy,
-  faTag
+  faTag,
+  faWarehouse
 } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = ({ open, setOpen }) => {
@@ -63,6 +64,7 @@ const Sidebar = ({ open, setOpen }) => {
     { name: 'Procurement', href: '/dashboard/procurement', icon: faList },
     { name: 'Payroll', href: '/dashboard/payroll', icon: faCalculator },
     { name: 'Inventory', href: '/dashboard/inventory', icon: faFileAlt },
+    { name: 'Fixed Assets', href: '/dashboard/assets', icon: faWarehouse },
     { name: 'Financial Reports', href: '/dashboard/reports/income-statement', icon: faChartLine },
     { name: 'Analytics', href: '/dashboard/analytics/expense-analysis', icon: faChartPie },
     { name: 'Admin', href: '/dashboard/admin', icon: faCog },
@@ -104,7 +106,7 @@ const Sidebar = ({ open, setOpen }) => {
       { name: 'Record Payment', href: '/dashboard/fees-payment', icon: faCreditCard },
       { name: 'Boarding Fee Payments', href: '/dashboard/all-payments', icon: faList },
       { name: 'Outstanding Balances', href: '/dashboard/students/balances', icon: faMoneyBillWave },
-      { name: 'Manual Balance Update', href: '/dashboard/students/manual-balance-update', icon: faEdit },
+      { name: 'Student Opening Balances', href: '/dashboard/students/manual-balance-update', icon: faEdit },
       { name: 'Additional Fees', href: '/dashboard/billing/additional-fees', icon: faDollarSign },
       { name: 'Waivers', href: '/dashboard/waivers', icon: faTag },
       { name: 'Invoice Structures', href: '/dashboard/invoice-structures', icon: faFileAlt },
@@ -155,6 +157,12 @@ const Sidebar = ({ open, setOpen }) => {
       { name: 'Add Item', href: '/dashboard/inventory/add-item', icon: faPlus },
       { name: 'Issue Uniform', href: '/dashboard/inventory/issue-uniform', icon: faUserGraduate },
       { name: 'Configurations', href: '/dashboard/inventory/configurations', icon: faCog },
+    ],
+    assets: [
+      { name: 'Home', href: '/dashboard', icon: faHome },
+      { name: 'Fixed Assets', href: '/dashboard/assets', icon: faWarehouse },
+      { name: 'Add Asset', href: '/dashboard/assets/add', icon: faPlus },
+      { name: 'Configurations', href: '/dashboard/assets/configurations', icon: faCog },
     ],
     announcements: [
       { name: 'Home', href: '/dashboard', icon: faHome },
@@ -209,8 +217,13 @@ const Sidebar = ({ open, setOpen }) => {
     // Check if we're in a specific section - use explicit priority order
     let sectionKey = null;
     
-    // Check billing section first (highest priority for student balance routes)
-    if (location.pathname.startsWith('/dashboard/fees') || 
+    // Check reports section first (for financial reports)
+    if (location.pathname.startsWith('/dashboard/reports') ||
+        location.pathname.startsWith('/dashboard/accounting/trial-balance')) {
+      sectionKey = 'reports';
+    }
+    // Check billing section (highest priority for student balance routes)
+    else if (location.pathname.startsWith('/dashboard/fees') || 
         location.pathname.startsWith('/dashboard/invoice') ||
         location.pathname.startsWith('/dashboard/financial') ||
         location.pathname.startsWith('/dashboard/all-payments') ||
@@ -227,6 +240,10 @@ const Sidebar = ({ open, setOpen }) => {
     // Check expenses section
     else if (location.pathname.startsWith('/dashboard/expenses')) {
       sectionKey = 'expenses';
+    }
+    // Check assets section
+    else if (location.pathname.startsWith('/dashboard/assets')) {
+      sectionKey = 'assets';
     }
     // Check admin section
     else if (location.pathname.startsWith('/dashboard/settings') || 

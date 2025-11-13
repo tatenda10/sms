@@ -152,7 +152,7 @@ class StudentBalancesController {
         }
     }
 
-    // Manual balance adjustment
+    // Student Opening Balance Entry (for historical data only)
     async manualBalanceAdjustment(req, res) {
         const connection = await pool.getConnection();
         
@@ -168,6 +168,8 @@ class StudentBalancesController {
                 });
             }
             
+            // Only allow DEBIT for opening balances (student owes money from before)
+            // CREDIT adjustments should not be used - if student overpaid, record as payment instead
             if (!['debit', 'credit'].includes(adjustment_type)) {
                 return res.status(400).json({ 
                     error: 'adjustment_type must be either "debit" or "credit"' 
@@ -209,6 +211,82 @@ class StudentBalancesController {
             // Generate reference if not provided
             const finalReference = reference || `MBU-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
             
+            // Get base currency
+            const [currencies] = await connection.execute(
+                'SELECT id FROM currencies WHERE base_currency = TRUE LIMIT 1'
+            );
+            const currency_id = currencies.length > 0 ? currencies[0].id : 1;
+            
+            // Get required accounts from Chart of Accounts
+            const [[accountsReceivable]] = await connection.execute(
+                'SELECT id FROM chart_of_accounts WHERE code = ?',
+                ['1100'] // Accounts Receivable - Tuition
+            );
+            
+            const [[retainedEarnings]] = await connection.execute(
+                'SELECT id FROM chart_of_accounts WHERE code = ?',
+                ['3998'] // Retained Earnings (Opening Balance Equity)
+            );
+            
+            if (!accountsReceivable || !retainedEarnings) {
+                await connection.rollback();
+                return res.status(500).json({ 
+                    error: 'Required accounts not found in Chart of Accounts (1100, 3998)' 
+                });
+            }
+            
+            // Create Journal Entry for Opening Balance
+            const journalDescription = `Opening Balance: ${description} - ${finalReference} - Student: ${student.Name} ${student.Surname} (${student.RegNumber})`;
+            
+            const [journalResult] = await connection.execute(`
+                INSERT INTO journal_entries (
+                    journal_id, entry_date, description, reference, 
+                    created_by, created_at, updated_at
+                ) VALUES (1, NOW(), ?, ?, ?, NOW(), NOW())
+            `, [journalDescription, finalReference, req.user?.id || 1]);
+            
+            const journalEntryId = journalResult.insertId;
+            
+            // Create Journal Entry Lines based on adjustment type
+            if (adjustment_type === 'debit') {
+                // Student owes money (Opening Balance Debt)
+                // DEBIT: Accounts Receivable (Asset increases)
+                // CREDIT: Retained Earnings (Equity increases to balance)
+                
+                await connection.execute(`
+                    INSERT INTO journal_entry_lines (
+                        journal_entry_id, account_id, debit, credit, description
+                    ) VALUES (?, ?, ?, 0, ?)
+                `, [journalEntryId, accountsReceivable.id, adjustmentAmount, 'Accounts Receivable - Opening Balance']);
+                
+                await connection.execute(`
+                    INSERT INTO journal_entry_lines (
+                        journal_entry_id, account_id, debit, credit, description
+                    ) VALUES (?, ?, 0, ?, ?)
+                `, [journalEntryId, retainedEarnings.id, adjustmentAmount, 'Retained Earnings - Opening Balance']);
+                
+            } else {
+                // Student has credit balance (Overpayment/Prepayment)
+                // DEBIT: Retained Earnings (Equity decreases)
+                // CREDIT: Accounts Receivable (Asset decreases/Liability increases)
+                
+                await connection.execute(`
+                    INSERT INTO journal_entry_lines (
+                        journal_entry_id, account_id, debit, credit, description
+                    ) VALUES (?, ?, ?, 0, ?)
+                `, [journalEntryId, retainedEarnings.id, adjustmentAmount, 'Retained Earnings - Opening Balance']);
+                
+                await connection.execute(`
+                    INSERT INTO journal_entry_lines (
+                        journal_entry_id, account_id, debit, credit, description
+                    ) VALUES (?, ?, 0, ?, ?)
+                `, [journalEntryId, accountsReceivable.id, adjustmentAmount, 'Accounts Receivable - Opening Balance']);
+            }
+            
+            // Update Account Balances
+            const AccountBalanceService = require('../../services/accountBalanceService');
+            await AccountBalanceService.updateAccountBalancesFromJournalEntry(connection, journalEntryId, currency_id);
+            
             // Update student balance
             if (balanceRows.length > 0) {
                 await connection.execute(
@@ -244,14 +322,16 @@ class StudentBalancesController {
             await connection.commit();
             
             res.json({
-                message: 'Balance adjustment recorded successfully',
+                message: 'Opening balance recorded successfully',
                 data: {
                     student_id,
                     student_name: `${student.Name} ${student.Surname}`,
                     registration_number: student.RegNumber,
                     adjustment_type,
                     amount: adjustmentAmount,
-                    reference: finalReference
+                    reference: finalReference,
+                    journal_entry_id: journalEntryId,
+                    note: 'This is an opening balance entry for historical debt'
                 }
             });
             

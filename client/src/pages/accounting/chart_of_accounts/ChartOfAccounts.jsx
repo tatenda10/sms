@@ -16,9 +16,12 @@ const TYPE_PREFIX = {
 const ChartOfAccounts = () => {
   const { token } = useAuth();
   const [accounts, setAccounts] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
   const [addForm, setAddForm] = useState({
     code: '',
     name: '',
@@ -26,13 +29,45 @@ const ChartOfAccounts = () => {
     parent_id: '',
     is_active: true
   });
+  const [openingBalanceForm, setOpeningBalanceForm] = useState({
+    account_id: '',
+    amount: '',
+    balance_type: 'debit',
+    description: '',
+    reference: '',
+    opening_balance_date: new Date().toISOString().split('T')[0],
+    currency_id: 1
+  });
   const [addLoading, setAddLoading] = useState(false);
+  const [openingBalanceLoading, setOpeningBalanceLoading] = useState(false);
   const [addError, setAddError] = useState('');
+  const [openingBalanceError, setOpeningBalanceError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     fetchAccounts();
+    loadCurrencies();
     // eslint-disable-next-line
   }, []);
+
+  const loadCurrencies = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/accounting/currencies`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        const currencyList = response.data.data || [];
+        setCurrencies(currencyList);
+        // Set default currency (base currency or first one)
+        const baseCurrency = currencyList.find(c => c.base_currency) || currencyList[0];
+        if (baseCurrency) {
+          setOpeningBalanceForm(prev => ({ ...prev, currency_id: baseCurrency.id }));
+        }
+      }
+    } catch (err) {
+      console.error('Error loading currencies:', err);
+    }
+  };
 
   // Auto-generate code when type changes
   useEffect(() => {
@@ -112,6 +147,70 @@ const ChartOfAccounts = () => {
     }
   };
 
+  const openOpeningBalanceModal = (account) => {
+    setSelectedAccount(account);
+    // Set default balance type based on account type
+    const defaultBalanceType = (account.type === 'Asset' || account.type === 'Expense') ? 'debit' : 'credit';
+    setOpeningBalanceForm({
+      account_id: account.id,
+      amount: '',
+      balance_type: defaultBalanceType,
+      description: `Opening Balance - ${account.name} (${account.code})`,
+      reference: `OB-${account.code}-${Date.now()}`,
+      opening_balance_date: new Date().toISOString().split('T')[0],
+      currency_id: currencies.find(c => c.base_currency)?.id || currencies[0]?.id || 1
+    });
+    setOpeningBalanceError('');
+    setSuccess('');
+    setShowOpeningBalanceModal(true);
+  };
+
+  const handleOpeningBalanceChange = (e) => {
+    const { name, value } = e.target;
+    setOpeningBalanceForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleOpeningBalanceSubmit = async (e) => {
+    e.preventDefault();
+    setOpeningBalanceLoading(true);
+    setOpeningBalanceError('');
+    setSuccess('');
+    
+    try {
+      const payload = {
+        ...openingBalanceForm,
+        amount: parseFloat(openingBalanceForm.amount)
+      };
+
+      const response = await axios.post(
+        `${BASE_URL}/accounting/chart-of-accounts/opening-balance`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        setSuccess('Opening balance created successfully!');
+        setShowOpeningBalanceModal(false);
+        setOpeningBalanceForm({
+          account_id: '',
+          amount: '',
+          balance_type: 'debit',
+          description: '',
+          reference: '',
+          opening_balance_date: new Date().toISOString().split('T')[0],
+          currency_id: 1
+        });
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        setOpeningBalanceError(response.data.message || 'Failed to create opening balance.');
+      }
+    } catch (err) {
+      setOpeningBalanceError(err.response?.data?.message || 'Failed to create opening balance.');
+    } finally {
+      setOpeningBalanceLoading(false);
+    }
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8">
       {/* Header */}
@@ -127,6 +226,13 @@ const ChartOfAccounts = () => {
           </button>
         </div>
       </div>
+
+      {/* Success Message */}
+      {success && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-xs text-green-800">
+          {success}
+        </div>
+      )}
 
       {/* Add Account Modal */}
       {showAddModal && (
@@ -265,13 +371,23 @@ const ChartOfAccounts = () => {
                         </span>
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        <Link
-                          to={`/dashboard/accounting/chart-of-accounts/view/${acc.id}`}
-                          className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
-                          style={{ borderRadius: 0 }}
-                        >
-                          View
-                        </Link>
+                        <div className="flex space-x-2">
+                          <Link
+                            to={`/dashboard/accounting/chart-of-accounts/view/${acc.id}`}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+                            style={{ borderRadius: 0 }}
+                          >
+                            View
+                          </Link>
+                          <button
+                            onClick={() => openOpeningBalanceModal(acc)}
+                            className="px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            style={{ borderRadius: 0 }}
+                            title="Add Opening Balance"
+                          >
+                            Opening Balance
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -281,6 +397,185 @@ const ChartOfAccounts = () => {
           )}
         </div>
       </div>
+
+      {/* Opening Balance Modal */}
+      {showOpeningBalanceModal && selectedAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-700 bg-opacity-50">
+          <div className="bg-white border border-gray-300 w-full max-w-md p-0" style={{ borderRadius: 0 }}>
+            <div className="border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+              <h2 className="text-xs font-semibold text-gray-800">
+                Add Opening Balance - {selectedAccount.code} - {selectedAccount.name}
+              </h2>
+              <button 
+                className="text-xs text-gray-500 hover:text-gray-800" 
+                onClick={() => setShowOpeningBalanceModal(false)} 
+                style={{ borderRadius: 0 }}
+              >
+                ✕
+              </button>
+            </div>
+            <form className="px-6 py-4" onSubmit={handleOpeningBalanceSubmit}>
+              <div className="bg-yellow-50 border border-yellow-200 p-3 mb-4">
+                <p className="text-xs text-yellow-800 font-semibold mb-1">⚠️ Use This ONLY for Opening Balances</p>
+                <p className="text-xs text-yellow-700">
+                  This feature is for recording historical balances that existed BEFORE the system was implemented. 
+                  Do NOT use this for mid-term adjustments.
+                </p>
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Account
+                </label>
+                <input
+                  type="text"
+                  value={`${selectedAccount.code} - ${selectedAccount.name} (${selectedAccount.type})`}
+                  readOnly
+                  className="w-full border border-gray-300 px-2 py-1 text-xs text-gray-900 bg-gray-100"
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Balance Type <span className="text-red-500">*</span>
+                  <span className="ml-2 text-xs text-gray-500 font-normal">
+                    ({selectedAccount.type === 'Asset' || selectedAccount.type === 'Expense' 
+                      ? 'Debit = Positive, Credit = Negative' 
+                      : 'Credit = Positive, Debit = Negative'})
+                  </span>
+                </label>
+                <select
+                  name="balance_type"
+                  value={openingBalanceForm.balance_type}
+                  onChange={handleOpeningBalanceChange}
+                  className="w-full border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                  style={{ borderRadius: 0 }}
+                  required
+                >
+                  <option value="debit">Debit</option>
+                  <option value="credit">Credit</option>
+                </select>
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  name="amount"
+                  value={openingBalanceForm.amount}
+                  onChange={handleOpeningBalanceChange}
+                  step="0.01"
+                  min="0"
+                  className="w-full border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                  style={{ borderRadius: 0 }}
+                  required
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Currency <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="currency_id"
+                  value={openingBalanceForm.currency_id}
+                  onChange={handleOpeningBalanceChange}
+                  className="w-full border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                  style={{ borderRadius: 0 }}
+                  required
+                >
+                  {currencies.map((currency) => (
+                    <option key={currency.id} value={currency.id}>
+                      {currency.code} - {currency.name} {currency.base_currency && '(Base)'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Opening Balance Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="opening_balance_date"
+                  value={openingBalanceForm.opening_balance_date}
+                  onChange={handleOpeningBalanceChange}
+                  className="w-full border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                  style={{ borderRadius: 0 }}
+                  required
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="description"
+                  value={openingBalanceForm.description}
+                  onChange={handleOpeningBalanceChange}
+                  rows="2"
+                  className="w-full border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                  style={{ borderRadius: 0 }}
+                  required
+                  placeholder="e.g., Opening Balance - Historical balance from previous system"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Reference
+                </label>
+                <input
+                  type="text"
+                  name="reference"
+                  value={openingBalanceForm.reference}
+                  onChange={handleOpeningBalanceChange}
+                  className="w-full border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                  style={{ borderRadius: 0 }}
+                  placeholder="Auto-generated if left blank"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 p-3 mb-4">
+                <p className="text-xs text-blue-800">
+                  <strong>Note:</strong> This will create a journal entry using Retained Earnings (3998) 
+                  as the offsetting account. This ensures historical balances don't affect current period 
+                  financial statements.
+                </p>
+              </div>
+
+              {openingBalanceError && (
+                <div className="text-xs text-red-600 mb-3">{openingBalanceError}</div>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  className="px-4 py-2 text-xs font-medium text-gray-800 bg-gray-200 hover:bg-gray-300 border border-gray-300 mr-2"
+                  style={{ borderRadius: 0 }}
+                  onClick={() => setShowOpeningBalanceModal(false)}
+                  disabled={openingBalanceLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900"
+                  style={{ borderRadius: 0 }}
+                  disabled={openingBalanceLoading}
+                >
+                  {openingBalanceLoading ? 'Creating...' : 'Create Opening Balance'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

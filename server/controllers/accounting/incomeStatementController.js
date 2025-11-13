@@ -105,14 +105,45 @@ class IncomeStatementController {
       
       const [expenses] = await pool.execute(expenseQuery, [period.start_date, period.end_date]);
       
+      // Get waiver expenses separately (not from expenses table, but from waivers table)
+      const waiverExpenseQuery = `
+        SELECT 
+          coa.id as account_id,
+          coa.code as account_code,
+          coa.name as account_name,
+          COALESCE(SUM(jel.debit), 0) as amount
+        FROM chart_of_accounts coa
+        INNER JOIN journal_entry_lines jel ON jel.account_id = coa.id
+        INNER JOIN journal_entries je ON je.id = jel.journal_entry_id
+        INNER JOIN waivers w ON w.journal_entry_id = je.id
+          AND w.granted_date BETWEEN ? AND ?
+          AND w.status = 'Active'
+        WHERE coa.type = 'Expense' 
+          AND coa.code BETWEEN '5500' AND '5540'
+          AND coa.is_active = 1
+          AND jel.debit > 0
+        GROUP BY coa.id, coa.code, coa.name
+        ORDER BY coa.code
+      `;
+      
+      const [waiverExpenses] = await pool.execute(waiverExpenseQuery, [period.start_date, period.end_date]);
+      
+      // Combine regular expenses and waiver expenses
+      const allExpenses = [...expenses, ...waiverExpenses];
+      
       console.log(`💸 Expense Query Results (${expenses.length} rows):`);
       expenses.forEach(item => {
         console.log(`  - ${item.account_name} (${item.account_code}): $${item.amount}`);
       });
       
+      console.log(`🎓 Waiver Expense Query Results (${waiverExpenses.length} rows):`);
+      waiverExpenses.forEach(item => {
+        console.log(`  - ${item.account_name} (${item.account_code}): $${item.amount}`);
+      });
+      
       // Calculate totals
       const totalRevenue = revenue.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
-      const totalExpenses = expenses.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+      const totalExpenses = allExpenses.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
       const netIncome = totalRevenue - totalExpenses;
       
       console.log(`📊 Calculated Totals:`);
@@ -126,7 +157,7 @@ class IncomeStatementController {
         percentage: totalRevenue > 0 ? ((parseFloat(item.amount) / totalRevenue) * 100).toFixed(2) : 0
       }));
       
-      const expensesWithPercentages = expenses.map(item => ({
+      const expensesWithPercentages = allExpenses.map(item => ({
         ...item,
         percentage: totalExpenses > 0 ? ((parseFloat(item.amount) / totalExpenses) * 100).toFixed(2) : 0
       }));

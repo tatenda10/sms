@@ -21,6 +21,7 @@ const generalLedgerRoutes = require('./routes/accounting/generalLedger');
 const cashBankRoutes = require('./routes/accounting/cashBank');
 const trialBalanceRoutes = require('./routes/accounting/trialBalance');
 const periodClosingRoutes = require('./routes/accounting/periodClosing');
+const savedReportsRoutes = require('./routes/accounting/savedReports');
 const expensesRoutes = require('./routes/expenses/index');
 const resultsRoutes = require('./routes/results/index');
 const boardingRoutes = require('./routes/boarding/index');
@@ -58,6 +59,8 @@ const sportsRoutes = require('./routes/sports/index');
 const studentSportsRoutes = require('./routes/students/sports');
 const analyticsRoutes = require('./routes/analytics/index');
 const waiversRoutes = require('./routes/waivers/waivers');
+const assetTypesRoutes = require('./routes/assets/assetTypes');
+const fixedAssetsRoutes = require('./routes/assets/fixedAssets');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -312,6 +315,7 @@ app.use('/api/accounting/general-ledger', generalLedgerRoutes);
 app.use('/api/accounting/cash-bank', cashBankRoutes);
 app.use('/api/accounting/trial-balance', trialBalanceRoutes);
 app.use('/api/accounting/period-closing', periodClosingRoutes);
+app.use('/api/accounting/saved-reports', savedReportsRoutes);
 app.use('/api/expenses', expensesRoutes);
 app.use('/api/results', resultsRoutes);
 app.use('/api/boarding', boardingRoutes);
@@ -349,6 +353,8 @@ app.use('/api/timetable-generation', timetableGenerationRoutes);
 app.use('/api/sports', sportsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/waivers', waiversRoutes);
+app.use('/api/assets/types', assetTypesRoutes);
+app.use('/api/assets', fixedAssetsRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

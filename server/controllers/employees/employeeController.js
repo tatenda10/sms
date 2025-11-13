@@ -415,7 +415,8 @@ class EmployeeController {
         departmentId,
         jobTitleId,
         hireDate,
-        isActive
+        isActive,
+        bankAccounts
       } = req.body;
 
       // Validation
@@ -472,6 +473,9 @@ class EmployeeController {
           }
         }
 
+        // Begin transaction for bank accounts update
+        await connection.beginTransaction();
+
         // Update employee
         await connection.execute(`
           UPDATE employees 
@@ -492,6 +496,100 @@ class EmployeeController {
           id
         ]);
 
+        // Handle bank accounts update
+        if (bankAccounts && Array.isArray(bankAccounts)) {
+          // Get existing bank accounts
+          const [existingAccounts] = await connection.execute(
+            'SELECT id FROM employee_bank_accounts WHERE employee_id = ?',
+            [id]
+          );
+
+          const existingAccountIds = existingAccounts.map(acc => acc.id);
+          const incomingAccountIds = bankAccounts
+            .filter(acc => acc.id)
+            .map(acc => acc.id);
+
+          // Delete accounts that are no longer in the new list
+          const accountsToDelete = existingAccountIds.filter(
+            existingId => !incomingAccountIds.includes(existingId)
+          );
+
+          if (accountsToDelete.length > 0) {
+            const placeholders = accountsToDelete.map(() => '?').join(',');
+            await connection.execute(
+              `DELETE FROM employee_bank_accounts WHERE id IN (${placeholders})`,
+              accountsToDelete
+            );
+          }
+
+          // Update or insert bank accounts
+          for (let i = 0; i < bankAccounts.length; i++) {
+            const account = bankAccounts[i];
+            if (account.bankName && account.accountNumber) {
+              if (account.id && incomingAccountIds.includes(account.id)) {
+                // Update existing account
+                await connection.execute(`
+                  UPDATE employee_bank_accounts 
+                  SET bank_name = ?, account_number = ?, currency = ?, is_primary = ?
+                  WHERE id = ? AND employee_id = ?
+                `, [
+                  account.bankName.trim(),
+                  account.accountNumber.trim(),
+                  account.currency || 'USD',
+                  account.isPrimary ? 1 : 0,
+                  account.id,
+                  id
+                ]);
+              } else {
+                // Insert new account
+                await connection.execute(`
+                  INSERT INTO employee_bank_accounts (
+                    employee_id, bank_name, account_number, currency, is_primary
+                  ) VALUES (?, ?, ?, ?, ?)
+                `, [
+                  id,
+                  account.bankName.trim(),
+                  account.accountNumber.trim(),
+                  account.currency || 'USD',
+                  account.isPrimary ? 1 : 0
+                ]);
+              }
+            }
+          }
+
+          // Ensure only one primary account (in case multiple were set)
+          const [primaryAccounts] = await connection.execute(
+            'SELECT id FROM employee_bank_accounts WHERE employee_id = ? AND is_primary = 1 ORDER BY id ASC',
+            [id]
+          );
+
+          if (primaryAccounts.length > 1) {
+            // Keep the first one as primary, set others to non-primary
+            const keepPrimaryId = primaryAccounts[0].id;
+            const otherPrimaryIds = primaryAccounts.slice(1).map(acc => acc.id);
+            if (otherPrimaryIds.length > 0) {
+              const placeholders = otherPrimaryIds.map(() => '?').join(',');
+              await connection.execute(
+                `UPDATE employee_bank_accounts SET is_primary = 0 WHERE id IN (${placeholders})`,
+                otherPrimaryIds
+              );
+            }
+          } else if (primaryAccounts.length === 0 && bankAccounts.length > 0) {
+            // If no primary account exists, set the first one as primary
+            const [firstAccount] = await connection.execute(
+              'SELECT id FROM employee_bank_accounts WHERE employee_id = ? ORDER BY id ASC LIMIT 1',
+              [id]
+            );
+            if (firstAccount.length > 0) {
+              await connection.execute(
+                'UPDATE employee_bank_accounts SET is_primary = 1 WHERE id = ?',
+                [firstAccount[0].id]
+              );
+            }
+          }
+        }
+
+        await connection.commit();
         connection.release();
 
         // Log employee update
@@ -515,6 +613,7 @@ class EmployeeController {
         });
 
       } catch (error) {
+        await connection.rollback();
         connection.release();
         throw error;
       }

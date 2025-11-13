@@ -110,8 +110,15 @@ class StudentBalanceService {
         }
 
         try {
+            // Ensure balance record exists
+            await this.ensureBalanceRecord(student_reg_number, conn);
+
             // Reverse the transaction effect
-            const balanceChange = transaction_type === 'CREDIT' ? -amount : amount;
+            // When creating: CREDIT decreases balance (paid), DEBIT increases balance (owed)
+            // When deleting: Reverse the effect
+            // CREDIT deletion: balance should increase (they no longer get credit)
+            // DEBIT deletion: balance should decrease (they no longer owe)
+            const balanceChange = transaction_type === 'CREDIT' ? amount : -amount;
 
             await conn.execute(
                 `UPDATE student_balances 

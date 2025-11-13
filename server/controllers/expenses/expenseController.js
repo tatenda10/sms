@@ -125,9 +125,25 @@ class ExpenseController {
       else if (payment_method === 'bank') journalName = 'Bank Payments Journal';
       else journalName = 'General Journal';
       
+      // Get or create journal
+      let journal_id = null;
       const [[journalRow]] = await conn.execute(`SELECT id FROM journals WHERE name = ? LIMIT 1`, [journalName]);
-      const journal_id = journalRow ? journalRow.id : null;
-      if (!journal_id) throw new Error('No journal found for ' + journalName);
+      if (journalRow && journalRow.id) {
+        journal_id = journalRow.id;
+      } else {
+        // Try to find any existing journal
+        const [anyJournal] = await conn.execute('SELECT id FROM journals LIMIT 1');
+        if (anyJournal.length > 0) {
+          journal_id = anyJournal[0].id;
+        } else {
+          // Create the journal if none exist
+          const [journalResult] = await conn.execute(
+            'INSERT INTO journals (name, description, is_active) VALUES (?, ?, ?)',
+            [journalName, `Journal for ${journalName.toLowerCase()}`, 1]
+          );
+          journal_id = journalResult.insertId;
+        }
+      }
       
       const [journalResult] = await conn.execute(
         `INSERT INTO journal_entries (journal_id, entry_date, reference, description) VALUES (?, ?, ?, ?)`,

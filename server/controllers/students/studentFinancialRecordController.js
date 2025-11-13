@@ -114,11 +114,8 @@ class StudentFinancialRecordController {
                                parseFloat(boardingPaymentsSummary[0].total_paid_amount || 0) +
                                parseFloat(creditTransactions[0].total_credit_amount || 0);
             
-            // Calculate the actual balance from all transactions (more reliable than student_balances table)
-            const calculatedBalance = totalCredit - totalDebit;
-            
-            // Use the calculated balance as the authoritative source
-            const outstandingBalance = calculatedBalance;
+            // Use the balance from student_balances table (authoritative source)
+            const outstandingBalance = parseFloat(currentBalance);
 
             const financialData = {
                 student_info: studentInfo[0],
@@ -126,7 +123,7 @@ class StudentFinancialRecordController {
                 total_outstanding: outstandingBalance,
                 total_paid: totalCredit,
                 total_invoiced: totalDebit,
-                balance: calculatedBalance, // Use the calculated balance from all transactions
+                balance: outstandingBalance, // Use the balance from student_balances table
                 // Additional data for reference
                 total_debit: totalDebit,
                 total_credit: totalCredit,
@@ -158,7 +155,8 @@ class StudentFinancialRecordController {
             let allTransactions = [];
 
             // Get fee payments (CREDIT transactions)
-            let feePaymentsWhere = 'WHERE fp.student_reg_number = ?';
+            // Only include payments that DON'T have a corresponding student_transaction
+            let feePaymentsWhere = '';
             let feePaymentsParams = [student_reg_number];
 
             if (start_date) {
@@ -188,7 +186,12 @@ class StudentFinancialRecordController {
                     'USD' as currency_symbol,
                     'CREDIT' as transaction_type
                  FROM fee_payments fp
-                 ${feePaymentsWhere}
+                 LEFT JOIN student_transactions st ON st.student_reg_number = fp.student_reg_number
+                    AND st.transaction_type = 'CREDIT'
+                    AND st.description LIKE CONCAT('%Receipt #', fp.receipt_number, '%')
+                 WHERE fp.student_reg_number = ? 
+                   AND st.id IS NULL
+                   ${feePaymentsWhere}
                  ORDER BY fp.payment_date DESC`,
                 feePaymentsParams
             );
@@ -230,7 +233,8 @@ class StudentFinancialRecordController {
             );
 
             // Get boarding enrollments (DEBIT transactions - invoices)
-            let boardingEnrollmentsWhere = 'WHERE be.student_reg_number = ?';
+            // Only include enrollments that DON'T have a corresponding student_transaction
+            let boardingEnrollmentsWhere = '';
             let boardingEnrollmentsParams = [student_reg_number];
 
             if (start_date) {
@@ -271,7 +275,13 @@ class StudentFinancialRecordController {
                     AND be.academic_year = bf.academic_year 
                     AND bf.is_active = TRUE
                  LEFT JOIN hostels h ON be.hostel_id = h.id
-                 ${boardingEnrollmentsWhere}
+                 LEFT JOIN student_transactions st ON st.enrollment_id = be.id 
+                    AND st.student_reg_number = be.student_reg_number
+                    AND st.transaction_type = 'DEBIT'
+                    AND st.description LIKE '%Boarding%'
+                 WHERE be.student_reg_number = ? 
+                   AND st.id IS NULL
+                   ${boardingEnrollmentsWhere}
                  ORDER BY be.enrollment_date DESC`,
                 boardingEnrollmentsParams
             );

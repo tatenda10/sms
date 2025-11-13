@@ -11,11 +11,17 @@ class AccountBalanceService {
         try {
             console.log(`🔄 Updating account balances for journal entry ${journalEntryId}...`);
 
-            // Get all journal entry lines for this journal entry
+            // Get all journal entry lines for this journal entry with account type
             const [journalLines] = await conn.execute(`
-                SELECT account_id, debit, credit, currency_id
-                FROM journal_entry_lines 
-                WHERE journal_entry_id = ?
+                SELECT 
+                    jel.account_id, 
+                    jel.debit, 
+                    jel.credit, 
+                    jel.currency_id,
+                    coa.type as account_type
+                FROM journal_entry_lines jel
+                INNER JOIN chart_of_accounts coa ON jel.account_id = coa.id
+                WHERE jel.journal_entry_id = ?
             `, [journalEntryId]);
 
             if (journalLines.length === 0) {
@@ -28,14 +34,20 @@ class AccountBalanceService {
             // Process each journal entry line
             for (const line of journalLines) {
                 const lineCurrencyId = line.currency_id || currencyId;
-                const balanceChange = parseFloat(line.debit || 0) - parseFloat(line.credit || 0);
+                
+                // Calculate balance change based on account type
+                // Assets & Expenses: Debit increases (+), Credit decreases (-)
+                // Liabilities, Equity, Revenue: Credit increases (+), Debit decreases (-)
+                const balanceChange = (line.account_type === 'Asset' || line.account_type === 'Expense')
+                    ? parseFloat(line.debit || 0) - parseFloat(line.credit || 0)
+                    : parseFloat(line.credit || 0) - parseFloat(line.debit || 0);
                 
                 if (Math.abs(balanceChange) < 0.01) {
-                    console.log(`⏭️ Skipping account ${line.account_id} - no significant balance change`);
+                    console.log(`⏭️ Skipping account ${line.account_id} (${line.account_type}) - no significant balance change`);
                     continue;
                 }
 
-                console.log(`💰 Processing account ${line.account_id}: ${balanceChange > 0 ? '+' : ''}${balanceChange}`);
+                console.log(`💰 Processing account ${line.account_id} (${line.account_type}): ${balanceChange > 0 ? '+' : ''}${balanceChange}`);
 
                 // Get current balance for this account and currency
                 const [currentBalance] = await conn.execute(`

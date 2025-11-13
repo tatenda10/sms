@@ -195,32 +195,25 @@ class GradelevelEnrollmentController {
                 });
             }
             
-            // Check if student is already enrolled in this class
-            const [existing] = await pool.execute(
-                'SELECT id FROM enrollments_gradelevel_classes WHERE student_regnumber = ? AND gradelevel_class_id = ?',
-                [student_regnumber, gradelevel_class_id]
+            // Check if student is already enrolled (database unique constraint will also enforce this)
+            const [existing] = await conn.execute(
+                'SELECT id, gradelevel_class_id, status FROM enrollments_gradelevel_classes WHERE student_regnumber = ?',
+                [student_regnumber]
             );
             
             if (existing.length > 0) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Student is already enrolled in this grade-level class' 
-                });
-            }
-            
-            // Check if student is already enrolled in another class in the same stream
-            const [streamEnrollment] = await pool.execute(
-                `SELECT e.id FROM enrollments_gradelevel_classes e 
-                 JOIN gradelevel_classes gc ON e.gradelevel_class_id = gc.id 
-                 WHERE e.student_regnumber = ? AND gc.stream_id = ? AND e.status = 'active'`,
-                [student_regnumber, gradelevelClasses[0].stream_id]
-            );
-            
-            if (streamEnrollment.length > 0) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Student is already enrolled in another class in the same stream' 
-                });
+                const existingEnrollment = existing[0];
+                if (existingEnrollment.gradelevel_class_id === gradelevel_class_id) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Student is already enrolled in this grade-level class' 
+                    });
+                } else {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: `Student already has an enrollment (Enrollment ID: ${existingEnrollment.id}, Status: ${existingEnrollment.status}). Please update the existing enrollment or set it to inactive before creating a new one.` 
+                    });
+                }
             }
             
             // Check class capacity if specified
@@ -238,12 +231,24 @@ class GradelevelEnrollmentController {
                 }
             }
             
-            const [result] = await conn.execute(
-                'INSERT INTO enrollments_gradelevel_classes (student_regnumber, gradelevel_class_id, status) VALUES (?, ?, ?)',
-                [student_regnumber, gradelevel_class_id, status]
-            );
-            
-            const enrollmentId = result.insertId;
+            let enrollmentId;
+            try {
+                const [result] = await conn.execute(
+                    'INSERT INTO enrollments_gradelevel_classes (student_regnumber, gradelevel_class_id, status) VALUES (?, ?, ?)',
+                    [student_regnumber, gradelevel_class_id, status]
+                );
+                enrollmentId = result.insertId;
+            } catch (insertError) {
+                // Handle database constraint violation
+                if (insertError.code === 'ER_DUP_ENTRY' || insertError.errno === 1062) {
+                    await conn.rollback();
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Student already has an enrollment. The database constraint prevents duplicate enrollments.' 
+                    });
+                }
+                throw insertError; // Re-throw if it's a different error
+            }
 
             // Create DEBIT transaction for class enrollment (always create transaction)
             const [classInfo] = await conn.execute(

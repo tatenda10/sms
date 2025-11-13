@@ -1,5 +1,6 @@
 const { pool } = require('../../config/database');
 const StudentTransactionController = require('../students/studentTransactionController');
+const AccountBalanceService = require('../../services/accountBalanceService');
 
 // Helper function to process transport payment accounting
 const processTransportPayment = async (conn, paymentData) => {
@@ -67,6 +68,9 @@ const processTransportPayment = async (conn, paymentData) => {
         created_by: created_by
       }
     );
+    
+    // 5. Update account balances from journal entry
+    await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId, 1);
     
     console.log(`✅ Transport payment processed: ${amount} for student ${student_reg_number}`);
     return { journalEntryId, transactionId };

@@ -1,4 +1,4 @@
-import { Users, BookOpen, BarChart3, Home, Truck, CreditCard, Calculator, ShoppingCart, Package, FileText, Settings, HelpCircle, DollarSign, Megaphone, Calendar, Trophy, PieChart } from 'lucide-react';
+import { Users, BookOpen, BarChart3, Home, Truck, CreditCard, Calculator, ShoppingCart, Package, FileText, Settings, HelpCircle, DollarSign, Megaphone, Calendar, Trophy, PieChart, Warehouse } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -104,6 +104,13 @@ const Dashboard = () => {
       href: '/dashboard/inventory',
       description: 'Track school supplies, equipment, and inventory management',
       requiredRoles: ['admin'] // Only admin for now
+    },
+    { 
+      name: 'Fixed Assets', 
+      icon: Warehouse, 
+      href: '/dashboard/assets',
+      description: 'Manage school property, vehicles, land, buildings, and equipment',
+      requiredRoles: ['admin', 'ACCOUNTING_MANAGEMENT']
     },
     { 
       name: 'Financial Reports', 

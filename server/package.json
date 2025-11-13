@@ -12,7 +12,13 @@
     "add-municipal-accounts": "node run-municipal-accounts-migration.js",
     "fix-payable-payments": "node run-fix-payable-payments.js",
     "fix-opening-balance": "node fix-opening-balance-entry.js",
-    "add-period-closing-fields": "node run-period-closing-migration.js"
+    "add-period-closing-fields": "node run-period-closing-migration.js",
+    "fix-student-opening-balances": "node fix-student-opening-balances.js",
+    "setup-fixed-assets": "node run-fixed-assets-migration.js",
+    "fix-currency-ids": "node run-currency-fix-migration.js",
+    "audit-currency-comprehensive": "node comprehensive-currency-audit.js",
+    "add-currency-columns": "node run-add-currency-columns.js",
+    "setup-waiver-accounting": "node run-waiver-accounting-migration.js"
   },
   "author": "",
   "license": "ISC",

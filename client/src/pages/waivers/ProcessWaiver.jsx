@@ -23,6 +23,7 @@ const ProcessWaiver = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [students, setStudents] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Success/Error modal states
@@ -35,6 +36,7 @@ const ProcessWaiver = () => {
   const [formData, setFormData] = useState({
     student_reg_number: '',
     waiver_amount: '',
+    currency_id: '',
     category_id: '',
     reason: '',
     notes: '',
@@ -44,6 +46,7 @@ const ProcessWaiver = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchCurrencies();
   }, []);
 
   const fetchCategories = async () => {
@@ -60,6 +63,29 @@ const ProcessWaiver = () => {
       console.error('Error fetching categories:', error);
       setErrorMessage(`Failed to fetch waiver categories: ${error.response?.data?.message || error.message}`);
       setShowErrorModal(true);
+    }
+  };
+
+  const fetchCurrencies = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/accounting/currencies`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const currencyList = response.data.data || [];
+      setCurrencies(currencyList);
+      
+      // Set default currency to base currency
+      const baseCurrency = currencyList.find(c => c.base_currency);
+      if (baseCurrency) {
+        setFormData(prev => ({ ...prev, currency_id: baseCurrency.id }));
+      }
+    } catch (error) {
+      console.error('Error fetching currencies:', error);
+      setErrorMessage('Failed to load currencies. Please refresh the page.');
     }
   };
 
@@ -100,8 +126,8 @@ const ProcessWaiver = () => {
       return;
     }
 
-    if (!formData.waiver_amount || !formData.category_id || !formData.reason || !formData.term || !formData.academic_year) {
-      setErrorMessage('Please fill in all required fields including term and academic year');
+    if (!formData.waiver_amount || !formData.currency_id || !formData.category_id || !formData.reason || !formData.term || !formData.academic_year) {
+      setErrorMessage('Please fill in all required fields including currency, term and academic year');
       setShowErrorModal(true);
       return;
     }
@@ -123,6 +149,7 @@ const ProcessWaiver = () => {
       const waiverPayload = {
         student_reg_number: selectedStudent.RegNumber,
         waiver_amount: parseFloat(formData.waiver_amount),
+        currency_id: formData.currency_id,
         category_id: formData.category_id,
         reason: formData.reason,
         notes: formData.notes,
@@ -139,10 +166,12 @@ const ProcessWaiver = () => {
         setShowSuccessModal(true);
         setShowConfirmation(false);
         
-        // Reset form
+        // Reset form but keep currency
+        const baseCurrency = currencies.find(c => c.base_currency);
         setFormData({
           student_reg_number: '',
           waiver_amount: '',
+          currency_id: baseCurrency?.id || '',
           category_id: '',
           reason: '',
           notes: '',
@@ -267,6 +296,25 @@ const ProcessWaiver = () => {
                       required
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Currency <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.currency_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, currency_id: e.target.value }))}
+                    className="w-full px-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                    required
+                  >
+                    <option value="">Select Currency</option>
+                    {currencies.map((currency) => (
+                      <option key={currency.id} value={currency.id}>
+                        {currency.code} - {currency.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

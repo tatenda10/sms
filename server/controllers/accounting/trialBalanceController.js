@@ -17,56 +17,15 @@ class TrialBalanceController {
       const conn = await pool.getConnection();
 
       try {
-        let query;
-        let params;
+        let accounts;
 
         if (as_of_date) {
-          // Get trial balance as of a specific date
-          query = `
-            SELECT 
-              coa.id,
-              coa.code as account_code,
-              coa.name as account_name,
-              coa.type as account_type,
-              coa.parent_id,
-              COALESCE(SUM(CASE WHEN jel.debit > 0 THEN jel.debit ELSE 0 END), 0) as total_debit,
-              COALESCE(SUM(CASE WHEN jel.credit > 0 THEN jel.credit ELSE 0 END), 0) as total_credit,
-              COALESCE(SUM(jel.debit - jel.credit), 0) as balance
-            FROM chart_of_accounts coa
-            LEFT JOIN journal_entry_lines jel ON coa.id = jel.account_id
-            LEFT JOIN journal_entries je ON jel.journal_entry_id = je.id
-            WHERE coa.is_active = TRUE
-              AND (je.entry_date IS NULL OR je.entry_date <= ?)
-            GROUP BY coa.id, coa.code, coa.name, coa.type, coa.parent_id
-            HAVING total_debit > 0 OR total_credit > 0 OR balance != 0
-            ORDER BY coa.code
-          `;
-          params = [as_of_date];
+          // Get trial balance as of a specific date using account_balances table
+          accounts = await TrialBalanceController.getTrialBalanceAsOfDate(conn, as_of_date);
         } else {
-          // Get trial balance for a date range
-          query = `
-            SELECT 
-              coa.id,
-              coa.code as account_code,
-              coa.name as account_name,
-              coa.type as account_type,
-              coa.parent_id,
-              COALESCE(SUM(CASE WHEN jel.debit > 0 THEN jel.debit ELSE 0 END), 0) as total_debit,
-              COALESCE(SUM(CASE WHEN jel.credit > 0 THEN jel.credit ELSE 0 END), 0) as total_credit,
-              COALESCE(SUM(jel.debit - jel.credit), 0) as balance
-            FROM chart_of_accounts coa
-            LEFT JOIN journal_entry_lines jel ON coa.id = jel.account_id
-            LEFT JOIN journal_entries je ON jel.journal_entry_id = je.id
-            WHERE coa.is_active = TRUE
-              AND (je.entry_date IS NULL OR (je.entry_date BETWEEN ? AND ?))
-            GROUP BY coa.id, coa.code, coa.name, coa.type, coa.parent_id
-            HAVING total_debit > 0 OR total_credit > 0 OR balance != 0
-            ORDER BY coa.code
-          `;
-          params = [start_date, end_date];
+          // Get trial balance for a date range using account_balances table
+          accounts = await TrialBalanceController.getTrialBalanceForDateRange(conn, start_date, end_date);
         }
-
-        const [accounts] = await conn.execute(query, params);
 
         // Calculate totals
         const totals = {
@@ -118,6 +77,180 @@ class TrialBalanceController {
     }
   }
 
+  // Get trial balance as of a specific date using account_balances table
+  static async getTrialBalanceAsOfDate(conn, asOfDate) {
+    const [accounts] = await conn.execute(`
+      SELECT 
+        coa.id,
+        coa.code as account_code,
+        coa.name as account_name,
+        coa.type as account_type,
+        coa.parent_id,
+        COALESCE(ab.balance, 0) as balance
+      FROM chart_of_accounts coa
+      LEFT JOIN (
+        SELECT 
+          ab1.account_id,
+          ab1.balance
+        FROM account_balances ab1
+        INNER JOIN (
+          SELECT 
+            account_id,
+            MAX(as_of_date) as max_date
+          FROM account_balances
+          WHERE as_of_date <= ?
+          GROUP BY account_id
+        ) ab2 ON ab1.account_id = ab2.account_id AND ab1.as_of_date = ab2.max_date
+      ) ab ON coa.id = ab.account_id
+      WHERE coa.is_active = TRUE
+        AND COALESCE(ab.balance, 0) != 0
+      ORDER BY coa.code
+    `, [asOfDate]);
+
+    // Calculate debit and credit based on account type and balance
+    return accounts.map(account => {
+      const balance = parseFloat(account.balance || 0);
+      let total_debit = 0;
+      let total_credit = 0;
+
+      // Asset & Expense: Debit balances are positive, Credit balances are negative
+      // Liability, Equity, Revenue: Credit balances are positive, Debit balances are negative
+      if (account.account_type === 'Asset' || account.account_type === 'Expense') {
+        if (balance >= 0) {
+          total_debit = balance;
+        } else {
+          total_credit = Math.abs(balance);
+        }
+      } else {
+        // Liability, Equity, Revenue
+        if (balance >= 0) {
+          total_credit = balance;
+        } else {
+          total_debit = Math.abs(balance);
+        }
+      }
+
+      return {
+        ...account,
+        total_debit,
+        total_credit,
+        balance
+      };
+    });
+  }
+
+  // Get trial balance for a date range using account_balances table
+  static async getTrialBalanceForDateRange(conn, startDate, endDate) {
+    // Get beginning balances (as of day before start_date)
+    const beginDate = new Date(startDate);
+    beginDate.setDate(beginDate.getDate() - 1);
+    const beginDateStr = beginDate.toISOString().split('T')[0];
+
+    const [beginBalances] = await conn.execute(`
+      SELECT 
+        ab1.account_id,
+        COALESCE(ab1.balance, 0) as balance
+      FROM (
+        SELECT DISTINCT account_id FROM account_balances
+      ) accounts
+      LEFT JOIN account_balances ab1 ON accounts.account_id = ab1.account_id
+        AND ab1.as_of_date = (
+          SELECT MAX(ab2.as_of_date)
+          FROM account_balances ab2
+          WHERE ab2.account_id = accounts.account_id
+            AND ab2.as_of_date <= ?
+        )
+    `, [beginDateStr]);
+
+    // Get ending balances (as of end_date)
+    const [endBalances] = await conn.execute(`
+      SELECT 
+        ab1.account_id,
+        COALESCE(ab1.balance, 0) as balance
+      FROM (
+        SELECT DISTINCT account_id FROM account_balances
+      ) accounts
+      LEFT JOIN account_balances ab1 ON accounts.account_id = ab1.account_id
+        AND ab1.as_of_date = (
+          SELECT MAX(ab2.as_of_date)
+          FROM account_balances ab2
+          WHERE ab2.account_id = accounts.account_id
+            AND ab2.as_of_date <= ?
+        )
+    `, [endDate]);
+
+    // Create maps for quick lookup
+    const beginBalanceMap = {};
+    beginBalances.forEach(row => {
+      beginBalanceMap[row.account_id] = parseFloat(row.balance || 0);
+    });
+
+    const endBalanceMap = {};
+    endBalances.forEach(row => {
+      endBalanceMap[row.account_id] = parseFloat(row.balance || 0);
+    });
+
+    // Get all active accounts
+    const [allAccounts] = await conn.execute(`
+      SELECT 
+        id,
+        code as account_code,
+        name as account_name,
+        type as account_type,
+        parent_id
+      FROM chart_of_accounts
+      WHERE is_active = TRUE
+      ORDER BY code
+    `);
+
+    // Calculate changes for each account
+    const accounts = allAccounts
+      .map(account => {
+        const beginBalance = beginBalanceMap[account.id] || 0;
+        const endBalance = endBalanceMap[account.id] || 0;
+        const change = endBalance - beginBalance;
+
+        // If no change and no balance, skip this account
+        if (change === 0 && endBalance === 0) {
+          return null;
+        }
+
+        let total_debit = 0;
+        let total_credit = 0;
+
+        // Calculate debits and credits based on account type and change
+        if (account.account_type === 'Asset' || account.account_type === 'Expense') {
+          // For Asset/Expense: Increase = Debit, Decrease = Credit
+          if (change > 0) {
+            total_debit = change;
+          } else if (change < 0) {
+            total_credit = Math.abs(change);
+          }
+        } else {
+          // For Liability/Equity/Revenue: Increase = Credit, Decrease = Debit
+          if (change > 0) {
+            total_credit = change;
+          } else if (change < 0) {
+            total_debit = Math.abs(change);
+          }
+        }
+
+        return {
+          id: account.id,
+          account_code: account.account_code,
+          account_name: account.account_name,
+          account_type: account.account_type,
+          parent_id: account.parent_id,
+          total_debit,
+          total_credit,
+          balance: endBalance
+        };
+      })
+      .filter(account => account !== null);
+
+    return accounts;
+  }
+
   // Get trial balance summary by account type
   static async getTrialBalanceSummary(req, res) {
     try {
@@ -133,31 +266,37 @@ class TrialBalanceController {
       const conn = await pool.getConnection();
 
       try {
-        const query = `
-          SELECT 
-            coa.type as account_type,
-            COALESCE(SUM(CASE WHEN jel.debit > 0 THEN jel.debit ELSE 0 END), 0) as total_debit,
-            COALESCE(SUM(CASE WHEN jel.credit > 0 THEN jel.credit ELSE 0 END), 0) as total_credit,
-            COALESCE(SUM(jel.debit - jel.credit), 0) as net_balance,
-            COUNT(DISTINCT coa.id) as account_count
-          FROM chart_of_accounts coa
-          LEFT JOIN journal_entry_lines jel ON coa.id = jel.account_id
-          LEFT JOIN journal_entries je ON jel.journal_entry_id = je.id
-          WHERE coa.is_active = TRUE
-            AND (je.entry_date IS NULL OR je.entry_date <= ?)
-          GROUP BY coa.type
-          ORDER BY 
-            CASE coa.type
-              WHEN 'Asset' THEN 1
-              WHEN 'Liability' THEN 2
-              WHEN 'Equity' THEN 3
-              WHEN 'Revenue' THEN 4
-              WHEN 'Expense' THEN 5
-              ELSE 6
-            END
-        `;
+        // Get trial balance using account_balances
+        const accounts = await TrialBalanceController.getTrialBalanceAsOfDate(conn, as_of_date);
 
-        const [summary] = await conn.execute(query, [as_of_date]);
+        // Group by account type
+        const summaryMap = {};
+        accounts.forEach(account => {
+          if (!summaryMap[account.account_type]) {
+            summaryMap[account.account_type] = {
+              account_type: account.account_type,
+              total_debit: 0,
+              total_credit: 0,
+              net_balance: 0,
+              account_count: 0
+            };
+          }
+          summaryMap[account.account_type].total_debit += parseFloat(account.total_debit || 0);
+          summaryMap[account.account_type].total_credit += parseFloat(account.total_credit || 0);
+          summaryMap[account.account_type].net_balance += parseFloat(account.balance || 0);
+          summaryMap[account.account_type].account_count += 1;
+        });
+
+        const summary = Object.values(summaryMap).sort((a, b) => {
+          const order = {
+            'Asset': 1,
+            'Liability': 2,
+            'Equity': 3,
+            'Revenue': 4,
+            'Expense': 5
+          };
+          return (order[a.account_type] || 6) - (order[b.account_type] || 6);
+        });
 
         res.json({
           success: true,
@@ -196,56 +335,31 @@ class TrialBalanceController {
       const conn = await pool.getConnection();
 
       try {
-        let query;
-        let params;
+        let accounts;
 
         if (as_of_date) {
-          query = `
-            SELECT 
-              coa.code as 'Account Code',
-              coa.name as 'Account Name',
-              coa.type as 'Account Type',
-              COALESCE(SUM(CASE WHEN jel.debit > 0 THEN jel.debit ELSE 0 END), 0) as 'Debit',
-              COALESCE(SUM(CASE WHEN jel.credit > 0 THEN jel.credit ELSE 0 END), 0) as 'Credit',
-              COALESCE(SUM(jel.debit - jel.credit), 0) as 'Balance'
-            FROM chart_of_accounts coa
-            LEFT JOIN journal_entry_lines jel ON coa.id = jel.account_id
-            LEFT JOIN journal_entries je ON jel.journal_entry_id = je.id
-            WHERE coa.is_active = TRUE
-              AND (je.entry_date IS NULL OR je.entry_date <= ?)
-            GROUP BY coa.id, coa.code, coa.name, coa.type
-            HAVING Debit > 0 OR Credit > 0 OR Balance != 0
-            ORDER BY coa.code
-          `;
-          params = [as_of_date];
+          // Get trial balance using account_balances
+          accounts = await TrialBalanceController.getTrialBalanceAsOfDate(conn, as_of_date);
         } else {
-          query = `
-            SELECT 
-              coa.code as 'Account Code',
-              coa.name as 'Account Name',
-              coa.type as 'Account Type',
-              COALESCE(SUM(CASE WHEN jel.debit > 0 THEN jel.debit ELSE 0 END), 0) as 'Debit',
-              COALESCE(SUM(CASE WHEN jel.credit > 0 THEN jel.credit ELSE 0 END), 0) as 'Credit',
-              COALESCE(SUM(jel.debit - jel.credit), 0) as 'Balance'
-            FROM chart_of_accounts coa
-            LEFT JOIN journal_entry_lines jel ON coa.id = jel.account_id
-            LEFT JOIN journal_entries je ON jel.journal_entry_id = je.id
-            WHERE coa.is_active = TRUE
-              AND (je.entry_date IS NULL OR (je.entry_date BETWEEN ? AND ?))
-            GROUP BY coa.id, coa.code, coa.name, coa.type
-            HAVING Debit > 0 OR Credit > 0 OR Balance != 0
-            ORDER BY coa.code
-          `;
-          params = [start_date, end_date];
+          // Get trial balance for date range using account_balances
+          accounts = await TrialBalanceController.getTrialBalanceForDateRange(conn, start_date, end_date);
         }
 
-        const [accounts] = await conn.execute(query, params);
+        // Format for CSV export
+        const accountsForCSV = accounts.map(account => ({
+          'Account Code': account.account_code,
+          'Account Name': account.account_name,
+          'Account Type': account.account_type,
+          'Debit': account.total_debit,
+          'Credit': account.total_credit,
+          'Balance': account.balance
+        }));
 
         // Generate CSV
-        const headers = Object.keys(accounts[0] || {});
+        const headers = Object.keys(accountsForCSV[0] || {});
         let csv = headers.join(',') + '\n';
 
-        accounts.forEach(account => {
+        accountsForCSV.forEach(account => {
           const row = headers.map(header => {
             const value = account[header];
             // Escape values that contain commas or quotes

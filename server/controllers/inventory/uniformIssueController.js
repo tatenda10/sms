@@ -1,6 +1,7 @@
 const { pool } = require('../../config/database');
 const StudentBalanceService = require('../../services/studentBalanceService');
 const StudentTransactionController = require('../students/studentTransactionController');
+const AccountBalanceService = require('../../services/accountBalanceService');
 
 // Helper function to process uniform payment accounting
 const processUniformPayment = async (conn, paymentData) => {
@@ -75,6 +76,9 @@ const processUniformPayment = async (conn, paymentData) => {
         created_by: issued_by
       }
     );
+    
+    // 6. Update account balances from journal entry
+    await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId, 1);
     
     console.log(`✅ Uniform payment processed: ${amount} for student ${student_reg_number}`);
     return { journalEntryId, transactionId };

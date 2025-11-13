@@ -33,6 +33,7 @@ const IssueUniform = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [students, setStudents] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
   const [issueForm, setIssueForm] = useState({
     itemId: '',
     studentId: '',
@@ -40,6 +41,7 @@ const IssueUniform = () => {
     paymentStatus: 'pending',
     paymentMethod: 'cash',
     amount: '',
+    currency_id: '',
     reference: '',
     notes: '',
     issueDate: new Date().toISOString().split('T')[0]
@@ -50,6 +52,7 @@ const IssueUniform = () => {
     if (token) {
       loadInventoryItems();
       loadStudents();
+      loadCurrencies();
     }
   }, [token]);
 
@@ -76,6 +79,26 @@ const IssueUniform = () => {
   const loadStudents = async () => {
     // We don't need to load all students upfront, we'll search on demand
     setStudents([]);
+  };
+
+  const loadCurrencies = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/accounting/currencies`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const currencyList = response.data.data || [];
+      setCurrencies(currencyList);
+      
+      // Set default currency to base currency
+      const baseCurrency = currencyList.find(c => c.base_currency);
+      if (baseCurrency) {
+        setIssueForm(prev => ({ ...prev, currency_id: baseCurrency.id }));
+      }
+    } catch (err) {
+      console.error('Error loading currencies:', err);
+      setError('Failed to load currencies. Please refresh the page.');
+    }
   };
 
   const paymentMethods = [
@@ -240,6 +263,7 @@ const IssueUniform = () => {
         student_reg_number: selectedStudent.RegNumber,
         quantity: parseInt(issueForm.quantity),
         amount: parseFloat(issueForm.amount),
+        currency_id: issueForm.currency_id,
         payment_status: issueForm.paymentStatus,
         payment_method: issueForm.paymentMethod,
         reference: issueForm.reference || null,
@@ -262,6 +286,7 @@ const IssueUniform = () => {
       
       // Reset form after 2 seconds
       setTimeout(() => {
+        const baseCurrency = currencies.find(c => c.base_currency);
         setIssueForm({
           itemId: '',
           studentId: '',
@@ -269,6 +294,7 @@ const IssueUniform = () => {
           paymentStatus: 'pending',
           paymentMethod: 'cash',
           amount: '',
+          currency_id: baseCurrency?.id || '',
           reference: '',
           notes: '',
           issueDate: new Date().toISOString().split('T')[0]
@@ -593,7 +619,7 @@ const IssueUniform = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Amount (USD) *
+                      Amount *
                     </label>
                     <input
                       type="number"
@@ -606,6 +632,26 @@ const IssueUniform = () => {
                       className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                       placeholder="0.00"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Currency *
+                    </label>
+                    <select
+                      name="currency_id"
+                      value={issueForm.currency_id}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                    >
+                      <option value="">Select Currency</option>
+                      {currencies.map((currency) => (
+                        <option key={currency.id} value={currency.id}>
+                          {currency.code} - {currency.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>

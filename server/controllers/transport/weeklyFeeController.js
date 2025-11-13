@@ -1,5 +1,6 @@
 const { pool } = require('../../config/database');
 const StudentTransactionController = require('../students/studentTransactionController');
+const AccountBalanceService = require('../../services/accountBalanceService');
 
 class WeeklyFeeController {
   // Get all weekly fees
@@ -234,6 +235,13 @@ class WeeklyFeeController {
       
       const route = routes[0];
       
+      // Get currency_id from currency code
+      const [currencyResult] = await connection.execute(
+        'SELECT id FROM currencies WHERE code = ? OR symbol = ? LIMIT 1',
+        [route.currency, route.currency]
+      );
+      const currency_id = currencyResult.length > 0 ? currencyResult[0].id : 1;
+      
       // Generate reference and receipt numbers
       const referenceNumber = reference || `TRP-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       const receiptNumber = `TRP-R${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -326,6 +334,9 @@ class WeeklyFeeController {
         ) VALUES (?, ?, 0, ?, ?)`,
         [journalEntryId, revenueAccount[0].id, amount, `Transport Revenue - ${route.route_name}`]
       );
+      
+      // Update account balances from journal entry
+      await AccountBalanceService.updateAccountBalancesFromJournalEntry(connection, journalEntryId, currency_id);
       
       await connection.commit();
       

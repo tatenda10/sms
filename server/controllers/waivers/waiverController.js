@@ -1,6 +1,7 @@
 const { pool } = require('../../config/database');
 const StudentTransactionController = require('../students/studentTransactionController');
 const StudentBalanceService = require('../../services/studentBalanceService');
+const AccountBalanceService = require('../../services/accountBalanceService');
 const AuditLogger = require('../../utils/audit');
 
 class WaiverController {
@@ -154,7 +155,8 @@ class WaiverController {
         reason,
         notes,
         term,
-        academic_year
+        academic_year,
+        waiver_type = 'Tuition' // Default to Tuition if not specified
       } = req.body;
 
       // Validation
@@ -193,71 +195,136 @@ class WaiverController {
 
       const student = students[0];
       const category = categories[0];
+      const amount = parseFloat(waiver_amount);
+
+      // Get base currency
+      const [[currency]] = await conn.execute(
+        'SELECT id FROM currencies WHERE base_currency = TRUE LIMIT 1'
+      );
+      const currency_id = currency ? currency.id : 1;
+
+      // Map waiver type to account codes
+      const waiverAccountMap = {
+        'Tuition': { expense: '5500', receivable: '1100' },
+        'Boarding': { expense: '5510', receivable: '1110' },
+        'Transport': { expense: '5520', receivable: '1120' },
+        'Uniform': { expense: '5530', receivable: '1130' },
+        'Other': { expense: '5540', receivable: '1100' }
+      };
+
+      const accounts = waiverAccountMap[waiver_type] || waiverAccountMap['Tuition'];
+
+      // Get account IDs
+      const [[expenseAccount]] = await conn.execute(
+        'SELECT id, name FROM chart_of_accounts WHERE code = ?',
+        [accounts.expense]
+      );
+
+      const [[receivableAccount]] = await conn.execute(
+        'SELECT id, name FROM chart_of_accounts WHERE code = ?',
+        [accounts.receivable]
+      );
+
+      if (!expenseAccount || !receivableAccount) {
+        await conn.rollback();
+        return res.status(500).json({
+          success: false,
+          message: 'Required accounts not found. Please ensure waiver expense accounts are set up.'
+        });
+      }
+
+      // Create journal entry
+      const refNumber = `WAIVER-${Date.now()}`;
+      let journalDescription = `Fee Waiver - ${waiver_type} - ${category.category_name}: ${reason}`;
+      if (term && academic_year) {
+        journalDescription += ` - ${term} ${academic_year}`;
+      }
+      journalDescription += ` - ${student.Name} ${student.Surname} (${student_reg_number})`;
+
+      const [journalResult] = await conn.execute(`
+        INSERT INTO journal_entries (
+          journal_id, entry_date, description, reference, created_by, created_at, updated_at
+        ) VALUES (1, NOW(), ?, ?, ?, NOW(), NOW())
+      `, [journalDescription, refNumber, req.user.id]);
+
+      const journalEntryId = journalResult.insertId;
+
+      // Create journal entry lines
+      // DEBIT: Waiver Expense (increases expense)
+      await conn.execute(`
+        INSERT INTO journal_entry_lines (
+          journal_entry_id, account_id, debit, credit, currency_id, description
+        ) VALUES (?, ?, ?, 0, ?, ?)
+      `, [journalEntryId, expenseAccount.id, amount, currency_id, `Waiver Expense - ${waiver_type}`]);
+
+      // CREDIT: Accounts Receivable (reduces what student owes)
+      await conn.execute(`
+        INSERT INTO journal_entry_lines (
+          journal_entry_id, account_id, debit, credit, currency_id, description
+        ) VALUES (?, ?, 0, ?, ?, ?)
+      `, [journalEntryId, receivableAccount.id, amount, currency_id, `Reduce AR - ${student.Name} ${student.Surname}`]);
+
+      // Update account balances
+      await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId, currency_id);
 
       // Create CREDIT transaction for waiver (money credited to student)
       let transactionDescription = `Fee Waiver - ${category.category_name}: ${reason}`;
-      
-      // Add term and year to description for better readability
       if (term && academic_year) {
         transactionDescription += ` - ${term} - ${academic_year}`;
-      } else if (term) {
-        transactionDescription += ` - ${term}`;
-      } else if (academic_year) {
-        transactionDescription += ` - ${academic_year}`;
       }
-      
       if (notes) {
         transactionDescription += ` | Notes: ${notes}`;
       }
-      
-      // Create transaction with term and academic year
+
       const [transactionResult] = await conn.execute(`
         INSERT INTO student_transactions (
-          student_reg_number, 
-          transaction_type, 
-          amount, 
-          description, 
-          term, 
-          academic_year,
-          created_by, 
-          transaction_date
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+          student_reg_number, transaction_type, amount, currency_id, description, 
+          term, academic_year, created_by, transaction_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
       `, [
-        student_reg_number,
-        'CREDIT',
-        parseFloat(waiver_amount),
-        transactionDescription,
-        term || null,
-        academic_year || null,
-        req.user.id
+        student_reg_number, 'CREDIT', amount, currency_id,
+        transactionDescription, term || null, academic_year || null, req.user.id
       ]);
 
       const transactionId = transactionResult.insertId;
 
       // Update student balance
       await StudentBalanceService.updateBalanceOnTransaction(
-        student_reg_number, 
-        'CREDIT', 
-        parseFloat(waiver_amount), 
-        conn
+        student_reg_number, 'CREDIT', amount, conn
       );
+
+      // Create waiver record
+      const [waiverResult] = await conn.execute(`
+        INSERT INTO waivers (
+          student_reg_number, category_id, waiver_amount, currency_id,
+          waiver_type, reason, notes, term, academic_year,
+          journal_entry_id, student_transaction_id,
+          granted_by, granted_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      `, [
+        student_reg_number, category_id, amount, currency_id,
+        waiver_type, reason, notes || null, term || null, academic_year || null,
+        journalEntryId, transactionId, req.user.id
+      ]);
 
       // Log audit event
       try {
         await AuditLogger.log({
           userId: req.user.id,
           action: 'WAIVER_GRANTED',
-          tableName: 'student_transactions',
-          recordId: transactionId,
+          tableName: 'waivers',
+          recordId: waiverResult.insertId,
           newValues: {
             student_reg_number,
             student_name: `${student.Name} ${student.Surname}`,
-            waiver_amount,
+            waiver_amount: amount,
+            waiver_type,
             category_name: category.category_name,
             reason,
             notes,
             term,
-            academic_year
+            academic_year,
+            journal_entry_id: journalEntryId
           },
           ipAddress: req.ip || req.connection.remoteAddress,
           userAgent: req.get('User-Agent')
@@ -270,12 +337,15 @@ class WaiverController {
 
       res.status(201).json({
         success: true,
-        message: 'Waiver processed successfully',
+        message: 'Waiver processed successfully with proper accounting',
         data: {
+          waiver_id: waiverResult.insertId,
           transaction_id: transactionId,
+          journal_entry_id: journalEntryId,
           student_reg_number,
           student_name: `${student.Name} ${student.Surname}`,
-          waiver_amount,
+          waiver_amount: amount,
+          waiver_type,
           category_name: category.category_name,
           reason,
           term,
