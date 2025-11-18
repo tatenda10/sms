@@ -197,22 +197,27 @@ const StudentsTab = ({ classId }) => {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded shadow w-full max-w-2xl">
             <h3 className="text-base font-medium text-gray-900 mb-4">Add Student to Class</h3>
-            <form onSubmit={handleSearch} className="flex mb-4">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder="Search by name or reg number..."
-                className="flex-1 px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-              <button
-                type="submit"
-                className="ml-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded hover:bg-gray-800 flex items-center"
-                disabled={searchLoading}
-              >
-                {searchLoading ? <FontAwesomeIcon icon={faSpinner} spin className="h-4 w-4" /> : <FontAwesomeIcon icon={faSearch} className="h-4 w-4" />}
-                <span className="ml-2">Search</span>
-              </button>
+            <form onSubmit={handleSearch} className="mb-4">
+              <div className="flex mb-2">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="Search by registration number, first name, or surname"
+                  className="flex-1 px-3 py-2 border border-gray-300 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                  type="submit"
+                  className="ml-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded hover:bg-gray-800 flex items-center"
+                  disabled={searchLoading}
+                >
+                  {searchLoading ? <FontAwesomeIcon icon={faSpinner} spin className="h-4 w-4" /> : <FontAwesomeIcon icon={faSearch} className="h-4 w-4" />}
+                  <span className="ml-2">Search</span>
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 You can search by registration number, first name, or surname
+              </p>
             </form>
             {searchError && <div className="text-xs text-red-600 mb-2">{searchError}</div>}
             {addError && <div className="text-xs text-red-600 mb-2">{addError}</div>}

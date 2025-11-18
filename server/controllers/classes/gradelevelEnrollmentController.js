@@ -25,12 +25,36 @@ async function createEnrollmentJournalEntries(conn, student_regnumber, amount, d
         const accountsReceivableId = accountsReceivable[0].id;
         const tuitionRevenueId = tuitionRevenue[0].id;
 
-        // Create journal entry (using Fees Journal - ID: 6)
+        // Get or create journal for class enrollments
+        let journal_id = 6; // Try Fees Journal (ID: 6) first
+        const [journalCheck] = await conn.execute('SELECT id FROM journals WHERE id = ?', [journal_id]);
+        if (journalCheck.length === 0) {
+            // Try to find journal by name
+            const [journalByName] = await conn.execute('SELECT id FROM journals WHERE name = ? LIMIT 1', ['Fees Journal']);
+            if (journalByName.length > 0) {
+                journal_id = journalByName[0].id;
+            } else {
+                // Try to find any existing journal
+                const [anyJournal] = await conn.execute('SELECT id FROM journals LIMIT 1');
+                if (anyJournal.length > 0) {
+                    journal_id = anyJournal[0].id;
+                } else {
+                    // Create Fees Journal if no journals exist
+                    const [journalResult] = await conn.execute(
+                        'INSERT INTO journals (name, description, is_active) VALUES (?, ?, ?)',
+                        ['Fees Journal', 'Journal for fee payment transactions including class enrollments', 1]
+                    );
+                    journal_id = journalResult.insertId;
+                }
+            }
+        }
+
+        // Create journal entry (using Fees Journal)
         const [journalEntry] = await conn.execute(
             `INSERT INTO journal_entries (journal_id, entry_date, description, reference, created_by) 
              VALUES (?, CURDATE(), ?, ?, ?)`,
             [
-                6, // Fees Journal
+                journal_id,
                 description,
                 `ENROLL-${student_regnumber}-${Date.now()}`,
                 created_by

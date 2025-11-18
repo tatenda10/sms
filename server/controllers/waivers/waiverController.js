@@ -204,12 +204,13 @@ class WaiverController {
       const currency_id = currency ? currency.id : 1;
 
       // Map waiver type to account codes
+      // Using 5600-5640 for waiver expenses to avoid conflict with Marketing (5500)
       const waiverAccountMap = {
-        'Tuition': { expense: '5500', receivable: '1100' },
-        'Boarding': { expense: '5510', receivable: '1110' },
-        'Transport': { expense: '5520', receivable: '1120' },
-        'Uniform': { expense: '5530', receivable: '1130' },
-        'Other': { expense: '5540', receivable: '1100' }
+        'Tuition': { expense: '5600', receivable: '1100' },
+        'Boarding': { expense: '5610', receivable: '1110' },
+        'Transport': { expense: '5620', receivable: '1110' },
+        'Uniform': { expense: '5630', receivable: '1110' },
+        'Other': { expense: '5640', receivable: '1100' }
       };
 
       const accounts = waiverAccountMap[waiver_type] || waiverAccountMap['Tuition'];
@@ -233,6 +234,30 @@ class WaiverController {
         });
       }
 
+      // Get or create journal for waivers
+      let journal_id = 1; // Try General Journal (ID: 1) first
+      const [journalCheck] = await conn.execute('SELECT id FROM journals WHERE id = ?', [journal_id]);
+      if (journalCheck.length === 0) {
+        // Try to find journal by name
+        const [journalByName] = await conn.execute('SELECT id FROM journals WHERE name = ? LIMIT 1', ['General Journal']);
+        if (journalByName.length > 0) {
+          journal_id = journalByName[0].id;
+        } else {
+          // Try to find any existing journal
+          const [anyJournal] = await conn.execute('SELECT id FROM journals LIMIT 1');
+          if (anyJournal.length > 0) {
+            journal_id = anyJournal[0].id;
+          } else {
+            // Create General Journal if no journals exist
+            const [journalResult] = await conn.execute(
+              'INSERT INTO journals (name, description, is_active) VALUES (?, ?, ?)',
+              ['General Journal', 'Journal for general transactions including waivers', 1]
+            );
+            journal_id = journalResult.insertId;
+          }
+        }
+      }
+
       // Create journal entry
       const refNumber = `WAIVER-${Date.now()}`;
       let journalDescription = `Fee Waiver - ${waiver_type} - ${category.category_name}: ${reason}`;
@@ -244,8 +269,8 @@ class WaiverController {
       const [journalResult] = await conn.execute(`
         INSERT INTO journal_entries (
           journal_id, entry_date, description, reference, created_by, created_at, updated_at
-        ) VALUES (1, NOW(), ?, ?, ?, NOW(), NOW())
-      `, [journalDescription, refNumber, req.user.id]);
+        ) VALUES (?, NOW(), ?, ?, ?, NOW(), NOW())
+      `, [journal_id, journalDescription, refNumber, req.user.id]);
 
       const journalEntryId = journalResult.insertId;
 

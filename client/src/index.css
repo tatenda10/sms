@@ -28,3 +28,14 @@ body::-webkit-scrollbar {
   display: none;
   /* For Chrome, Safari, and Opera */
 }
+
+/* Hide spinner arrows on number inputs */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

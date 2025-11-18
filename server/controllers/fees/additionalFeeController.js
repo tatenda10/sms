@@ -88,10 +88,15 @@ class AdditionalFeeController {
       }
 
       // Create fee structure
+      // Convert undefined values to null for SQL (MySQL2 doesn't accept undefined)
+      const sqlDescription = description !== undefined ? description : null;
+      const sqlAcademicYear = academic_year !== undefined ? academic_year : null;
+      const sqlCreatedBy = req.user?.id !== undefined ? req.user?.id : null;
+      
       const [result] = await conn.execute(`
         INSERT INTO additional_fee_structures (fee_name, description, amount, currency_id, fee_type, academic_year, created_by)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, [fee_name, description, amount, currency_id, fee_type, academic_year, req.user?.id]);
+      `, [fee_name, sqlDescription, amount, currency_id, fee_type, sqlAcademicYear, sqlCreatedBy]);
 
       await conn.commit();
 
@@ -307,6 +312,17 @@ class AdditionalFeeController {
             conn
           );
 
+          // Create journal entries for accounting (DEBIT Accounts Receivable, CREDIT Revenue)
+          await AdditionalFeeController.createFeeAssignmentJournalEntries(conn, {
+            student_reg_number: regNumber,
+            fee_amount: fee.amount,
+            currency_id: fee.currency_id,
+            fee_name: fee.fee_name,
+            academic_year: academic_year,
+            term: term,
+            created_by: req.user?.id
+          });
+
           assignmentsCreated++;
         }
       }
@@ -417,6 +433,17 @@ class AdditionalFeeController {
               fee.amount, 
               conn
             );
+
+            // Create journal entries for accounting (DEBIT Accounts Receivable, CREDIT Revenue)
+            await AdditionalFeeController.createFeeAssignmentJournalEntries(conn, {
+              student_reg_number: student.RegNumber,
+              fee_amount: fee.amount,
+              currency_id: fee.currency_id,
+              fee_name: fee.fee_name,
+              academic_year: academic_year,
+              term: null,
+              created_by: req.user?.id
+            });
 
             assignmentsCreated++;
             console.log(`Successfully processed fee assignment for student ${student.RegNumber}`);
@@ -885,8 +912,10 @@ class AdditionalFeeController {
       let debitAccountCode;
       if (paymentData.payment_method === 'Cash') {
         debitAccountCode = '1000'; // Cash on Hand
-      } else if (paymentData.payment_method === 'Bank' || paymentData.payment_method === 'Mobile Money') {
+      } else if (paymentData.payment_method === 'Bank Transfer' || paymentData.payment_method === 'Mobile Money') {
         debitAccountCode = '1010'; // Bank Account
+      } else if (paymentData.payment_method === 'Cheque') {
+        debitAccountCode = '1010'; // Bank Account (cheques go to bank)
       } else {
         debitAccountCode = '1000'; // Default to Cash on Hand
       }
@@ -903,24 +932,34 @@ class AdditionalFeeController {
 
       const debitAccountId = debitAccounts[0].id;
 
-      // Get Additional Fees Revenue account (or create fallback)
+      // Get Additional Fees Revenue account (code 4400)
       const [revenueAccounts] = await conn.execute(
-        'SELECT id FROM chart_of_accounts WHERE code LIKE ? AND type = ? AND (name LIKE ? OR name LIKE ?) LIMIT 1',
-        ['4%', 'Revenue', '%additional%', '%fee%']
+        'SELECT id FROM chart_of_accounts WHERE code = ? AND type = ? LIMIT 1',
+        ['4400', 'Revenue']
       );
 
       if (revenueAccounts.length === 0) {
-        // Fallback to any revenue account
+        // Fallback: try to find by name
         const [fallbackRevenue] = await conn.execute(
-          'SELECT id FROM chart_of_accounts WHERE type = ? LIMIT 1',
-          ['Revenue']
+          'SELECT id FROM chart_of_accounts WHERE type = ? AND (name LIKE ? OR name LIKE ?) LIMIT 1',
+          ['Revenue', '%additional%', '%fee%']
         );
         
         if (fallbackRevenue.length === 0) {
-          throw new Error('Revenue account not found in chart of accounts');
+          // Last resort: any revenue account
+          const [anyRevenue] = await conn.execute(
+            'SELECT id FROM chart_of_accounts WHERE type = ? LIMIT 1',
+            ['Revenue']
+          );
+          
+          if (anyRevenue.length === 0) {
+            throw new Error('Additional Fees Revenue account (4400) not found in chart of accounts');
+          }
+          
+          revenueAccounts[0] = anyRevenue[0];
+        } else {
+          revenueAccounts[0] = fallbackRevenue[0];
         }
-        
-        revenueAccounts[0] = fallbackRevenue[0];
       }
 
       const revenueAccountId = revenueAccounts[0].id;
@@ -968,6 +1007,123 @@ class AdditionalFeeController {
       return journalEntryId;
     } catch (error) {
       console.error('Error creating journal entries:', error);
+      throw error;
+    }
+  }
+
+  // Create journal entries when fee is assigned to student (not when paid)
+  static async createFeeAssignmentJournalEntries(conn, assignmentData) {
+    try {
+      // Get student name
+      const [students] = await conn.execute(
+        'SELECT Name, Surname FROM students WHERE RegNumber = ?',
+        [assignmentData.student_reg_number]
+      );
+
+      if (students.length === 0) {
+        throw new Error('Student not found');
+      }
+
+      const student_name = `${students[0].Name} ${students[0].Surname}`;
+
+      // Get Accounts Receivable account (code 1100)
+      const [arAccounts] = await conn.execute(
+        'SELECT id FROM chart_of_accounts WHERE code = ? AND type = ? LIMIT 1',
+        ['1100', 'Asset']
+      );
+
+      if (arAccounts.length === 0) {
+        throw new Error('Accounts Receivable account (1100) not found in chart of accounts');
+      }
+
+      const arAccountId = arAccounts[0].id;
+
+      // Get Additional Fees Revenue account (code 4400)
+      const [revenueAccounts] = await conn.execute(
+        'SELECT id FROM chart_of_accounts WHERE code = ? AND type = ? LIMIT 1',
+        ['4400', 'Revenue']
+      );
+
+      if (revenueAccounts.length === 0) {
+        // Fallback: try to find by name
+        const [fallbackRevenue] = await conn.execute(
+          'SELECT id FROM chart_of_accounts WHERE type = ? AND (name LIKE ? OR name LIKE ?) LIMIT 1',
+          ['Revenue', '%additional%', '%fee%']
+        );
+        
+        if (fallbackRevenue.length === 0) {
+          throw new Error('Additional Fees Revenue account (4400) not found in chart of accounts');
+        }
+        
+        revenueAccounts[0] = fallbackRevenue[0];
+      }
+
+      const revenueAccountId = revenueAccounts[0].id;
+
+      // Get or create journal for additional fees
+      let journal_id = 1; // Try General Journal (ID: 1) first
+      const [journalCheck] = await conn.execute('SELECT id FROM journals WHERE id = ?', [journal_id]);
+      if (journalCheck.length === 0) {
+        const [journalByName] = await conn.execute('SELECT id FROM journals WHERE name = ? LIMIT 1', ['General Journal']);
+        if (journalByName.length > 0) {
+          journal_id = journalByName[0].id;
+        } else {
+          const [anyJournal] = await conn.execute('SELECT id FROM journals LIMIT 1');
+          if (anyJournal.length > 0) {
+            journal_id = anyJournal[0].id;
+          } else {
+            const [journalResult] = await conn.execute(
+              'INSERT INTO journals (name, description, is_active) VALUES (?, ?, ?)',
+              ['General Journal', 'Journal for general transactions including additional fees', 1]
+            );
+            journal_id = journalResult.insertId;
+          }
+        }
+      }
+
+      // Create journal entry header
+      const reference = `AF-ASSIGN-${assignmentData.student_reg_number}-${Date.now()}`;
+      const description = `Additional Fee Assignment - ${assignmentData.fee_name} - ${student_name} (${assignmentData.student_reg_number})`;
+      if (assignmentData.academic_year) {
+        description += ` - ${assignmentData.academic_year}`;
+      }
+      if (assignmentData.term) {
+        description += ` - ${assignmentData.term}`;
+      }
+
+      const [journalResult] = await conn.execute(
+        `INSERT INTO journal_entries 
+         (journal_id, entry_date, reference, description, created_by, created_at, updated_at) 
+         VALUES (?, CURDATE(), ?, ?, ?, NOW(), NOW())`,
+        [journal_id, reference, description, assignmentData.created_by || 1]
+      );
+
+      const journalEntryId = journalResult.insertId;
+
+      // Create journal entry lines
+      // DEBIT: Accounts Receivable (student owes more)
+      await conn.execute(
+        `INSERT INTO journal_entry_lines 
+         (journal_entry_id, account_id, debit, credit, description) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [journalEntryId, arAccountId, assignmentData.fee_amount, 0, `Additional Fee - ${assignmentData.fee_name} - ${student_name}`]
+      );
+
+      // CREDIT: Additional Fees Revenue (revenue earned)
+      await conn.execute(
+        `INSERT INTO journal_entry_lines 
+         (journal_entry_id, account_id, debit, credit, description) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [journalEntryId, revenueAccountId, 0, assignmentData.fee_amount, `Additional Fee Revenue - ${assignmentData.fee_name}`]
+      );
+
+      // Update account balances
+      await AccountBalanceService.updateAccountBalancesFromJournalEntry(conn, journalEntryId, assignmentData.currency_id || 1);
+
+      console.log(`Created journal entry ${journalEntryId} for additional fee assignment ${assignmentData.student_reg_number}`);
+      return journalEntryId;
+    } catch (error) {
+      console.error('Error creating fee assignment journal entries:', error);
       throw error;
     }
   }

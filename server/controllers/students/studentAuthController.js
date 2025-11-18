@@ -8,7 +8,7 @@ class StudentAuthController {
   static async login(req, res) {
     const conn = await pool.getConnection();
     try {
-      const { regNumber, password } = req.body;
+      let { regNumber, password } = req.body;
 
       if (!regNumber || !password) {
         return res.status(400).json({
@@ -17,25 +17,66 @@ class StudentAuthController {
         });
       }
 
-      // Find student by registration number
-      const [students] = await conn.execute(
+      // Trim whitespace from registration number
+      regNumber = regNumber.trim();
+      
+      console.log('🔍 Student login attempt:', { 
+        regNumber: regNumber, 
+        regNumberLength: regNumber.length,
+        passwordLength: password ? password.length : 0 
+      });
+
+      // Find student by registration number using case-insensitive comparison
+      // Try exact match first (in case it matches exactly)
+      let [students] = await conn.execute(
         'SELECT * FROM students WHERE RegNumber = ?',
         [regNumber]
       );
 
+      // If not found, try case-insensitive match
       if (students.length === 0) {
+        console.log('⚠️ Exact match not found, trying case-insensitive...');
+        [students] = await conn.execute(
+          'SELECT * FROM students WHERE LOWER(TRIM(RegNumber)) = LOWER(?)',
+          [regNumber]
+        );
+      }
+
+      if (students.length === 0) {
+        console.log('❌ Student not found for regNumber:', regNumber);
+        // Try to find similar registration numbers for debugging
+        const [similar] = await conn.execute(
+          'SELECT RegNumber, Name, Surname FROM students WHERE RegNumber LIKE ? LIMIT 5',
+          [`%${regNumber.substring(0, Math.min(3, regNumber.length))}%`]
+        );
+        if (similar.length > 0) {
+          console.log('💡 Similar registration numbers found:', similar.map(s => s.RegNumber));
+        }
         return res.status(401).json({
           success: false,
           message: 'Invalid registration number or student not found'
         });
       }
+      
+      console.log('✅ Student found:', { 
+        regNumber: students[0].RegNumber, 
+        inputRegNumber: regNumber,
+        hasPassword: !!students[0].password 
+      });
 
       const student = students[0];
 
       // Check if this is first login (no password set)
       if (!student.password) {
-        // For first login, use registration number as temporary password
-        if (password !== regNumber) {
+        // For first login, use registration number as temporary password (case-insensitive)
+        const passwordTrimmed = password.trim();
+        const studentRegNumberTrimmed = student.RegNumber.trim();
+        // Compare case-insensitively
+        if (passwordTrimmed.toLowerCase() !== studentRegNumberTrimmed.toLowerCase()) {
+          console.log('❌ First login password mismatch:', {
+            entered: passwordTrimmed,
+            expected: studentRegNumberTrimmed
+          });
           return res.status(401).json({
             success: false,
             message: 'First login detected. Please use your registration number as password to set up your account.',

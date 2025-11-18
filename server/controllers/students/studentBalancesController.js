@@ -235,6 +235,30 @@ class StudentBalancesController {
                 });
             }
             
+            // Get or create journal for opening balances
+            let journal_id = 1; // Try General Journal (ID: 1) first
+            const [journalCheck] = await connection.execute('SELECT id FROM journals WHERE id = ?', [journal_id]);
+            if (journalCheck.length === 0) {
+                // Try to find journal by name
+                const [journalByName] = await connection.execute('SELECT id FROM journals WHERE name = ? LIMIT 1', ['General Journal']);
+                if (journalByName.length > 0) {
+                    journal_id = journalByName[0].id;
+                } else {
+                    // Try to find any existing journal
+                    const [anyJournal] = await connection.execute('SELECT id FROM journals LIMIT 1');
+                    if (anyJournal.length > 0) {
+                        journal_id = anyJournal[0].id;
+                    } else {
+                        // Create General Journal if no journals exist
+                        const [journalResult] = await connection.execute(
+                            'INSERT INTO journals (name, description, is_active) VALUES (?, ?, ?)',
+                            ['General Journal', 'Journal for general transactions including opening balances', 1]
+                        );
+                        journal_id = journalResult.insertId;
+                    }
+                }
+            }
+            
             // Create Journal Entry for Opening Balance
             const journalDescription = `Opening Balance: ${description} - ${finalReference} - Student: ${student.Name} ${student.Surname} (${student.RegNumber})`;
             
@@ -242,8 +266,8 @@ class StudentBalancesController {
                 INSERT INTO journal_entries (
                     journal_id, entry_date, description, reference, 
                     created_by, created_at, updated_at
-                ) VALUES (1, NOW(), ?, ?, ?, NOW(), NOW())
-            `, [journalDescription, finalReference, req.user?.id || 1]);
+                ) VALUES (?, NOW(), ?, ?, ?, NOW(), NOW())
+            `, [journal_id, journalDescription, finalReference, req.user?.id || 1]);
             
             const journalEntryId = journalResult.insertId;
             

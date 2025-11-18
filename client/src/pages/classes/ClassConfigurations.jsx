@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUsers, faBook } from '@fortawesome/free-solid-svg-icons';
+import { faUsers, faBook, faEdit, faTrash, faTimes, faSave } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import BASE_URL from '../../contexts/Api';
 import axios from 'axios';
@@ -15,6 +15,10 @@ const ClassConfigurations = () => {
   const [streams, setStreams] = useState([]);
   const [streamsLoading, setStreamsLoading] = useState(false);
   const [streamsError, setStreamsError] = useState('');
+  const [editingStreamId, setEditingStreamId] = useState(null);
+  const [editStreamForm, setEditStreamForm] = useState({ name: '', stage: '' });
+  const [updateStreamLoading, setUpdateStreamLoading] = useState(false);
+  const [deleteStreamLoading, setDeleteStreamLoading] = useState(null);
 
   // Subject add form state
   const [subjectForm, setSubjectForm] = useState({ code: '', name: '', syllabus: '' });
@@ -78,6 +82,63 @@ const ClassConfigurations = () => {
       setStreamError(err.response?.data?.message || 'Failed to add stream.');
     } finally {
       setStreamLoading(false);
+    }
+  };
+
+  const handleEditStream = (stream) => {
+    setEditingStreamId(stream.id);
+    setEditStreamForm({ name: stream.name, stage: stream.stage });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingStreamId(null);
+    setEditStreamForm({ name: '', stage: '' });
+  };
+
+  const handleUpdateStream = async (streamId) => {
+    if (!editStreamForm.name.trim() || !editStreamForm.stage.trim()) {
+      setStreamsError('Both name and stage are required.');
+      return;
+    }
+    try {
+      setUpdateStreamLoading(true);
+      setStreamsError('');
+      const response = await axios.put(`${BASE_URL}/classes/streams/${streamId}`, editStreamForm, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        setEditingStreamId(null);
+        setEditStreamForm({ name: '', stage: '' });
+        fetchStreams();
+      } else {
+        setStreamsError(response.data.message || 'Failed to update stream.');
+      }
+    } catch (err) {
+      setStreamsError(err.response?.data?.message || 'Failed to update stream.');
+    } finally {
+      setUpdateStreamLoading(false);
+    }
+  };
+
+  const handleDeleteStream = async (streamId) => {
+    if (!window.confirm('Are you sure you want to delete this stream? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      setDeleteStreamLoading(streamId);
+      setStreamsError('');
+      const response = await axios.delete(`${BASE_URL}/classes/streams/${streamId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        fetchStreams();
+      } else {
+        setStreamsError(response.data.message || 'Failed to delete stream.');
+      }
+    } catch (err) {
+      setStreamsError(err.response?.data?.message || 'Failed to delete stream.');
+    } finally {
+      setDeleteStreamLoading(null);
     }
   };
 
@@ -259,10 +320,11 @@ const ClassConfigurations = () => {
       {/* List of Streams */}
       <div className="p-6">
         <h3 className=" font-semibold text-gray-900 mb-2">Existing Streams</h3>
+        {streamsError && (
+          <div className="mb-3 text-xs text-red-600 bg-red-50 p-2 rounded">{streamsError}</div>
+        )}
         {streamsLoading ? (
           <div className="text-xs text-gray-500">Loading streams...</div>
-        ) : streamsError ? (
-          <div className="text-xs text-red-600">{streamsError}</div>
         ) : streams.length === 0 ? (
           <div className="text-xs text-gray-500">No streams found.</div>
         ) : (
@@ -272,13 +334,78 @@ const ClassConfigurations = () => {
                 <tr>
                   <th className="px-3 py-2 text-left font-medium tracking-wider">Stream Name</th>
                   <th className="px-3 py-2 text-left font-medium tracking-wider">Stage</th>
+                  <th className="px-3 py-2 text-left font-medium tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {streams.map((stream) => (
                   <tr key={stream.id}>
-                    <td className="px-3 py-2 whitespace-nowrap">{stream.name}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{stream.stage}</td>
+                    {editingStreamId === stream.id ? (
+                      <>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={editStreamForm.name}
+                            onChange={(e) => setEditStreamForm(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-2 py-1 border border-gray-300 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Stream Name"
+                          />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={editStreamForm.stage}
+                            onChange={(e) => setEditStreamForm(prev => ({ ...prev, stage: e.target.value }))}
+                            className="w-full px-2 py-1 border border-gray-300 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Stage"
+                          />
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleUpdateStream(stream.id)}
+                              disabled={updateStreamLoading}
+                              className="px-2 py-1 text-xs bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 flex items-center"
+                              title="Save"
+                            >
+                              <FontAwesomeIcon icon={faSave} className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              disabled={updateStreamLoading}
+                              className="px-2 py-1 text-xs bg-gray-500 text-white hover:bg-gray-600 disabled:opacity-50 flex items-center"
+                              title="Cancel"
+                            >
+                              <FontAwesomeIcon icon={faTimes} className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-3 py-2 whitespace-nowrap">{stream.name}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">{stream.stage}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleEditStream(stream)}
+                              className="px-2 py-1 text-xs bg-blue-600 text-white hover:bg-blue-700 flex items-center"
+                              title="Edit"
+                            >
+                              <FontAwesomeIcon icon={faEdit} className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStream(stream.id)}
+                              disabled={deleteStreamLoading === stream.id}
+                              className="px-2 py-1 text-xs bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 flex items-center"
+                              title="Delete"
+                            >
+                              <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

@@ -34,7 +34,7 @@ const ManualBalanceUpdate = () => {
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
-      setError('Please enter a registration number to search');
+      setError('Please enter a registration number or student name to search');
       return;
     }
 
@@ -221,7 +221,7 @@ const ManualBalanceUpdate = () => {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Enter registration number"
+                  placeholder="Search by registration number or name"
                   className="flex-1 px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 />

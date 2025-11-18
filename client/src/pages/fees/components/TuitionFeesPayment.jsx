@@ -168,12 +168,6 @@ const TuitionFeesPayment = () => {
       return;
     }
 
-    if (!selectedStructure) {
-      setErrorMessage('Please select an invoice structure');
-      setShowErrorModal(true);
-      return;
-    }
-
     if (!formData.amount || !formData.currency_id || !formData.payment_method_id) {
       setErrorMessage('Please fill in all required fields');
       setShowErrorModal(true);
@@ -201,10 +195,14 @@ const TuitionFeesPayment = () => {
         payment_method: paymentMethods.find(m => m.id === formData.payment_method_id)?.name || 'Cash',
         payment_date: formData.payment_date,
         reference_number: formData.reference_number,
-        notes: formData.notes,
-        fee_type: 'tuition',
-        invoice_structure_id: formData.invoice_structure_id
+        notes: (formData.notes && formData.notes.trim()) || (formData.invoice_structure_id ? null : 'Payment for outstanding debt (no invoice)'),
+        fee_type: 'tuition'
       };
+      
+      // Only include invoice_structure_id if one was selected
+      if (formData.invoice_structure_id) {
+        paymentPayload.invoice_structure_id = formData.invoice_structure_id;
+      }
 
       const response = await axios.post(`${BASE_URL}/fees/payments`, paymentPayload, {
         headers: { Authorization: `Bearer ${token}` }
@@ -221,9 +219,10 @@ const TuitionFeesPayment = () => {
           payment_method: paymentMethods.find(m => m.id === formData.payment_method_id)?.name || 'Cash',
           fee_type: 'tuition',
           reference_number: formData.reference_number,
-          class_name: selectedStructure?.class_name || '',
-          term: selectedStructure?.term || '',
-          academic_year: selectedStructure?.academic_year || ''
+          class_name: selectedStructure?.class_name || 'N/A',
+          term: selectedStructure?.term || 'N/A',
+          academic_year: selectedStructure?.academic_year || 'N/A',
+          notes: formData.notes || ''
         };
         
         setReceipt(receiptData);
@@ -314,10 +313,19 @@ const TuitionFeesPayment = () => {
     // Fee Information
     doc.text('Fee Type:', 20, 150);
     doc.text(receipt.fee_type, 60, 150);
-    doc.text('Class:', 20, 160);
-    doc.text(receipt.class_name, 60, 160);
-    doc.text('Term:', 20, 170);
-    doc.text(`${receipt.term} ${receipt.academic_year}`, 60, 170);
+    if (receipt.class_name !== 'N/A') {
+      doc.text('Class:', 20, 160);
+      doc.text(receipt.class_name, 60, 160);
+      doc.text('Term:', 20, 170);
+      doc.text(`${receipt.term} ${receipt.academic_year}`, 60, 170);
+    } else {
+      doc.text('Payment Type:', 20, 160);
+      doc.text('General Payment (No Invoice)', 60, 160);
+    }
+    if (receipt.notes) {
+      doc.text('Notes:', 20, 180);
+      doc.text(receipt.notes.substring(0, 50), 60, 180); // Truncate if too long
+    }
     
     // Footer
     doc.setLineWidth(0.5);
@@ -408,22 +416,26 @@ const TuitionFeesPayment = () => {
           </div>
         </div>
 
-        {/* Invoice Structure Selection */}
+        {/* Invoice Structure Selection (Optional) */}
         <div>
-          <h3 className="text-xs font-medium text-gray-900 mb-1">Invoice Structure</h3>
+          <h3 className="text-xs font-medium text-gray-900 mb-1">
+            Invoice Structure <span className="text-gray-500 font-normal">(Optional - for payments against specific invoices)</span>
+          </h3>
+          <p className="text-xs text-gray-500 mb-2">
+            💡 You can skip this section to record payments for outstanding debts without a specific invoice
+          </p>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Class <span className="text-red-500">*</span> ({classes.length} loaded)
+                Class ({classes.length} loaded)
               </label>
               <select
                 value={formData.gradelevel_class_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, gradelevel_class_id: e.target.value }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, gradelevel_class_id: e.target.value, term: '', academic_year: '', invoice_structure_id: '' }))}
                 className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                required
               >
-                <option value="">Select Class</option>
+                <option value="">Select Class (Optional)</option>
                 {classes.map((cls) => {
                   console.log('🔍 Class item:', cls);
                   return (
@@ -437,15 +449,15 @@ const TuitionFeesPayment = () => {
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Term <span className="text-red-500">*</span>
+                Term
               </label>
               <select
                 value={formData.term}
-                onChange={(e) => setFormData(prev => ({ ...prev, term: e.target.value }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, term: e.target.value, academic_year: '', invoice_structure_id: '' }))}
                 className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                required
+                disabled={!formData.gradelevel_class_id}
               >
-                <option value="">Select Term</option>
+                <option value="">Select Term (Optional)</option>
                 <option value="Term 1">Term 1</option>
                 <option value="Term 2">Term 2</option>
                 <option value="Term 3">Term 3</option>
@@ -454,15 +466,15 @@ const TuitionFeesPayment = () => {
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Academic Year <span className="text-red-500">*</span>
+                Academic Year
               </label>
               <input
                 type="text"
                 value={formData.academic_year}
-                onChange={(e) => setFormData(prev => ({ ...prev, academic_year: e.target.value }))}
-                placeholder="e.g., 2025"
+                onChange={(e) => setFormData(prev => ({ ...prev, academic_year: e.target.value, invoice_structure_id: '' }))}
+                placeholder="e.g., 2025 (Optional)"
                 className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                required
+                disabled={!formData.gradelevel_class_id || !formData.term}
               />
             </div>
           </div>
@@ -471,7 +483,7 @@ const TuitionFeesPayment = () => {
           {invoiceStructures.length > 0 && (
             <div className="mt-3">
                <div className="bg-blue-50 p-2 border border-gray-200 mb-2">
-                 <p className="text-xs text-blue-700 font-medium">Click on an invoice structure below to select:</p>
+                 <p className="text-xs text-blue-700 font-medium">Click on an invoice structure below to select (optional):</p>
                </div>
               <div className="space-y-1">
                 {invoiceStructures.map((structure) => (
@@ -510,9 +522,21 @@ const TuitionFeesPayment = () => {
 
           {selectedStructure && (
              <div className="mt-3 bg-green-50 border border-green-200 p-3">
-               <div className="flex items-center mb-2">
-                 <FontAwesomeIcon icon={faCheck} className="text-green-600 text-xs mr-2" />
-                 <span className="text-xs font-medium text-green-800">Invoice Structure Selected Successfully</span>
+               <div className="flex items-center justify-between mb-2">
+                 <div className="flex items-center">
+                   <FontAwesomeIcon icon={faCheck} className="text-green-600 text-xs mr-2" />
+                   <span className="text-xs font-medium text-green-800">Invoice Structure Selected</span>
+                 </div>
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setSelectedStructure(null);
+                     setFormData(prev => ({ ...prev, invoice_structure_id: '' }));
+                   }}
+                   className="text-xs text-gray-600 hover:text-gray-800"
+                 >
+                   Clear
+                 </button>
                </div>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
@@ -527,6 +551,14 @@ const TuitionFeesPayment = () => {
                    <span className="text-xs text-gray-500">Note: Please enter the payment amount manually below</span>
                 </div>
               </div>
+            </div>
+          )}
+          
+          {formData.gradelevel_class_id && formData.term && formData.academic_year && invoiceStructures.length === 0 && (
+            <div className="mt-3 bg-yellow-50 border border-yellow-200 p-3">
+              <p className="text-xs text-yellow-800">
+                ℹ️ No invoice structures found for this class/term/year. You can still proceed with the payment without selecting an invoice.
+              </p>
             </div>
           )}
         </div>
@@ -670,14 +702,18 @@ const TuitionFeesPayment = () => {
                 <span className="text-gray-600">Student:</span>
                 <span className="font-medium text-gray-900">{selectedStudent?.Name} {selectedStudent?.Surname}</span>
               </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between text-xs">
-                <span className="text-gray-600">Class:</span>
-                <span className="font-medium text-gray-900">{selectedStructure?.class_name}</span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between text-xs">
-                <span className="text-gray-600">Term:</span>
-                <span className="font-medium text-gray-900">{selectedStructure?.term} {selectedStructure?.academic_year}</span>
-              </div>
+              {selectedStructure && (
+                <>
+                  <div className="flex flex-col sm:flex-row sm:justify-between text-xs">
+                    <span className="text-gray-600">Class:</span>
+                    <span className="font-medium text-gray-900">{selectedStructure?.class_name}</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:justify-between text-xs">
+                    <span className="text-gray-600">Term:</span>
+                    <span className="font-medium text-gray-900">{selectedStructure?.term} {selectedStructure?.academic_year}</span>
+                  </div>
+                </>
+              )}
               <div className="flex flex-col sm:flex-row sm:justify-between text-xs">
                 <span className="text-gray-600">Amount:</span>
                 <span className="font-medium text-gray-900">{formData.amount} {currencies.find(c => c.id == formData.currency_id)?.symbol}</span>

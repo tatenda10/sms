@@ -38,53 +38,37 @@ class IncomeStatementController {
         console.log(`  - ${entry.entry_date} | ${entry.reference || 'No Ref'} | ${entry.description}`);
       });
       
-      // Get revenue from student transactions (invoices generated) instead of journal entries (payments received)
+      // Get revenue from journal entries - CREDITS to Revenue accounts (4000-4999)
+      // Revenue is recognized when invoices are created (DEBIT Accounts Receivable, CREDIT Revenue)
       const revenueQuery = `
         SELECT 
-          'INVOICE_REVENUE' as account_id,
-          'INV' as account_code,
-          'Tuition Revenue (Invoices Generated)' as account_name,
-          COALESCE(SUM(st.amount), 0) as amount
-        FROM student_transactions st
-        WHERE st.transaction_type = 'DEBIT'
-          AND st.transaction_date BETWEEN ? AND ?
-          AND st.description LIKE '%TUITION INVOICE%'
-        UNION ALL
-        SELECT 
-          'BOARDING_REVENUE' as account_id,
-          'BRD' as account_code,
-          'Boarding Revenue (Invoices Generated)' as account_name,
-          COALESCE(SUM(st.amount), 0) as amount
-        FROM student_transactions st
-        WHERE st.transaction_type = 'DEBIT'
-          AND st.transaction_date BETWEEN ? AND ?
-          AND st.description LIKE '%BOARDING%'
-        UNION ALL
-        SELECT 
-          'OTHER_REVENUE' as account_id,
-          'OTH' as account_code,
-          'Other Revenue (Invoices Generated)' as account_name,
-          COALESCE(SUM(st.amount), 0) as amount
-        FROM student_transactions st
-        WHERE st.transaction_type = 'DEBIT'
-          AND st.transaction_date BETWEEN ? AND ?
-          AND st.description NOT LIKE '%TUITION INVOICE%'
-          AND st.description NOT LIKE '%BOARDING%'
+          coa.id as account_id,
+          coa.code as account_code,
+          coa.name as account_name,
+          COALESCE(SUM(jel.credit), 0) as amount
+        FROM chart_of_accounts coa
+        INNER JOIN journal_entry_lines jel ON jel.account_id = coa.id
+        INNER JOIN journal_entries je ON je.id = jel.journal_entry_id
+        WHERE coa.type = 'Revenue'
+          AND coa.is_active = 1
+          AND je.entry_date BETWEEN ? AND ?
+          AND jel.credit > 0
+          AND je.description NOT LIKE '%Opening Balances B/D%'
+          AND je.description NOT LIKE '%Close % to Income Summary%'
+          AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
+        GROUP BY coa.id, coa.code, coa.name
+        ORDER BY coa.code
       `;
       
-      const [revenue] = await pool.execute(revenueQuery, [
-        period.start_date, period.end_date,  // Tuition revenue
-        period.start_date, period.end_date,  // Boarding revenue  
-        period.start_date, period.end_date   // Other revenue
-      ]);
+      const [revenue] = await pool.execute(revenueQuery, [period.start_date, period.end_date]);
       
       console.log(`💰 Revenue Query Results (${revenue.length} rows):`);
       revenue.forEach(item => {
         console.log(`  - ${item.account_name} (${item.account_code}): $${item.amount}`);
       });
       
-      // Get expenses from the expenses table (source of truth)
-      // Then link to journal entries to get the actual debit amounts
+      // Get expenses from journal entries - DEBITS to Expense accounts (5000-5999)
+      // This includes all expenses recorded in journal entries, not just those in expenses table
       const expenseQuery = `
         SELECT 
           coa.id as account_id,
@@ -92,52 +76,28 @@ class IncomeStatementController {
           coa.name as account_name,
           COALESCE(SUM(jel.debit), 0) as amount
         FROM chart_of_accounts coa
-        INNER JOIN journal_entry_lines jel ON jel.account_id = coa.id
-        INNER JOIN journal_entries je ON je.id = jel.journal_entry_id
-        INNER JOIN expenses e ON e.journal_entry_id = je.id
-          AND e.expense_date BETWEEN ? AND ?
+        LEFT JOIN journal_entry_lines jel ON jel.account_id = coa.id
+        LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id 
+          AND je.entry_date BETWEEN ? AND ?
+          AND je.description NOT LIKE '%Opening Balances B/D%'
+          AND je.description NOT LIKE '%Close % to Income Summary%'
+          AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
         WHERE coa.type = 'Expense' 
           AND coa.is_active = 1
-          AND jel.debit > 0
         GROUP BY coa.id, coa.code, coa.name
+        HAVING amount > 0
         ORDER BY coa.code
       `;
       
       const [expenses] = await pool.execute(expenseQuery, [period.start_date, period.end_date]);
       
-      // Get waiver expenses separately (not from expenses table, but from waivers table)
-      const waiverExpenseQuery = `
-        SELECT 
-          coa.id as account_id,
-          coa.code as account_code,
-          coa.name as account_name,
-          COALESCE(SUM(jel.debit), 0) as amount
-        FROM chart_of_accounts coa
-        INNER JOIN journal_entry_lines jel ON jel.account_id = coa.id
-        INNER JOIN journal_entries je ON je.id = jel.journal_entry_id
-        INNER JOIN waivers w ON w.journal_entry_id = je.id
-          AND w.granted_date BETWEEN ? AND ?
-          AND w.status = 'Active'
-        WHERE coa.type = 'Expense' 
-          AND coa.code BETWEEN '5500' AND '5540'
-          AND coa.is_active = 1
-          AND jel.debit > 0
-        GROUP BY coa.id, coa.code, coa.name
-        ORDER BY coa.code
-      `;
-      
-      const [waiverExpenses] = await pool.execute(waiverExpenseQuery, [period.start_date, period.end_date]);
-      
-      // Combine regular expenses and waiver expenses
-      const allExpenses = [...expenses, ...waiverExpenses];
+      // Waiver expenses are already included in the expenses query above
+      // (they're recorded as journal entries with expense accounts 5600-5640)
+      // No need to query separately unless we want to show them as a separate line item
+      const allExpenses = expenses;
       
       console.log(`💸 Expense Query Results (${expenses.length} rows):`);
       expenses.forEach(item => {
-        console.log(`  - ${item.account_name} (${item.account_code}): $${item.amount}`);
-      });
-      
-      console.log(`🎓 Waiver Expense Query Results (${waiverExpenses.length} rows):`);
-      waiverExpenses.forEach(item => {
         console.log(`  - ${item.account_name} (${item.account_code}): $${item.amount}`);
       });
       
@@ -412,45 +372,29 @@ class IncomeStatementController {
 
   // Helper method to generate income statement data
   static async generateIncomeStatementData(startDate, endDate) {
-    // Get revenue from student transactions (invoices generated) instead of journal entries (payments received)
+    // Get revenue from journal entries - CREDITS to Revenue accounts (4000-4999)
+    // Revenue is recognized when invoices are created (DEBIT Accounts Receivable, CREDIT Revenue)
     const revenueQuery = `
       SELECT 
-        'INVOICE_REVENUE' as account_id,
-        'INV' as account_code,
-        'Tuition Revenue (Invoices Generated)' as account_name,
-        COALESCE(SUM(st.amount), 0) as amount
-      FROM student_transactions st
-      WHERE st.transaction_type = 'DEBIT'
-        AND st.transaction_date BETWEEN ? AND ?
-        AND st.description LIKE '%TUITION INVOICE%'
-      UNION ALL
-      SELECT 
-        'BOARDING_REVENUE' as account_id,
-        'BRD' as account_code,
-        'Boarding Revenue (Invoices Generated)' as account_name,
-        COALESCE(SUM(st.amount), 0) as amount
-      FROM student_transactions st
-      WHERE st.transaction_type = 'DEBIT'
-        AND st.transaction_date BETWEEN ? AND ?
-        AND st.description LIKE '%BOARDING%'
-      UNION ALL
-      SELECT 
-        'OTHER_REVENUE' as account_id,
-        'OTH' as account_code,
-        'Other Revenue (Invoices Generated)' as account_name,
-        COALESCE(SUM(st.amount), 0) as amount
-      FROM student_transactions st
-      WHERE st.transaction_type = 'DEBIT'
-        AND st.transaction_date BETWEEN ? AND ?
-        AND st.description NOT LIKE '%TUITION INVOICE%'
-        AND st.description NOT LIKE '%BOARDING%'
+        coa.id as account_id,
+        coa.code as account_code,
+        coa.name as account_name,
+        COALESCE(SUM(jel.credit), 0) as amount
+      FROM chart_of_accounts coa
+      INNER JOIN journal_entry_lines jel ON jel.account_id = coa.id
+      INNER JOIN journal_entries je ON je.id = jel.journal_entry_id
+      WHERE coa.type = 'Revenue'
+        AND coa.is_active = 1
+        AND je.entry_date BETWEEN ? AND ?
+        AND jel.credit > 0
+        AND je.description NOT LIKE '%Opening Balances B/D%'
+        AND je.description NOT LIKE '%Close % to Income Summary%'
+        AND je.description NOT LIKE '%Close Income Summary to Retained Earnings%'
+      GROUP BY coa.id, coa.code, coa.name
+      ORDER BY coa.code
     `;
     
-    const [revenue] = await pool.execute(revenueQuery, [
-      startDate, endDate,  // Tuition revenue
-      startDate, endDate,  // Boarding revenue  
-      startDate, endDate   // Other revenue
-    ]);
+    const [revenue] = await pool.execute(revenueQuery, [startDate, endDate]);
     
     // Get expense accounts - use LEFT JOIN to include all accounts even with zero values
     const expenseQuery = `
