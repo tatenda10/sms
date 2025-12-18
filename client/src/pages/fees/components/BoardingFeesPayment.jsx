@@ -377,74 +377,124 @@ Thank you for your payment!
   // Show receipt only after successful payment
   if (showReceipt && receiptData) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <div className="text-center mb-6">
-          <FontAwesomeIcon icon={faCheckCircle} className="text-4xl text-green-500 mb-2" />
-          <h2 className="text-xl font-bold text-gray-900">Payment Successful!</h2>
-          <p className="text-sm text-gray-600">Your boarding fees payment has been processed successfully.</p>
-        </div>
+      <div className="modal-overlay" onClick={handleNewPayment}>
+        <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+          <div className="modal-header">
+            <h3 className="modal-title">Payment Successful!</h3>
+            <button className="modal-close-btn" onClick={handleNewPayment}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          
+          <div className="modal-body">
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <FontAwesomeIcon icon={faCheckCircle} style={{ fontSize: '3rem', color: '#10b981', marginBottom: '12px' }} />
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Your boarding fees payment has been processed successfully.</p>
+            </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">Payment Receipt</h3>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Receipt No:</span>
-              <span className="font-bold">{receiptData.receipt_number}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Reference No:</span>
-              <span className="font-bold">{receiptData.reference_number}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Student Name:</span>
-              <span className="font-bold">{receiptData.student_name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Registration No:</span>
-              <span className="font-bold">{receiptData.student_reg}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Hostel:</span>
-              <span className="font-bold">{receiptData.hostel_name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Payment Date:</span>
-              <span className="font-bold">{receiptData.payment_date}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Payment Method:</span>
-              <span className="font-bold">{receiptData.payment_method}</span>
-            </div>
-            <div className="flex justify-between border-t pt-3">
-              <span className="text-gray-900 font-bold text-lg">Amount Paid:</span>
-              <span className="text-gray-900 font-bold text-lg">
-                {receiptData.currency}{receiptData.amount}
-              </span>
+            <div style={{
+              padding: '12px',
+              background: '#f9fafb',
+              border: '1px solid var(--border-color)',
+              borderRadius: '4px',
+              marginBottom: '20px'
+            }}>
+              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', textAlign: 'center' }}>Payment Receipt</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 30px', fontSize: '0.75rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Receipt No
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {receiptData.receipt_number}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Reference No
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {receiptData.reference_number}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Student Name
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                    {receiptData.student_name}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Registration No
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                    {receiptData.student_reg}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Hostel
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                    {receiptData.hostel_name}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Payment Date
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                    {receiptData.payment_date}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Payment Method
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                    {receiptData.payment_method}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Amount Paid
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600 }}>
+                    {receiptData.currency}{receiptData.amount}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex space-x-3">
-          <button
-            onClick={handlePrintReceipt}
-            className="flex-1 bg-gray-900 text-white px-4 py-2 text-sm hover:bg-gray-800 flex items-center justify-center"
-          >
-            <FontAwesomeIcon icon={faPrint} className="mr-2" />
-            Print Receipt
-          </button>
-          <button
-            onClick={handleDownloadPDF}
-            className="flex-1 bg-blue-600 text-white px-4 py-2 text-sm hover:bg-blue-700 flex items-center justify-center"
-          >
-            <FontAwesomeIcon icon={faDownload} className="mr-2" />
-            Download PDF
-          </button>
-          <button
-            onClick={handleNewPayment}
-            className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 text-sm hover:bg-gray-300 flex items-center justify-center"
-          >
-            New Payment
-          </button>
+          <div className="modal-footer">
+            <button
+              className="modal-btn modal-btn-cancel"
+              onClick={handleNewPayment}
+            >
+              New Payment
+            </button>
+            <button
+              className="modal-btn"
+              onClick={handlePrintReceipt}
+              style={{ background: '#6b7280', color: 'white' }}
+            >
+              <FontAwesomeIcon icon={faPrint} style={{ marginRight: '4px' }} />
+              Print
+            </button>
+            <button
+              className="modal-btn modal-btn-confirm"
+              onClick={handleDownloadPDF}
+            >
+              <FontAwesomeIcon icon={faDownload} style={{ marginRight: '4px' }} />
+              Download PDF
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -452,338 +502,397 @@ Thank you for your payment!
 
   if (showConfirmation) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <h2 className="text-base font-medium text-gray-900 mb-4">Confirm Payment</h2>
-        
-        <div className="bg-gray-50 p-4 rounded-lg mb-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-3">Payment Summary</h3>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Student Name:</span>
-              <span className="font-medium">{foundStudent?.Name} {foundStudent?.Surname}</span>
+      <div className="modal-overlay" onClick={handleCancelConfirmation}>
+        <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+          <div className="modal-header">
+            <h3 className="modal-title">Confirm Payment</h3>
+            <button className="modal-close-btn" onClick={handleCancelConfirmation}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          
+          <div className="modal-body">
+            <div style={{
+              padding: '12px',
+              background: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: '4px',
+              marginBottom: '20px',
+              fontSize: '0.75rem'
+            }}>
+              <div style={{ marginBottom: '4px' }}>
+                <strong>Student:</strong> {foundStudent?.Name} {foundStudent?.Surname} ({foundStudent?.RegNumber})
+              </div>
+              <div style={{ marginBottom: '4px' }}>
+                <strong>Hostel:</strong> {getSelectedHostelName()}
+              </div>
+              <div style={{ marginBottom: '4px' }}>
+                <strong>Academic Year:</strong> {paymentData.academic_year} | <strong>Term:</strong> Term {paymentData.term}
+              </div>
+              <div>
+                <strong>Amount:</strong> {getSelectedCurrencySymbol()}{paymentData.amount_paid}
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Registration No:</span>
-              <span className="font-medium">{foundStudent?.RegNumber}</span>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 30px', fontSize: '0.75rem' }}>
+              <div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Payment Method
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                  {paymentData.payment_method}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Payment Date
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                  {paymentData.payment_date}
+                </div>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Reference Number
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                  {paymentData.reference_number}
+                </div>
+              </div>
+              {paymentData.notes && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Notes
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                    {paymentData.notes}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Fee Type:</span>
-              <span className="font-medium">Boarding Fees</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Hostel:</span>
-              <span className="font-medium">{getSelectedHostelName()}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Academic Year:</span>
-              <span className="font-medium">{paymentData.academic_year}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Term:</span>
-              <span className="font-medium">Term {paymentData.term}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Payment Method:</span>
-              <span className="font-medium">{paymentData.payment_method}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Payment Date:</span>
-              <span className="font-medium">{paymentData.payment_date}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Reference Number:</span>
-              <span className="font-medium">{paymentData.reference_number}</span>
-            </div>
-            {paymentData.notes && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Notes:</span>
-                <span className="font-medium">{paymentData.notes}</span>
+
+            {error && (
+              <div style={{ 
+                padding: '10px', 
+                background: '#fee2e2', 
+                color: '#dc2626', 
+                fontSize: '0.75rem', 
+                marginTop: '16px', 
+                borderRadius: '4px' 
+              }}>
+                {error}
               </div>
             )}
-            <div className="flex justify-between border-t pt-2">
-              <span className="text-gray-900 font-medium">Amount to Pay:</span>
-              <span className="text-gray-900 font-bold text-sm">
-                {getSelectedCurrencySymbol()}{paymentData.amount_paid}
-              </span>
-            </div>
           </div>
-        </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs rounded">
-            {error}
+          <div className="modal-footer">
+            <button
+              className="modal-btn modal-btn-cancel"
+              onClick={handleCancelConfirmation}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              className="modal-btn modal-btn-confirm"
+              onClick={handleConfirmPayment}
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : 'Confirm Payment'}
+            </button>
           </div>
-        )}
-
-        <div className="flex space-x-3">
-          <button
-            onClick={handleConfirmPayment}
-            disabled={loading}
-            className="flex-1 bg-green-600 text-white px-4 py-2 text-xs hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          >
-            {loading ? 'Processing...' : (
-              <>
-                <FontAwesomeIcon icon={faCheckCircle} className="mr-1" />
-                Confirm Payment
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleCancelConfirmation}
-            disabled={loading}
-            className="flex-1 bg-gray-500 text-white px-4 py-2 text-xs hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          >
-            <FontAwesomeIcon icon={faTimes} className="mr-1" />
-            Cancel
-          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <h2 className="text-base font-medium text-gray-900 mb-4">Boarding Fee Payments</h2>
-      
-      {/* Student Search */}
-      <div className="mb-4">
-        <label className="block text-xs font-medium text-gray-700 mb-1">
-          Student Registration Number <span className="text-red-500">*</span>
-        </label>
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={studentRegNumber}
-            onChange={(e) => setStudentRegNumber(e.target.value)}
-            placeholder="Enter student registration number"
-            className={`flex-1 border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 ${
-              showValidation && !studentRegNumber.trim() ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
+    <div style={{ width: '100%' }}>
+      <form onSubmit={handlePaymentSubmit} className="modal-form">
+        {/* Student Selection */}
+        <div style={{ marginBottom: '24px' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FontAwesomeIcon icon={faSearch} style={{ color: '#2563eb' }} />
+            Student Information
+          </h4>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '16px' }}>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">
+                Student Registration Number <span className="required">*</span>
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={studentRegNumber}
+                  onChange={(e) => setStudentRegNumber(e.target.value)}
+                  placeholder="Enter student registration number"
+                  className="form-control"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={handleStudentSearch}
+                  disabled={loading}
+                  className="modal-btn"
+                  style={{ 
+                    background: '#6b7280', 
+                    color: 'white', 
+                    padding: '6px 12px',
+                    whiteSpace: 'nowrap',
+                    fontSize: '0.7rem'
+                  }}
+                >
+                  {loading ? 'Searching...' : (
+                    <>
+                      <FontAwesomeIcon icon={faSearch} style={{ marginRight: '4px' }} />
+                      Search
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Student Info */}
+          {foundStudent && (
+            <div style={{ 
+              background: '#d1fae5', 
+              border: '1px solid #6ee7b7', 
+              padding: '12px',
+              borderRadius: '4px',
+              fontSize: '0.75rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                <FontAwesomeIcon icon={faCheckCircle} style={{ color: '#059669', marginRight: '8px', fontSize: '0.75rem' }} />
+                <span style={{ fontWeight: 500, color: '#065f46' }}>Student Found Successfully</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)' }}>Name:</span>
+                  <span style={{ marginLeft: '8px', fontWeight: 500, color: 'var(--text-primary)' }}>{foundStudent.Name} {foundStudent.Surname}</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)' }}>Registration No:</span>
+                  <span style={{ marginLeft: '8px', fontWeight: 500, color: 'var(--text-primary)' }}>{foundStudent.RegNumber}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Error/Success Messages */}
+        {error && (
+          <div style={{ 
+            padding: '10px', 
+            background: '#fee2e2', 
+            color: '#dc2626', 
+            fontSize: '0.75rem', 
+            marginBottom: '16px', 
+            borderRadius: '4px',
+            border: '1px solid #fecaca'
+          }}>
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div style={{ 
+            padding: '10px', 
+            background: '#d1fae5', 
+            color: '#065f46', 
+            fontSize: '0.75rem', 
+            marginBottom: '16px', 
+            borderRadius: '4px',
+            border: '1px solid #6ee7b7'
+          }}>
+            {success}
+          </div>
+        )}
+
+        {/* Payment Details */}
+        <div style={{ marginBottom: '24px' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FontAwesomeIcon icon={faCreditCard} style={{ color: '#10b981' }} />
+            Payment Details
+          </h4>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+            <div className="form-group">
+              <label className="form-label">
+                Academic Year <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                value={paymentData.academic_year}
+                onChange={(e) => setPaymentData({ ...paymentData, academic_year: e.target.value })}
+                placeholder="e.g., 2025"
+                className="form-control"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Term <span className="required">*</span>
+              </label>
+              <select
+                value={paymentData.term}
+                onChange={(e) => setPaymentData({ ...paymentData, term: e.target.value })}
+                className="form-control"
+              >
+                <option value="1">Term 1</option>
+                <option value="2">Term 2</option>
+                <option value="3">Term 3</option>
+              </select>
+            </div>
+
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">
+                Hostel <span className="required">*</span>
+              </label>
+              <select
+                value={paymentData.hostel_id}
+                onChange={(e) => setPaymentData({ ...paymentData, hostel_id: e.target.value })}
+                className="form-control"
+              >
+                <option value="">Select a hostel</option>
+                {hostels.map((hostel) => (
+                  <option key={hostel.id} value={hostel.id}>
+                    {hostel.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Amount <span className="required">*</span>
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={paymentData.amount_paid}
+                onChange={(e) => setPaymentData({ ...paymentData, amount_paid: e.target.value })}
+                placeholder="0.00"
+                className="form-control"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Currency <span className="required">*</span>
+              </label>
+              <select
+                value={paymentData.currency_id}
+                onChange={(e) => setPaymentData({ ...paymentData, currency_id: e.target.value })}
+                className="form-control"
+              >
+                <option value="">Select currency</option>
+                {currencies.map((currency) => (
+                  <option key={currency.id} value={currency.id}>
+                    {currency.name} ({currency.symbol})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Payment Method <span className="required">*</span>
+              </label>
+              <select
+                value={paymentData.payment_method}
+                onChange={(e) => setPaymentData({ ...paymentData, payment_method: e.target.value })}
+                className="form-control"
+              >
+                <option value="Cash">Cash</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cheque">Cheque</option>
+                <option value="Mobile Money">Mobile Money</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Payment Date <span className="required">*</span>
+              </label>
+              <input
+                type="date"
+                value={paymentData.payment_date}
+                onChange={(e) => setPaymentData({ ...paymentData, payment_date: e.target.value })}
+                className="form-control"
+              />
+            </div>
+
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">
+                Reference Number <span className="required">*</span>
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={paymentData.reference_number}
+                  onChange={(e) => setPaymentData({ ...paymentData, reference_number: e.target.value })}
+                  placeholder="Enter reference number or auto-generate"
+                  className="form-control"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAutoGenerateReference}
+                  className="modal-btn"
+                  style={{ 
+                    background: '#2563eb', 
+                    color: 'white', 
+                    padding: '6px 12px',
+                    whiteSpace: 'nowrap',
+                    fontSize: '0.7rem'
+                  }}
+                  title="Auto-generate reference number"
+                >
+                  <FontAwesomeIcon icon={faSync} style={{ marginRight: '4px' }} />
+                  Auto
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">
+                Notes (Optional)
+              </label>
+              <textarea
+                value={paymentData.notes}
+                onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
+                rows="2"
+                placeholder="Additional notes about this payment"
+                className="form-control"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
           <button
-            onClick={handleStudentSearch}
-            disabled={loading}
-            className="bg-gray-900 text-white px-3 py-1.5 text-xs hover:bg-gray-800 disabled:opacity-50"
+            type="submit"
+            disabled={loading || !foundStudent}
+            className="modal-btn modal-btn-confirm"
+            style={{ 
+              minWidth: '120px'
+            }}
           >
-            {loading ? 'Searching...' : (
+            {loading ? 'Processing...' : (
               <>
-                <FontAwesomeIcon icon={faSearch} className="mr-1" />
-                Search
+                <FontAwesomeIcon icon={faCreditCard} style={{ marginRight: '4px' }} />
+                Process Payment
               </>
             )}
           </button>
         </div>
-      </div>
-
-      {/* Student Info */}
-      {foundStudent && (
-        <div className="bg-gray-50 p-3 rounded-lg mb-4">
-          <h3 className="text-xs font-medium text-gray-900 mb-1">Student Information</h3>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <span className="text-gray-600">Name:</span>
-              <span className="ml-1 font-medium">{foundStudent.Name} {foundStudent.Surname}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">Registration No:</span>
-              <span className="ml-1 font-medium">{foundStudent.RegNumber}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error/Success Messages */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs rounded">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 text-xs rounded">
-          {success}
-        </div>
-      )}
-
-      {/* Payment Form */}
-      <form onSubmit={handlePaymentSubmit} className="space-y-3">
-        {/* Academic Year and Term */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Academic Year <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={paymentData.academic_year}
-              onChange={(e) => setPaymentData({ ...paymentData, academic_year: e.target.value })}
-              placeholder="e.g., 2025"
-              className={`w-full border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 ${
-                !isFieldValid('academic_year') ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Term <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={paymentData.term}
-              onChange={(e) => setPaymentData({ ...paymentData, term: e.target.value })}
-              className={`w-full border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 ${
-                !isFieldValid('term') ? 'border-red-500' : 'border-gray-300'
-              }`}
-            >
-              <option value="1">Term 1</option>
-              <option value="2">Term 2</option>
-              <option value="3">Term 3</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Hostel Selection */}
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Hostel <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={paymentData.hostel_id}
-            onChange={(e) => setPaymentData({ ...paymentData, hostel_id: e.target.value })}
-            className={`w-full border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 ${
-              !isFieldValid('hostel_id') ? 'border-red-500' : 'border-gray-300'
-            }`}
-          >
-            <option value="">Select a hostel</option>
-            {hostels.map((hostel) => (
-              <option key={hostel.id} value={hostel.id}>
-                {hostel.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Amount and Currency */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Amount <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={paymentData.amount_paid}
-              onChange={(e) => setPaymentData({ ...paymentData, amount_paid: e.target.value })}
-              placeholder="0.00"
-              className={`w-full border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 ${
-                !isFieldValid('amount_paid') ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Currency <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={paymentData.currency_id}
-              onChange={(e) => setPaymentData({ ...paymentData, currency_id: e.target.value })}
-              className={`w-full border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 ${
-                !isFieldValid('currency_id') ? 'border-red-500' : 'border-gray-300'
-              }`}
-            >
-              <option value="">Select currency</option>
-              {currencies.map((currency) => (
-                <option key={currency.id} value={currency.id}>
-                  {currency.name} ({currency.symbol})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Payment Method and Date */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Payment Method <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={paymentData.payment_method}
-              onChange={(e) => setPaymentData({ ...paymentData, payment_method: e.target.value })}
-              className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-            >
-              <option value="Cash">Cash</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="Cheque">Cheque</option>
-              <option value="Mobile Money">Mobile Money</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Payment Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              value={paymentData.payment_date}
-              onChange={(e) => setPaymentData({ ...paymentData, payment_date: e.target.value })}
-              className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-            />
-          </div>
-        </div>
-
-        {/* Reference Number */}
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Reference Number <span className="text-red-500">*</span>
-          </label>
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={paymentData.reference_number}
-              onChange={(e) => setPaymentData({ ...paymentData, reference_number: e.target.value })}
-              placeholder="Enter reference number or auto-generate"
-              className={`flex-1 border px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 ${
-                !isFieldValid('reference_number') ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            <button
-              type="button"
-              onClick={handleAutoGenerateReference}
-              className="bg-blue-600 text-white px-2 py-1.5 text-xs hover:bg-blue-700"
-              title="Auto-generate reference number"
-            >
-              <FontAwesomeIcon icon={faSync} />
-            </button>
-          </div>
-        </div>
-
-        {/* Notes */}
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Notes (Optional)
-          </label>
-          <textarea
-            value={paymentData.notes}
-            onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
-            rows="2"
-            placeholder="Additional notes about this payment"
-            className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-          />
-        </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading || !foundStudent}
-          className="w-full bg-gray-900 text-white px-4 py-2 text-xs hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Processing...' : (
-            <>
-              <FontAwesomeIcon icon={faCreditCard} className="mr-1" />
-              Process Payment
-            </>
-          )}
-        </button>
       </form>
     </div>
   );

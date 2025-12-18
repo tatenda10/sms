@@ -339,56 +339,86 @@ const TuitionFeesPayment = () => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 p-3 md:p-4">
-      <h2 className="text-sm md:text-base font-medium text-gray-900 mb-3 md:mb-4">Tuition Fee Payments</h2>
-
-      <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
+    <div style={{ width: '100%' }}>
+      <form onSubmit={handleSubmit} className="modal-form">
         {/* Student Selection */}
-        <div>
-          <h3 className="text-xs font-medium text-gray-900 mb-1">Student Information</h3>
+        <div style={{ marginBottom: '24px' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#2563eb' }} />
+            Student Information
+          </h4>
           
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Search Student <span className="text-red-500">*</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '16px' }}>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">
+                Search Student <span className="required">*</span>
               </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 relative">
-                  <FontAwesomeIcon icon={faSearch} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                  <FontAwesomeIcon icon={faSearch} style={{ position: 'absolute', left: '8px', color: 'var(--text-secondary)', fontSize: '0.75rem' }} />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Enter student name or registration number..."
-                    className="w-full pl-6 pr-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                    className="form-control"
+                    style={{ paddingLeft: '28px' }}
                   />
                 </div>
                 <button
                   type="button"
                   onClick={searchStudents}
-                  className="bg-gray-900 text-white px-3 py-1.5 text-xs hover:bg-gray-800 w-full sm:w-auto"
+                  className="modal-btn"
+                  style={{ 
+                    background: '#6b7280', 
+                    color: 'white', 
+                    padding: '6px 12px',
+                    whiteSpace: 'nowrap',
+                    fontSize: '0.7rem'
+                  }}
                 >
                   Search
                 </button>
               </div>
             </div>
+          </div>
 
             {students.length > 0 && (
-              <div className="border border-gray-200 max-h-32 overflow-y-auto">
-                 <div className="bg-blue-50 p-2 border-b border-gray-200">
-                   <p className="text-xs text-blue-700 font-medium">Click on a student below to select:</p>
+              <div style={{ 
+                border: '1px solid var(--border-color)', 
+                maxHeight: '120px', 
+                overflowY: 'auto',
+                marginBottom: '16px',
+                borderRadius: '4px'
+              }}>
+                 <div style={{ 
+                   background: '#eff6ff', 
+                   padding: '8px 12px', 
+                   borderBottom: '1px solid var(--border-color)',
+                   fontSize: '0.7rem',
+                   color: '#1e40af',
+                   fontWeight: 500
+                 }}>
+                   <p>Click on a student below to select:</p>
                  </div>
                 {students.map((student) => (
                   <div
                     key={student.RegNumber}
                     onClick={() => selectStudent(student)}
-                    className="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #f3f4f6',
+                      fontSize: '0.75rem'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                   >
-                    <div className="font-medium text-gray-900 text-xs">
+                    <div style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: '4px' }}>
                       {student.Name} {student.Surname}
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Reg: {student.RegNumber} | Class: {student.Class}
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                      Reg: {student.RegNumber} | Class: {student.Class || 'N/A'}
                     </div>
                   </div>
                 ))}
@@ -396,44 +426,50 @@ const TuitionFeesPayment = () => {
             )}
 
             {selectedStudent && (
-               <div className="bg-green-50 border border-green-200 p-3">
-                 <div className="flex items-center mb-2">
-                   <FontAwesomeIcon icon={faCheck} className="text-green-600 text-xs mr-2" />
-                   <span className="text-xs font-medium text-green-800">Student Selected Successfully</span>
+               <div style={{ 
+                 background: '#d1fae5', 
+                 border: '1px solid #6ee7b7', 
+                 padding: '12px',
+                 borderRadius: '4px',
+                 fontSize: '0.75rem'
+               }}>
+                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                   <FontAwesomeIcon icon={faCheck} style={{ color: '#059669', marginRight: '8px', fontSize: '0.75rem' }} />
+                   <span style={{ fontWeight: 500, color: '#065f46' }}>Student Selected Successfully</span>
                  </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
                   <div>
-                    <span className="text-gray-600">Name:</span>
-                    <span className="ml-1 font-medium">{selectedStudent.Name} {selectedStudent.Surname}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Name:</span>
+                    <span style={{ marginLeft: '8px', fontWeight: 500, color: 'var(--text-primary)' }}>{selectedStudent.Name} {selectedStudent.Surname}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Registration No:</span>
-                    <span className="ml-1 font-medium">{selectedStudent.RegNumber}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Registration No:</span>
+                    <span style={{ marginLeft: '8px', fontWeight: 500, color: 'var(--text-primary)' }}>{selectedStudent.RegNumber}</span>
                   </div>
                 </div>
               </div>
             )}
-          </div>
         </div>
 
         {/* Invoice Structure Selection (Optional) */}
-        <div>
-          <h3 className="text-xs font-medium text-gray-900 mb-1">
-            Invoice Structure <span className="text-gray-500 font-normal">(Optional - for payments against specific invoices)</span>
-          </h3>
-          <p className="text-xs text-gray-500 mb-2">
+        <div style={{ marginBottom: '24px' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FontAwesomeIcon icon={faList} style={{ color: '#10b981' }} />
+            Invoice Structure <span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-secondary)' }}>(Optional)</span>
+          </h4>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
             💡 You can skip this section to record payments for outstanding debts without a specific invoice
           </p>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+            <div className="form-group">
+              <label className="form-label">
                 Class ({classes.length} loaded)
               </label>
               <select
                 value={formData.gradelevel_class_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, gradelevel_class_id: e.target.value, term: '', academic_year: '', invoice_structure_id: '' }))}
-                className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
               >
                 <option value="">Select Class (Optional)</option>
                 {classes.map((cls) => {
@@ -447,14 +483,14 @@ const TuitionFeesPayment = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+            <div className="form-group">
+              <label className="form-label">
                 Term
               </label>
               <select
                 value={formData.term}
                 onChange={(e) => setFormData(prev => ({ ...prev, term: e.target.value, academic_year: '', invoice_structure_id: '' }))}
-                className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 disabled={!formData.gradelevel_class_id}
               >
                 <option value="">Select Term (Optional)</option>
@@ -464,8 +500,8 @@ const TuitionFeesPayment = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+            <div className="form-group">
+              <label className="form-label">
                 Academic Year
               </label>
               <input
@@ -473,7 +509,7 @@ const TuitionFeesPayment = () => {
                 value={formData.academic_year}
                 onChange={(e) => setFormData(prev => ({ ...prev, academic_year: e.target.value, invoice_structure_id: '' }))}
                 placeholder="e.g., 2025 (Optional)"
-                className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 disabled={!formData.gradelevel_class_id || !formData.term}
               />
             </div>
@@ -481,35 +517,57 @@ const TuitionFeesPayment = () => {
 
           {/* Invoice Structures List */}
           {invoiceStructures.length > 0 && (
-            <div className="mt-3">
-               <div className="bg-blue-50 p-2 border border-gray-200 mb-2">
-                 <p className="text-xs text-blue-700 font-medium">Click on an invoice structure below to select (optional):</p>
+            <div style={{ marginTop: '16px' }}>
+               <div style={{ 
+                 background: '#eff6ff', 
+                 padding: '8px 12px', 
+                 border: '1px solid var(--border-color)', 
+                 marginBottom: '8px',
+                 borderRadius: '4px',
+                 fontSize: '0.7rem',
+                 color: '#1e40af',
+                 fontWeight: 500
+               }}>
+                 <p>Click on an invoice structure below to select (optional):</p>
                </div>
-              <div className="space-y-1">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {invoiceStructures.map((structure) => (
                   <div
                     key={structure.id}
                     onClick={() => selectInvoiceStructure(structure)}
-                    className={`p-2 border cursor-pointer transition-colors ${
-                      selectedStructure?.id === structure.id
-                        ? 'border-gray-500 bg-gray-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    style={{
+                      padding: '12px',
+                      border: `1px solid ${selectedStructure?.id === structure.id ? '#6b7280' : 'var(--border-color)'}`,
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      background: selectedStructure?.id === structure.id ? '#f9fafb' : 'transparent',
+                      fontSize: '0.75rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedStructure?.id !== structure.id) {
+                        e.currentTarget.style.borderColor = '#d1d5db';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedStructure?.id !== structure.id) {
+                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                      }
+                    }}
                   >
-                    <div className="flex justify-between items-start">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                       <div>
-                        <div className="font-medium text-gray-900 text-xs">
+                        <div style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: '4px' }}>
                           {structure.class_name} - {structure.term} {structure.academic_year}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                           {structure.invoice_items?.length || 0} items
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 text-xs">
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
                           {structure.total_amount} {structure.currency_symbol}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
                           {structure.is_active ? 'Active' : 'Inactive'}
                         </div>
                       </div>
@@ -521,11 +579,18 @@ const TuitionFeesPayment = () => {
           )}
 
           {selectedStructure && (
-             <div className="mt-3 bg-green-50 border border-green-200 p-3">
-               <div className="flex items-center justify-between mb-2">
-                 <div className="flex items-center">
-                   <FontAwesomeIcon icon={faCheck} className="text-green-600 text-xs mr-2" />
-                   <span className="text-xs font-medium text-green-800">Invoice Structure Selected</span>
+             <div style={{ 
+               marginTop: '16px',
+               background: '#d1fae5', 
+               border: '1px solid #6ee7b7', 
+               padding: '12px',
+               borderRadius: '4px',
+               fontSize: '0.75rem'
+             }}>
+               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                 <div style={{ display: 'flex', alignItems: 'center' }}>
+                   <FontAwesomeIcon icon={faCheck} style={{ color: '#059669', marginRight: '8px', fontSize: '0.75rem' }} />
+                   <span style={{ fontWeight: 500, color: '#065f46' }}>Invoice Structure Selected</span>
                  </div>
                  <button
                    type="button"
@@ -533,30 +598,45 @@ const TuitionFeesPayment = () => {
                      setSelectedStructure(null);
                      setFormData(prev => ({ ...prev, invoice_structure_id: '' }));
                    }}
-                   className="text-xs text-gray-600 hover:text-gray-800"
+                   style={{
+                     fontSize: '0.7rem',
+                     color: 'var(--text-secondary)',
+                     background: 'transparent',
+                     border: 'none',
+                     cursor: 'pointer',
+                     padding: '4px 8px'
+                   }}
                  >
                    Clear
                  </button>
                </div>
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
                 <div>
-                  <span className="text-gray-600">Selected:</span>
-                  <span className="ml-1 font-medium">{selectedStructure.class_name} - {selectedStructure.term} {selectedStructure.academic_year}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>Selected:</span>
+                  <span style={{ marginLeft: '8px', fontWeight: 500, color: 'var(--text-primary)' }}>{selectedStructure.class_name} - {selectedStructure.term} {selectedStructure.academic_year}</span>
                 </div>
                 <div>
-                   <span className="text-gray-600">Total Amount:</span>
-                  <span className="ml-1 font-medium">{selectedStructure.total_amount} {selectedStructure.currency_symbol}</span>
+                   <span style={{ color: 'var(--text-secondary)' }}>Total Amount:</span>
+                  <span style={{ marginLeft: '8px', fontWeight: 500, color: 'var(--text-primary)' }}>{selectedStructure.total_amount} {selectedStructure.currency_symbol}</span>
                 </div>
-                 <div className="col-span-2">
-                   <span className="text-xs text-gray-500">Note: Please enter the payment amount manually below</span>
+                 <div style={{ gridColumn: '1 / -1' }}>
+                   <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Note: Please enter the payment amount manually below</span>
                 </div>
               </div>
             </div>
           )}
           
           {formData.gradelevel_class_id && formData.term && formData.academic_year && invoiceStructures.length === 0 && (
-            <div className="mt-3 bg-yellow-50 border border-yellow-200 p-3">
-              <p className="text-xs text-yellow-800">
+            <div style={{ 
+              marginTop: '16px',
+              background: '#fef3c7', 
+              border: '1px solid #fcd34d', 
+              padding: '12px',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              color: '#92400e'
+            }}>
+              <p>
                 ℹ️ No invoice structures found for this class/term/year. You can still proceed with the payment without selecting an invoice.
               </p>
             </div>
@@ -564,13 +644,16 @@ const TuitionFeesPayment = () => {
         </div>
 
         {/* Payment Details */}
-        <div>
-          <h3 className="text-xs font-medium text-gray-900 mb-1">Payment Details</h3>
+        <div style={{ marginBottom: '24px' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FontAwesomeIcon icon={faDollarSign} style={{ color: '#10b981' }} />
+            Payment Details
+          </h4>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Amount <span className="text-red-500">*</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+            <div className="form-group">
+              <label className="form-label">
+                Amount <span className="required">*</span>
               </label>
               <input
                 type="number"
@@ -578,19 +661,19 @@ const TuitionFeesPayment = () => {
                 value={formData.amount}
                 onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
                 placeholder="0.00"
-                className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 required
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Currency <span className="text-red-500">*</span>
+            <div className="form-group">
+              <label className="form-label">
+                Currency <span className="required">*</span>
               </label>
               <select
                 value={formData.currency_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, currency_id: e.target.value }))}
-                className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 required
               >
                 <option value="">Select Currency</option>
@@ -602,14 +685,14 @@ const TuitionFeesPayment = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Payment Method <span className="text-red-500">*</span>
+            <div className="form-group">
+              <label className="form-label">
+                Payment Method <span className="required">*</span>
               </label>
               <select
                 value={formData.payment_method_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, payment_method_id: e.target.value }))}
-                className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 required
               >
                 <option value="">Select Payment Method</option>
@@ -621,51 +704,59 @@ const TuitionFeesPayment = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Payment Date <span className="text-red-500">*</span>
+            <div className="form-group">
+              <label className="form-label">
+                Payment Date <span className="required">*</span>
               </label>
               <input
                 type="date"
                 value={formData.payment_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, payment_date: e.target.value }))}
-                className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 required
               />
             </div>
 
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Reference Number <span className="text-red-500">*</span>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">
+                Reference Number <span className="required">*</span>
               </label>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <input
                   type="text"
                   value={formData.reference_number}
                   onChange={(e) => setFormData(prev => ({ ...prev, reference_number: e.target.value }))}
                   placeholder="Enter reference number"
-                  className="flex-1 border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                  className="form-control"
+                  style={{ flex: 1 }}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, reference_number: generateReferenceNumber() }))}
-                  className="bg-gray-600 text-white px-3 py-1.5 text-xs hover:bg-gray-700 w-full sm:w-auto"
+                  className="modal-btn"
+                  style={{ 
+                    background: '#6b7280', 
+                    color: 'white', 
+                    padding: '6px 12px',
+                    whiteSpace: 'nowrap',
+                    fontSize: '0.7rem'
+                  }}
                 >
                   Auto
                 </button>
               </div>
             </div>
 
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label className="form-label">
                 Notes
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Additional notes..."
-                className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 rows="2"
               />
             </div>
@@ -673,11 +764,14 @@ const TuitionFeesPayment = () => {
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-center sm:justify-end">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
           <button
             type="submit"
             disabled={loading}
-            className="bg-gray-900 text-white px-4 py-2 text-xs hover:bg-gray-800 disabled:opacity-50 w-full sm:w-auto"
+            className="modal-btn modal-btn-confirm"
+            style={{ 
+              minWidth: '120px'
+            }}
           >
             {loading ? 'Processing...' : 'Process Payment'}
           </button>

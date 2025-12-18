@@ -2,11 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faShoppingCart, 
-  faFileInvoiceDollar, 
-  faTruck, 
-  faClipboardList,
-  faChartBar,
   faPlus,
   faEye,
   faEdit,
@@ -14,11 +9,7 @@ import {
   faCheckCircle,
   faClock,
   faExclamationTriangle,
-  faSearch,
-  faFilter,
-  faDownload,
-  faPrint,
-  faUserShield
+  faSearch
 } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import BASE_URL from '../../contexts/Api';
@@ -34,61 +25,98 @@ const Procurement = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
 
-  // State for procurement data
-  const [procurementStats, setProcurementStats] = useState({
-    totalRequests: 0,
-    pendingApproval: 0,
-    approved: 0,
-    delivered: 0,
-    totalValue: 0
-  });
 
-  const [recentRequests, setRecentRequests] = useState([]);
-  const [searchParams, setSearchParams] = useState({
-    search: '',
-    status: '',
-    start_date: '',
-    end_date: '',
-    page: 1,
-    limit: 10
-  });
+  const [purchaseRequests, setPurchaseRequests] = useState([]);
+  const [search, setSearch] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(25);
+  const [total, setTotal] = useState(0);
 
-  // Fetch procurement data on component mount
-  useEffect(() => {
-    fetchProcurementData();
-  }, []);
 
-  // Fetch procurement statistics and recent requests
-  const fetchProcurementData = async () => {
+  // Fetch purchase requests
+  const fetchPurchaseRequests = async () => {
+    if (!token) {
+      setError('Authentication required');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      // Fetch procurement statistics
-      const statsResponse = await axios.get(`${BASE_URL}/procurement/stats`, {
+      const params = {
+        page: page,
+        limit: pageSize
+      };
+      if (activeSearchTerm) params.search = activeSearchTerm;
+      if (statusFilter) params.status = statusFilter;
+      if (startDate) params.start_date = startDate;
+      if (endDate) params.end_date = endDate;
+
+      const response = await axios.get(`${BASE_URL}/procurement/purchase-requests`, {
+        params,
         headers: { Authorization: `Bearer ${token}` }
       });
-      setProcurementStats(statsResponse.data.data);
-
-      // Fetch recent purchase requests
-      const requestsResponse = await axios.get(`${BASE_URL}/procurement/purchase-requests`, {
-        params: {
-          page: 1,
-          limit: 5,
-          sort: 'created_at',
-          order: 'desc'
-        },
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRecentRequests(requestsResponse.data.data || []);
-
+      
+      // Handle different response structures
+      if (response.data.success !== false) {
+        // If response has success field and it's true, or no success field
+        const data = response.data.data || response.data;
+        const totalCount = response.data.total || response.data.pagination?.total || (Array.isArray(data) ? data.length : 0);
+        const requests = Array.isArray(data) ? data : (data?.requests || data?.purchase_requests || []);
+        
+        setPurchaseRequests(requests);
+        setTotal(totalCount);
+      } else {
+        setError(response.data.message || 'Failed to fetch purchase requests');
+        setPurchaseRequests([]);
+        setTotal(0);
+      }
     } catch (error) {
-      console.error('Error fetching procurement data:', error);
-      setError(error.response?.data?.message || 'Failed to fetch procurement data');
-      setShowErrorModal(true);
+      console.error('Error fetching purchase requests:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
+      });
+      
+      let errorMessage = 'Failed to fetch purchase requests';
+      if (error.response) {
+        // Server responded with error
+        errorMessage = error.response.data?.message || 
+                      error.response.data?.error || 
+                      `Server error (${error.response.status})`;
+      } else if (error.request) {
+        // Request made but no response
+        errorMessage = 'No response from server. Please check your connection.';
+      } else {
+        // Error setting up request
+        errorMessage = error.message || 'Failed to fetch purchase requests';
+      }
+      
+      setError(errorMessage);
+      setPurchaseRequests([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchPurchaseRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, activeSearchTerm, statusFilter, startDate, endDate]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setActiveSearchTerm(search);
+    setPage(1);
   };
 
   // Handle delete request
@@ -104,7 +132,7 @@ const Procurement = () => {
       
       setSuccess('Purchase request deleted successfully');
       setShowSuccessModal(true);
-      fetchProcurementData(); // Refresh data
+      fetchPurchaseRequests(); // Refresh data
     } catch (error) {
       console.error('Error deleting purchase request:', error);
       setError(error.response?.data?.message || 'Failed to delete purchase request');
@@ -157,312 +185,336 @@ const Procurement = () => {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading procurement data...</div>
-      </div>
-    );
-  }
+  const totalPages = Math.ceil(total / pageSize);
+  const displayStart = purchaseRequests.length > 0 ? (page - 1) * pageSize + 1 : 0;
+  const displayEnd = Math.min(page * pageSize, total);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Procurement Dashboard</h1>
-              <p className="text-sm text-gray-600 mt-1">Manage purchase requests and procurement activities</p>
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative' 
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">Purchase Requests</h2>
+          <p className="report-subtitle">Manage and track purchase requests.</p>
+        </div>
+        <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Link
+            to="/dashboard/procurement/purchase-requests/new"
+            className="btn-checklist"
+            style={{ textDecoration: 'none' }}
+          >
+            <FontAwesomeIcon icon={faPlus} />
+            Add Purchase Request
+          </Link>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', flexShrink: 0 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Filters Section */}
+      <div className="report-filters" style={{ flexShrink: 0 }}>
+        <div className="report-filters-left">
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="filter-group">
+            <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <FontAwesomeIcon icon={faSearch} className="search-icon" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by title, requester, department..."
+                className="filter-input search-input"
+              />
+              {search && (
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setActiveSearchTerm('');
+                    setPage(1);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    padding: '4px 6px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '20px',
+                    height: '20px'
+                  }}
+                  title="Clear search"
+                >
+                  ×
+                </button>
+              )}
             </div>
-            <div className="flex items-center space-x-3">
-              <Link
-                to="/dashboard/procurement/purchase-requests/new"
-                className="bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 flex items-center space-x-2 text-sm font-medium transition-colors"
+          </form>
+          {/* Status Filter */}
+          <div className="filter-group">
+            <label className="filter-label" style={{ marginRight: '8px' }}>Status:</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => { setPage(1); setStatusFilter(e.target.value); }}
+              className="filter-input"
+              style={{ minWidth: '150px', width: '150px' }}
+            >
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="delivered">Delivered</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            {statusFilter && (
+              <button
+                onClick={() => { setPage(1); setStatusFilter(''); }}
+                style={{
+                  marginLeft: '8px',
+                  padding: '6px 10px',
+                  background: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  color: 'var(--text-secondary)'
+                }}
+                title="Clear status filter"
               >
-                <FontAwesomeIcon icon={faPlus} />
-                <span>New Purchase Request</span>
-              </Link>
-            </div>
+                ×
+              </button>
+            )}
+          </div>
+          {/* Start Date Filter */}
+          <div className="filter-group">
+            <label className="filter-label" style={{ marginRight: '8px' }}>Start Date:</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => { setPage(1); setStartDate(e.target.value); }}
+              className="filter-input"
+              style={{ minWidth: '150px', width: '150px' }}
+            />
+            {startDate && (
+              <button
+                onClick={() => { setPage(1); setStartDate(''); }}
+                style={{
+                  marginLeft: '8px',
+                  padding: '6px 10px',
+                  background: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  color: 'var(--text-secondary)'
+                }}
+                title="Clear start date"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {/* End Date Filter */}
+          <div className="filter-group">
+            <label className="filter-label" style={{ marginRight: '8px' }}>End Date:</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => { setPage(1); setEndDate(e.target.value); }}
+              className="filter-input"
+              style={{ minWidth: '150px', width: '150px' }}
+            />
+            {endDate && (
+              <button
+                onClick={() => { setPage(1); setEndDate(''); }}
+                style={{
+                  marginLeft: '8px',
+                  padding: '6px 10px',
+                  background: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  color: 'var(--text-secondary)'
+                }}
+                title="Clear end date"
+              >
+                ×
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white border border-gray-200 p-4 shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-600">Total Requests</p>
-                <p className="text-lg font-semibold text-gray-900">{procurementStats.totalRequests}</p>
-              </div>
-              <div className="bg-blue-100 p-2">
-                <FontAwesomeIcon icon={faClipboardList} className="text-blue-600 text-sm" />
-              </div>
-            </div>
+      {/* Table Container */}
+      <div className="report-content-container ecl-table-container" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        overflow: 'auto',
+        minHeight: 0,
+        padding: 0,
+        height: '100%'
+      }}>
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+            Loading purchase requests...
           </div>
-
-          <div className="bg-white border border-gray-200 p-4 shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-600">Pending Approval</p>
-                <p className="text-lg font-semibold text-yellow-600">{procurementStats.pendingApproval}</p>
-              </div>
-              <div className="bg-yellow-100 p-2">
-                <FontAwesomeIcon icon={faClock} className="text-yellow-600 text-sm" />
-              </div>
-            </div>
+        ) : error ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#dc2626', fontSize: '0.75rem' }}>
+            {error}
           </div>
-
-          <div className="bg-white border border-gray-200 p-4 shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-600">Approved</p>
-                <p className="text-lg font-semibold text-blue-600">{procurementStats.approved}</p>
-              </div>
-              <div className="bg-blue-100 p-2">
-                <FontAwesomeIcon icon={faCheckCircle} className="text-blue-600 text-sm" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 p-4 shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-600">Delivered</p>
-                <p className="text-lg font-semibold text-green-600">{procurementStats.delivered}</p>
-              </div>
-              <div className="bg-green-100 p-2">
-                <FontAwesomeIcon icon={faTruck} className="text-green-600 text-sm" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 p-4 shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-gray-600">Total Value</p>
-                <p className="text-lg font-semibold text-gray-900">{formatCurrency(procurementStats.totalValue)}</p>
-              </div>
-              <div className="bg-green-100 p-2">
-                <FontAwesomeIcon icon={faChartBar} className="text-green-600 text-sm" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <Link
-            to="/dashboard/procurement/purchase-requests"
-            className="bg-white border border-gray-200 p-4 hover:border-blue-300 hover:shadow-md transition-all"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-100 p-2">
-                <FontAwesomeIcon icon={faClipboardList} className="text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Purchase Requests</h3>
-                <p className="text-xs text-gray-500">View and manage requests</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/dashboard/procurement/suppliers"
-            className="bg-white border border-gray-200 p-4 hover:border-blue-300 hover:shadow-md transition-all"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="bg-green-100 p-2">
-                <FontAwesomeIcon icon={faShoppingCart} className="text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Suppliers</h3>
-                <p className="text-xs text-gray-500">Manage vendor relationships</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/dashboard/procurement/purchase-orders"
-            className="bg-white border border-gray-200 p-4 hover:border-blue-300 hover:shadow-md transition-all"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="bg-purple-100 p-2">
-                <FontAwesomeIcon icon={faFileInvoiceDollar} className="text-purple-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Purchase Orders</h3>
-                <p className="text-xs text-gray-500">Track orders and deliveries</p>
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            to="/dashboard/procurement/reports"
-            className="bg-white border border-gray-200 p-4 hover:border-blue-300 hover:shadow-md transition-all"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="bg-orange-100 p-2">
-                <FontAwesomeIcon icon={faChartBar} className="text-orange-600" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Reports</h3>
-                <p className="text-xs text-gray-500">Analytics and insights</p>
-              </div>
-            </div>
-          </Link>
-
-          <div className="bg-white border border-gray-200 p-4 hover:border-red-300 hover:shadow-md transition-all cursor-default">
-            <div className="flex items-center space-x-3">
-              <div className="bg-red-100 p-2">
-                <FontAwesomeIcon icon={faUserShield} className="text-red-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-gray-900">Admin</h3>
-                <p className="text-xs text-gray-500">User management & configuration</p>
-                <div className="mt-2 space-y-1">
-                  <Link
-                    to="/dashboard/settings"
-                    className="block text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    User Management
-                  </Link>
-                  <Link
-                    to="/dashboard/configurations"
-                    className="block text-xs text-green-600 hover:text-green-800 font-medium cursor-pointer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    System Configurations
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Purchase Requests */}
-        <div className="bg-white border border-gray-200 shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-gray-900">Recent Purchase Requests</h2>
-              <div className="flex items-center space-x-2">
-                <Link
-                  to="/dashboard/procurement/purchase-requests"
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+        ) : (
+          <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+            <thead style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              background: 'var(--sidebar-bg)'
+            }}>
+              <tr>
+                <th style={{ padding: '6px 10px' }}>REQUEST</th>
+                <th style={{ padding: '6px 10px' }}>REQUESTER</th>
+                <th style={{ padding: '6px 10px' }}>DEPARTMENT</th>
+                <th style={{ padding: '6px 10px' }}>AMOUNT</th>
+                <th style={{ padding: '6px 10px' }}>STATUS</th>
+                <th style={{ padding: '6px 10px' }}>DATE</th>
+                <th style={{ padding: '6px 10px' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchaseRequests.map((request, index) => (
+                <tr
+                  key={request.id}
+                  style={{
+                    height: '32px',
+                    backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                  }}
                 >
-                  View All
-                </Link>
-                <button
-                  onClick={() => window.print()}
-                  className="text-gray-600 hover:text-gray-700 p-1"
-                  title="Print"
-                >
-                  <FontAwesomeIcon icon={faPrint} className="text-sm" />
-                </button>
-                <button
-                  onClick={() => {/* Export functionality */}}
-                  className="text-gray-600 hover:text-gray-700 p-1"
-                  title="Export"
-                >
-                  <FontAwesomeIcon icon={faDownload} className="text-sm" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Request
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Requester
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Department
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <td style={{ padding: '4px 10px' }}>
+                    <div style={{ fontWeight: 500 }}>{request.title}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>#{request.id}</div>
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>{request.requester || '-'}</td>
+                  <td style={{ padding: '4px 10px' }}>{request.department || '-'}</td>
+                  <td style={{ padding: '4px 10px' }}>{formatCurrency(request.amount || 0)}</td>
+                  <td style={{ padding: '4px 10px' }}>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '2px 8px',
+                      fontSize: '0.7rem',
+                      fontWeight: 500,
+                      borderRadius: '4px',
+                      ...(request.status === 'pending' ? { color: '#d97706', background: '#fef3c7' } :
+                          request.status === 'approved' ? { color: '#2563eb', background: '#dbeafe' } :
+                          request.status === 'delivered' ? { color: '#059669', background: '#d1fae5' } :
+                          request.status === 'rejected' ? { color: '#dc2626', background: '#fee2e2' } :
+                          { color: '#6b7280', background: '#f3f4f6' })
+                    }}>
+                      <FontAwesomeIcon icon={getStatusIcon(request.status)} style={{ marginRight: '4px', fontSize: '0.7rem' }} />
+                      {request.status ? request.status.charAt(0).toUpperCase() + request.status.slice(1) : '-'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>{formatDate(request.created_at)}</td>
+                  <td style={{ padding: '4px 10px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <Link
+                        to={`/dashboard/procurement/purchase-requests/${request.id}`}
+                        style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'none' }}
+                        title="View"
+                      >
+                        <FontAwesomeIcon icon={faEye} />
+                      </Link>
+                      <Link
+                        to={`/dashboard/procurement/purchase-requests/${request.id}/edit`}
+                        style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'none' }}
+                        title="Edit"
+                      >
+                        <FontAwesomeIcon icon={faEdit} />
+                      </Link>
+                      <button
+                        onClick={() => handleDeleteRequest(request.id)}
+                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="Delete"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {recentRequests.length > 0 ? (
-                  recentRequests.map((request) => (
-                    <tr key={request.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{request.title}</div>
-                        <div className="text-xs text-gray-500">#{request.id}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{request.requester}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{request.department}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{formatCurrency(request.amount)}</div>
-                      </td>
-                                          <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${getStatusColor(request.status)}`}>
-                        <FontAwesomeIcon icon={getStatusIcon(request.status)} className="mr-1" />
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                      </span>
-                    </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{formatDate(request.created_at)}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <Link
-                            to={`/dashboard/procurement/purchase-requests/${request.id}`}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="View Details"
-                          >
-                            <FontAwesomeIcon icon={faEye} />
-                          </Link>
-                          <Link
-                            to={`/dashboard/procurement/purchase-requests/${request.id}/edit`}
-                            className="text-green-600 hover:text-green-900"
-                            title="Edit"
-                          >
-                            <FontAwesomeIcon icon={faEdit} />
-                          </Link>
-                          <button 
-                            onClick={() => handleDeleteRequest(request.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
-                      No purchase requests found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {/* Empty placeholder rows to always show 25 rows */}
+              {Array.from({ length: Math.max(0, 25 - purchaseRequests.length) }).map((_, index) => (
+                <tr
+                  key={`empty-${index}`}
+                  style={{
+                    height: '32px',
+                    backgroundColor: (purchaseRequests.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                  }}
+                >
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Pagination Footer - Separate Container */}
+      <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+        <div className="table-footer-left">
+          Showing {displayStart} to {displayEnd} of {total || 0} results.
+        </div>
+        <div className="table-footer-right">
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+              >
+                Previous
+              </button>
+              <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
+                Page {page} of {totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
+          {totalPages <= 1 && (
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+              All data displayed
+            </div>
+          )}
         </div>
       </div>
 

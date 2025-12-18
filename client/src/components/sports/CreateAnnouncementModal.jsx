@@ -12,7 +12,10 @@ import {
   faSwimmer,
   faBaseball,
   faFootballBall,
-  faHockeyPuck
+  faHockeyPuck,
+  faCalendarAlt,
+  faUsers,
+  faExclamationCircle
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
@@ -21,7 +24,9 @@ import BASE_URL from '../../contexts/Api';
 const CreateAnnouncementModal = ({ isOpen, onClose, onSuccess, editingAnnouncement = null }) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [formError, setFormError] = useState(null);
   const [categories, setCategories] = useState([]);
   const [teams, setTeams] = useState([]);
   const [fixtures, setFixtures] = useState([]);
@@ -57,7 +62,8 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSuccess, editingAnnounceme
 
   useEffect(() => {
     if (isOpen) {
-      fetchData();
+      setIsLoading(true);
+      fetchData().finally(() => setIsLoading(false));
       if (editingAnnouncement) {
         setFormData({
           title: editingAnnouncement.title || '',
@@ -68,8 +74,8 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSuccess, editingAnnounceme
           fixture_id: editingAnnouncement.fixture_id || '',
           priority: editingAnnouncement.priority || 'medium',
           status: editingAnnouncement.status || 'published',
-          start_date: editingAnnouncement.start_date || '',
-          end_date: editingAnnouncement.end_date || '',
+          start_date: editingAnnouncement.start_date ? editingAnnouncement.start_date.split('T')[0] : '',
+          end_date: editingAnnouncement.end_date ? editingAnnouncement.end_date.split('T')[0] : '',
           target_audience: editingAnnouncement.target_audience || 'all'
         });
       } else {
@@ -97,6 +103,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSuccess, editingAnnounceme
       setFixtures(fixturesRes.data.data || []);
     } catch (err) {
       console.error('Error fetching data:', err);
+      setFormError('Failed to load data');
     }
   };
 
@@ -115,6 +122,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSuccess, editingAnnounceme
       target_audience: 'all'
     });
     setError(null);
+    setFormError(null);
   };
 
   const handleInputChange = (e) => {
@@ -127,10 +135,16 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSuccess, editingAnnounceme
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      setError(null);
+    
+    if (!isFormValid()) {
+      setFormError('Please fill in all required fields');
+      return;
+    }
+    
+    setLoading(true);
+    setFormError(null);
 
+    try {
       const url = editingAnnouncement 
         ? `${BASE_URL}/sports/announcements/${editingAnnouncement.id}`
         : `${BASE_URL}/sports/announcements`;
@@ -146,262 +160,311 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSuccess, editingAnnounceme
       resetForm();
     } catch (err) {
       console.error('Error saving announcement:', err);
-      setError(err.response?.data?.message || 'Failed to save announcement');
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (err.response) {
+        const errorData = err.response.data;
+        if (errorData?.error) {
+          errorMessage = errorData.error;
+        } else {
+          errorMessage = errorData?.message || `Server Error (${err.response.status})`;
+        }
+      } else if (err.request) {
+        errorMessage = 'No response from server. Please check your internet connection.';
+      } else {
+        errorMessage = err.message || 'An unexpected error occurred';
+      }
+      
+      setFormError(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+  
+  const isFormValid = () => {
+    return (
+      formData.title &&
+      formData.content &&
+      formData.announcement_type
+    );
+  };
+  
+  const handleCloseModal = () => {
+    setFormError(null);
+    setError(null);
+    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">
-            {editingAnnouncement ? 'Edit Announcement' : 'Create New Announcement'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <FontAwesomeIcon icon={faTimes} className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 p-3">
-              <div className="text-sm text-red-700">{error}</div>
+    <div className="modal-overlay" onClick={handleCloseModal}>
+      <div 
+        className="modal-dialog" 
+        onClick={(e) => e.stopPropagation()} 
+        style={{ maxWidth: '800px', minHeight: isLoading ? '400px' : 'auto' }}
+      >
+        {isLoading ? (
+          // Loading State
+          <>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ height: '20px', width: '200px', background: '#e5e7eb', borderRadius: '4px' }}></div>
+              <div style={{ width: '18px', height: '18px', background: '#e5e7eb', borderRadius: '4px' }}></div>
             </div>
-          )}
-
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Title *
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                placeholder="Announcement title"
-                required
-              />
+            <div className="modal-body" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', flex: '1', minHeight: '300px' }}>
+              <div className="loading-spinner"></div>
+              <p>Loading...</p>
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Type *
-              </label>
-              <select
-                name="announcement_type"
-                value={formData.announcement_type}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                required
-              >
-                <option value="general">General</option>
-                <option value="fixture">Fixture</option>
-                <option value="result">Result</option>
-                <option value="training">Training</option>
-                <option value="meeting">Meeting</option>
-              </select>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <div style={{ height: '32px', width: '80px', background: '#e5e7eb', borderRadius: '4px' }}></div>
+              <div style={{ height: '32px', width: '100px', background: '#e5e7eb', borderRadius: '4px' }}></div>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Content *
-            </label>
-            <textarea
-              name="content"
-              value={formData.content}
-              onChange={handleInputChange}
-              rows={4}
-              className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              placeholder="Announcement content..."
-              required
-            />
-          </div>
-
-          {/* Related Information */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Sport Category
-              </label>
-              <select
-                name="sport_category_id"
-                value={formData.sport_category_id}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              >
-                <option value="">Select Category</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+          </>
+        ) : (
+          // Content State
+          <>
+            <div className="modal-header">
+              <h3 className="modal-title">{editingAnnouncement ? 'Edit Announcement' : 'Add Announcement'}</h3>
+              <button className="modal-close-btn" onClick={handleCloseModal}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Team
-              </label>
-              <select
-                name="team_id"
-                value={formData.team_id}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              >
-                <option value="">Select Team</option>
-                {teams.map(team => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Fixture
-              </label>
-              <select
-                name="fixture_id"
-                value={formData.fixture_id}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              >
-                <option value="">Select Fixture</option>
-                {fixtures.map(fixture => (
-                  <option key={fixture.id} value={fixture.id}>
-                    {fixture.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Priority and Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Priority
-              </label>
-              <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Date Range */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                name="start_date"
-                value={formData.start_date}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                name="end_date"
-                value={formData.end_date}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Target Audience */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Target Audience
-            </label>
-            <select
-              name="target_audience"
-              value={formData.target_audience}
-              onChange={handleInputChange}
-              className="w-full px-2 py-1.5 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-            >
-              <option value="all">All</option>
-              <option value="students">Students</option>
-              <option value="employees">Employees</option>
-              <option value="teams">Teams</option>
-            </select>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end space-x-2 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-gray-700 bg-gray-100 text-sm hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-3 py-1.5 bg-gray-700 text-white text-sm hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <FontAwesomeIcon icon={faSave} className="h-3 w-3 mr-1" />
-                  {editingAnnouncement ? 'Update Announcement' : 'Create Announcement'}
-                </span>
+            
+            <div className="modal-body">
+              {formError && (
+                <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+                  {formError}
+                </div>
               )}
-            </button>
-          </div>
-        </form>
+              
+              <form onSubmit={handleSubmit} className="modal-form">
+
+                {/* Announcement Information Section */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FontAwesomeIcon icon={faBullhorn} style={{ color: '#2563eb' }} />
+                    Announcement Information
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">
+                        Title <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="title"
+                        className="form-control"
+                        placeholder="Enter announcement title"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">
+                        Type <span className="required">*</span>
+                      </label>
+                      <select
+                        name="announcement_type"
+                        className="form-control"
+                        value={formData.announcement_type}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="general">General</option>
+                        <option value="fixture">Fixture</option>
+                        <option value="result">Result</option>
+                        <option value="training">Training</option>
+                        <option value="meeting">Meeting</option>
+                      </select>
+                    </div>
+                    
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label className="form-label">
+                        Content <span className="required">*</span>
+                      </label>
+                      <textarea
+                        name="content"
+                        className="form-control"
+                        placeholder="Enter announcement content"
+                        value={formData.content}
+                        onChange={handleInputChange}
+                        rows={4}
+                        style={{ resize: 'vertical' }}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Related Information Section */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FontAwesomeIcon icon={faUsers} style={{ color: '#10b981' }} />
+                    Related Information
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Sport Category</label>
+                      <select
+                        name="sport_category_id"
+                        className="form-control"
+                        value={formData.sport_category_id}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select category</option>
+                        {categories.map(category => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Team</label>
+                      <select
+                        name="team_id"
+                        className="form-control"
+                        value={formData.team_id}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select team</option>
+                        {teams.map(team => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Fixture</label>
+                      <select
+                        name="fixture_id"
+                        className="form-control"
+                        value={formData.fixture_id}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select fixture</option>
+                        {fixtures.map(fixture => (
+                          <option key={fixture.id} value={fixture.id}>
+                            {fixture.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Priority & Status Section */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FontAwesomeIcon icon={faExclamationCircle} style={{ color: '#f59e0b' }} />
+                    Priority & Status
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Priority</label>
+                      <select
+                        name="priority"
+                        className="form-control"
+                        value={formData.priority}
+                        onChange={handleInputChange}
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Status</label>
+                      <select
+                        name="status"
+                        className="form-control"
+                        value={formData.status}
+                        onChange={handleInputChange}
+                      >
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                        <option value="archived">Archived</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Schedule & Audience Section */}
+                <div>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FontAwesomeIcon icon={faCalendarAlt} style={{ color: '#8b5cf6' }} />
+                    Schedule & Audience
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Start Date</label>
+                      <input
+                        type="date"
+                        name="start_date"
+                        className="form-control"
+                        value={formData.start_date}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">End Date</label>
+                      <input
+                        type="date"
+                        name="end_date"
+                        className="form-control"
+                        value={formData.end_date}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label className="form-label">Target Audience</label>
+                      <select
+                        name="target_audience"
+                        className="form-control"
+                        value={formData.target_audience}
+                        onChange={handleInputChange}
+                      >
+                        <option value="all">All</option>
+                        <option value="students">Students</option>
+                        <option value="employees">Employees</option>
+                        <option value="teams">Teams</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+            
+            <div className="modal-footer">
+              <button className="modal-btn modal-btn-cancel" onClick={handleCloseModal}>
+                Cancel
+              </button>
+              <button 
+                className="modal-btn modal-btn-confirm" 
+                onClick={handleSubmit}
+                disabled={!isFormValid() || loading}
+              >
+                {loading ? 'Saving...' : editingAnnouncement ? 'Update Announcement' : 'Save Announcement'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

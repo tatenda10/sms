@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGraduationCap, faBed, faEllipsisH } from '@fortawesome/free-solid-svg-icons';
-import { useNavigate } from 'react-router-dom';
 
 // Import fee type components
 import TuitionFeesPayment from './components/TuitionFeesPayment';
@@ -10,7 +9,6 @@ import OtherFeesPayment from './components/OtherFeesPayment';
 
 const FeesPayment = () => {
   const [activeTab, setActiveTab] = useState('tuition');
-  const navigate = useNavigate();
 
   const tabs = [
     { id: 'tuition', name: 'Tuition Fee Payments', icon: faGraduationCap },
@@ -37,45 +35,77 @@ const FeesPayment = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-2 md:py-6">
-      <div className="w-full px-2 md:px-4 lg:px-8">
-        {/* Header */}
-        <div className="mb-4 md:mb-6">
-          <div>
-            <h1 className="text-lg md:text-xl font-bold text-gray-900">Fees Payment</h1>
-            <p className="text-xs md:text-sm text-gray-600">Process student fee payments</p>
-          </div>
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative' 
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">Fees Payment</h2>
+          <p className="report-subtitle">Process student fee payments.</p>
         </div>
+        <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="mb-4 md:mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex flex-wrap space-x-2 md:space-x-8 overflow-x-auto">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-2 px-1 border-b-2 font-medium text-xs flex items-center space-x-1 whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'border-gray-900 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <FontAwesomeIcon icon={tab.icon} className="text-xs" />
-                  <span className="hidden sm:inline">{tab.name}</span>
-                  <span className="sm:hidden">{tab.name.split(' ')[0]}</span>
-                </button>
-              ))}
-            </nav>
+      {/* Tabs Section */}
+      <div className="report-filters" style={{ flexShrink: 0 }}>
+        <div className="report-filters-left">
+          <div className="filter-group" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  border: `1px solid ${activeTab === tab.id ? '#2563eb' : 'var(--border-color)'}`,
+                  borderRadius: '4px',
+                  background: activeTab === tab.id ? '#2563eb' : 'transparent',
+                  color: activeTab === tab.id ? 'white' : 'var(--text-primary)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.currentTarget.style.background = '#f3f4f6';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={tab.icon} style={{ fontSize: '0.7rem' }} />
+                <span>{tab.name}</span>
+              </button>
+            ))}
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 gap-4 md:gap-6">
-          {/* Payment Form - Full Width */}
-          <div>
-            {renderActiveComponent()}
-          </div>
-        </div>
+      {/* Content Container */}
+      <div className="report-content-container" style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        flex: 1, 
+        overflow: 'auto', 
+        minHeight: 0,
+        padding: '20px 30px'
+      }}>
+        {renderActiveComponent()}
       </div>
     </div>
   );

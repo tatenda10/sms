@@ -14,7 +14,8 @@ import {
   faSwimmer,
   faBaseball,
   faFootballBall,
-  faHockeyPuck
+  faHockeyPuck,
+  faTrophy
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
@@ -23,7 +24,9 @@ import BASE_URL from '../../contexts/Api';
 const CreateFixtureModal = ({ isOpen, onClose, onSuccess, editingFixture = null }) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [formError, setFormError] = useState(null);
   const [categories, setCategories] = useState([]);
   const [teams, setTeams] = useState([]);
   const [formData, setFormData] = useState({
@@ -61,7 +64,8 @@ const CreateFixtureModal = ({ isOpen, onClose, onSuccess, editingFixture = null 
 
   useEffect(() => {
     if (isOpen) {
-      fetchCategories();
+      setIsLoading(true);
+      fetchCategories().finally(() => setIsLoading(false));
       if (editingFixture) {
         setFormData({
           title: editingFixture.title || '',
@@ -72,7 +76,7 @@ const CreateFixtureModal = ({ isOpen, onClose, onSuccess, editingFixture = null 
           home_team_name: editingFixture.home_team_name || '',
           away_team_name: editingFixture.away_team_name || '',
           venue: editingFixture.venue || '',
-          fixture_date: editingFixture.fixture_date || '',
+          fixture_date: editingFixture.fixture_date ? editingFixture.fixture_date.split('T')[0] : '',
           fixture_time: editingFixture.fixture_time || '',
           weather_conditions: editingFixture.weather_conditions || '',
           referee_name: editingFixture.referee_name || '',
@@ -80,9 +84,25 @@ const CreateFixtureModal = ({ isOpen, onClose, onSuccess, editingFixture = null 
           is_home_game: editingFixture.is_home_game !== undefined ? editingFixture.is_home_game : true
         });
       } else {
-        // Set default date to today
+        // Reset form
         const today = new Date().toISOString().split('T')[0];
-        setFormData(prev => ({ ...prev, fixture_date: today }));
+        setFormData({
+          title: '',
+          description: '',
+          sport_category_id: '',
+          home_team_id: '',
+          away_team_id: '',
+          home_team_name: '',
+          away_team_name: '',
+          venue: '',
+          fixture_date: today,
+          fixture_time: '',
+          weather_conditions: '',
+          referee_name: '',
+          referee_contact: '',
+          is_home_game: true
+        });
+        setFormError(null);
       }
     }
   }, [isOpen, editingFixture]);
@@ -101,6 +121,7 @@ const CreateFixtureModal = ({ isOpen, onClose, onSuccess, editingFixture = null 
       setCategories(response.data.data || []);
     } catch (err) {
       console.error('Error fetching categories:', err);
+      setFormError('Failed to load sport categories');
     }
   };
 
@@ -126,8 +147,14 @@ const CreateFixtureModal = ({ isOpen, onClose, onSuccess, editingFixture = null 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!isFormValid()) {
+      setFormError('Please fill in all required fields');
+      return;
+    }
+    
     setLoading(true);
-    setError(null);
+    setFormError(null);
 
     try {
       const payload = { ...formData };
@@ -153,300 +180,340 @@ const CreateFixtureModal = ({ isOpen, onClose, onSuccess, editingFixture = null 
       onClose();
     } catch (err) {
       console.error('Error saving fixture:', err);
-      setError(err.response?.data?.message || 'Failed to save fixture');
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (err.response) {
+        const errorData = err.response.data;
+        if (errorData?.error) {
+          errorMessage = errorData.error;
+        } else {
+          errorMessage = errorData?.message || `Server Error (${err.response.status})`;
+        }
+      } else if (err.request) {
+        errorMessage = 'No response from server. Please check your internet connection.';
+      } else {
+        errorMessage = err.message || 'An unexpected error occurred';
+      }
+      
+      setFormError(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+  
+  const isFormValid = () => {
+    return (
+      formData.title &&
+      formData.sport_category_id &&
+      formData.fixture_date &&
+      formData.fixture_time
+    );
+  };
+  
+  const handleCloseModal = () => {
+    setFormError(null);
+    setError(null);
+    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">
-            {editingFixture ? 'Edit Fixture' : 'Create New Fixture'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <FontAwesomeIcon icon={faTimes} className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 p-3">
-              <div className="text-sm text-red-700">{error}</div>
+    <div className="modal-overlay" onClick={handleCloseModal}>
+      <div 
+        className="modal-dialog" 
+        onClick={(e) => e.stopPropagation()} 
+        style={{ maxWidth: '800px', minHeight: isLoading ? '400px' : 'auto' }}
+      >
+        {isLoading ? (
+          // Loading State
+          <>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ height: '20px', width: '200px', background: '#e5e7eb', borderRadius: '4px' }}></div>
+              <div style={{ width: '18px', height: '18px', background: '#e5e7eb', borderRadius: '4px' }}></div>
             </div>
-          )}
-
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Title *
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                placeholder="e.g., Senior Football vs ABC School"
-                required
-              />
+            <div className="modal-body" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', flex: '1', minHeight: '300px' }}>
+              <div className="loading-spinner"></div>
+              <p>Loading...</p>
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Sport Category *
-              </label>
-              <select
-                name="sport_category_id"
-                value={formData.sport_category_id}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                required
-              >
-                <option value="">Select Sport Category</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <div style={{ height: '32px', width: '80px', background: '#e5e7eb', borderRadius: '4px' }}></div>
+              <div style={{ height: '32px', width: '100px', background: '#e5e7eb', borderRadius: '4px' }}></div>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Additional details about the fixture..."
-            />
-          </div>
-
-          {/* Teams */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Home Team
-              </label>
-              <select
-                name="home_team_id"
-                value={formData.home_team_id}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              >
-                <option value="">Select Home Team</option>
-                {teams.map(team => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
+          </>
+        ) : (
+          // Content State
+          <>
+            <div className="modal-header">
+              <h3 className="modal-title">{editingFixture ? 'Edit Fixture' : 'Add Fixture'}</h3>
+              <button className="modal-close-btn" onClick={handleCloseModal}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
             </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Away Team
-              </label>
-              <select
-                name="away_team_id"
-                value={formData.away_team_id}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-              >
-                <option value="">Select Away Team</option>
-                {teams.map(team => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* External Teams */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Home Team Name (External)
-              </label>
-              <input
-                type="text"
-                name="home_team_name"
-                value={formData.home_team_name}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                placeholder="e.g., ABC School"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Away Team Name (External)
-              </label>
-              <input
-                type="text"
-                name="away_team_name"
-                value={formData.away_team_name}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                placeholder="e.g., XYZ School"
-              />
-            </div>
-          </div>
-
-          {/* Date and Time */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 mr-2" />
-                Fixture Date *
-              </label>
-              <input
-                type="date"
-                name="fixture_date"
-                value={formData.fixture_date}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 mr-2" />
-                Fixture Time *
-              </label>
-              <input
-                type="time"
-                name="fixture_time"
-                value={formData.fixture_time}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Venue */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <FontAwesomeIcon icon={faMapMarkerAlt} className="h-4 w-4 mr-2" />
-              Venue
-            </label>
-            <input
-              type="text"
-              name="venue"
-              value={formData.venue}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., School Football Ground"
-            />
-          </div>
-
-          {/* Referee Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Referee Name
-              </label>
-              <input
-                type="text"
-                name="referee_name"
-                value={formData.referee_name}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                placeholder="e.g., John Smith"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Referee Contact
-              </label>
-              <input
-                type="text"
-                name="referee_contact"
-                value={formData.referee_contact}
-                onChange={handleInputChange}
-                className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm"
-                placeholder="e.g., 1234567890"
-              />
-            </div>
-          </div>
-
-          {/* Weather Conditions */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Weather Conditions
-            </label>
-            <input
-              type="text"
-              name="weather_conditions"
-              value={formData.weather_conditions}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Sunny, Rainy, Cloudy"
-            />
-          </div>
-
-          {/* Home Game Toggle */}
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              name="is_home_game"
-              checked={formData.is_home_game}
-              onChange={handleInputChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label className="ml-2 text-sm font-medium text-gray-700">
-              This is a home game
-            </label>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end space-x-2 pt-4 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-gray-700 bg-gray-100 text-sm hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-3 py-1.5 bg-gray-700 text-white text-sm hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <FontAwesomeIcon icon={faSave} className="h-4 w-4 mr-2" />
-                  {editingFixture ? 'Update Fixture' : 'Create Fixture'}
-                </span>
+            
+            <div className="modal-body">
+              {formError && (
+                <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+                  {formError}
+                </div>
               )}
-            </button>
-          </div>
-        </form>
+              
+              <form onSubmit={handleSubmit} className="modal-form">
+
+                {/* Fixture Information Section */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FontAwesomeIcon icon={faTrophy} style={{ color: '#2563eb' }} />
+                    Fixture Information
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">
+                        Title <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="title"
+                        className="form-control"
+                        placeholder="Enter fixture title"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">
+                        Sport Category <span className="required">*</span>
+                      </label>
+                      <select
+                        name="sport_category_id"
+                        className="form-control"
+                        value={formData.sport_category_id}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="">Select sport category</option>
+                        {categories.map(category => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label className="form-label">Description</label>
+                      <textarea
+                        name="description"
+                        className="form-control"
+                        placeholder="Enter fixture description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows={3}
+                        style={{ resize: 'vertical' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Teams Section */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FontAwesomeIcon icon={faUsers} style={{ color: '#10b981' }} />
+                    Teams
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Home Team</label>
+                      <select
+                        name="home_team_id"
+                        className="form-control"
+                        value={formData.home_team_id}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select home team</option>
+                        {teams.map(team => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Away Team</label>
+                      <select
+                        name="away_team_id"
+                        className="form-control"
+                        value={formData.away_team_id}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select away team</option>
+                        {teams.map(team => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Home Team Name (External)</label>
+                      <input
+                        type="text"
+                        name="home_team_name"
+                        className="form-control"
+                        placeholder="e.g., ABC School"
+                        value={formData.home_team_name}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Away Team Name (External)</label>
+                      <input
+                        type="text"
+                        name="away_team_name"
+                        className="form-control"
+                        placeholder="e.g., XYZ School"
+                        value={formData.away_team_name}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Schedule & Location Section */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FontAwesomeIcon icon={faCalendarAlt} style={{ color: '#f59e0b' }} />
+                    Schedule & Location
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">
+                        Fixture Date <span className="required">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        name="fixture_date"
+                        className="form-control"
+                        value={formData.fixture_date}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">
+                        Fixture Time <span className="required">*</span>
+                      </label>
+                      <input
+                        type="time"
+                        name="fixture_time"
+                        className="form-control"
+                        value={formData.fixture_time}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label className="form-label">Venue</label>
+                      <input
+                        type="text"
+                        name="venue"
+                        className="form-control"
+                        placeholder="Enter venue"
+                        value={formData.venue}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Information Section */}
+                <div>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#8b5cf6' }} />
+                    Additional Information
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Referee Name</label>
+                      <input
+                        type="text"
+                        name="referee_name"
+                        className="form-control"
+                        placeholder="Enter referee name"
+                        value={formData.referee_name}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Referee Contact</label>
+                      <input
+                        type="text"
+                        name="referee_contact"
+                        className="form-control"
+                        placeholder="Enter referee contact"
+                        value={formData.referee_contact}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label className="form-label">Weather Conditions</label>
+                      <input
+                        type="text"
+                        name="weather_conditions"
+                        className="form-control"
+                        placeholder="e.g., Sunny, Rainy, Cloudy"
+                        value={formData.weather_conditions}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          name="is_home_game"
+                          checked={formData.is_home_game}
+                          onChange={handleInputChange}
+                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                        />
+                        <span className="form-label" style={{ margin: 0 }}>This is a home game</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+            
+            <div className="modal-footer">
+              <button className="modal-btn modal-btn-cancel" onClick={handleCloseModal}>
+                Cancel
+              </button>
+              <button 
+                className="modal-btn modal-btn-confirm" 
+                onClick={handleSubmit}
+                disabled={!isFormValid() || loading}
+              >
+                {loading ? 'Saving...' : editingFixture ? 'Update Fixture' : 'Save Fixture'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

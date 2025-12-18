@@ -1,15 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell, faUser, faCog, faSignOutAlt, faBars } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faBell, 
+  faUser, 
+  faCog, 
+  faSignOutAlt, 
+  faBars,
+  faCalendarAlt,
+  faUsers,
+  faBullhorn
+} from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useSports } from '../contexts/SportsContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/logo.png';
 
 const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  
+  // Get sports context (will return default if not in provider)
+  const sportsContext = useSports();
+  const { activeTab: activeSportsTab, setActiveTab: onSportsTabChange, showCalendar } = sportsContext;
+  
+  // Check if we're on the sports page
+  const isSportsPage = location.pathname.startsWith('/dashboard/sports');
+  
+  // Determine active tab for display (calendar is shown separately)
+  const displayActiveTab = showCalendar ? 'calendar' : activeSportsTab;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -67,10 +88,68 @@ const Header = ({ onMenuClick }) => {
           <img src={logo} alt="Logo" className="top-nav-logo" />
         </div>
 
-        {/* Center - Menu Items (optional, can be added later) */}
-        <div className="top-nav-center">
-          {/* Add menu items here if needed */}
-        </div>
+        {/* Center - Sports Navigation Menu */}
+        {isSportsPage && (
+          <div className="top-nav-center" style={{ 
+            position: 'absolute', 
+            left: '50%', 
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0'
+          }}>
+            {[
+              { id: 'fixtures', label: 'Fixtures', icon: faCalendarAlt },
+              { id: 'teams', label: 'Teams', icon: faUsers },
+              { id: 'announcements', label: 'Announcements', icon: faBullhorn },
+              { id: 'calendar', label: 'Calendar', icon: faCalendarAlt }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => onSportsTabChange && onSportsTabChange(tab.id)}
+                className={`top-nav-menu-item ${displayActiveTab === tab.id ? 'active' : ''}`}
+                style={{
+                  padding: '12px 20px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: displayActiveTab === tab.id ? '#2563eb' : 'var(--text-secondary)',
+                  borderBottom: displayActiveTab === tab.id ? '2px solid #2563eb' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  borderTop: 'none',
+                  borderLeft: 'none',
+                  borderRight: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  if (displayActiveTab !== tab.id) {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (displayActiveTab !== tab.id) {
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={tab.icon} style={{ fontSize: '0.75rem' }} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {!isSportsPage && (
+          <div className="top-nav-center">
+            {/* Empty when not on sports page */}
+          </div>
+        )}
 
         {/* Right - User Info */}
         <div className="top-nav-right">

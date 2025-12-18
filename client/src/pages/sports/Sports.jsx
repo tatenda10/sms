@@ -25,6 +25,7 @@ import {
   faHockeyPuck
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSports } from '../../contexts/SportsContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import BASE_URL from '../../contexts/Api';
@@ -36,8 +37,7 @@ import SportsCalendar from './SportsCalendar';
 const Sports = () => {
   const { token } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('fixtures');
-  const [showCalendar, setShowCalendar] = useState(false);
+  const { activeTab, setActiveTab, showCalendar, setShowCalendar } = useSports();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -52,8 +52,56 @@ const Sports = () => {
     current_page: 1,
     total_pages: 1,
     total_items: 0,
-    items_per_page: 10
+    items_per_page: 25
   });
+  
+  // Fixtures-specific states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  
+  // Teams-specific states
+  const [teamSearchTerm, setTeamSearchTerm] = useState('');
+  const [activeTeamSearchTerm, setActiveTeamSearchTerm] = useState('');
+  const [teamCategoryFilter, setTeamCategoryFilter] = useState('');
+  
+  // Announcements-specific states
+  const [announcementSearchTerm, setAnnouncementSearchTerm] = useState('');
+  const [activeAnnouncementSearchTerm, setActiveAnnouncementSearchTerm] = useState('');
+  const [announcementTypeFilter, setAnnouncementTypeFilter] = useState('');
+  const [announcementPriorityFilter, setAnnouncementPriorityFilter] = useState('');
+  const [announcementCategoryFilter, setAnnouncementCategoryFilter] = useState('');
+  
+  // Toast states
+  const [toast, setToast] = useState({ message: null, type: 'success', visible: false });
+  
+  // Fixtures modal states
+  const [showAddFixtureModal, setShowAddFixtureModal] = useState(false);
+  const [showViewFixtureModal, setShowViewFixtureModal] = useState(false);
+  const [showEditFixtureModal, setShowEditFixtureModal] = useState(false);
+  const [showDeleteFixtureModal, setShowDeleteFixtureModal] = useState(false);
+  const [selectedFixture, setSelectedFixture] = useState(null);
+  const [fixtureToDelete, setFixtureToDelete] = useState(null);
+  const [isDeletingFixture, setIsDeletingFixture] = useState(false);
+  
+  // Teams modal states
+  const [showAddTeamModal, setShowAddTeamModal] = useState(false);
+  const [showViewTeamModal, setShowViewTeamModal] = useState(false);
+  const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+  const [showDeleteTeamModal, setShowDeleteTeamModal] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [teamToDelete, setTeamToDelete] = useState(null);
+  const [isDeletingTeam, setIsDeletingTeam] = useState(false);
+  
+  // Announcements modal states
+  const [showAddAnnouncementModal, setShowAddAnnouncementModal] = useState(false);
+  const [showViewAnnouncementModal, setShowViewAnnouncementModal] = useState(false);
+  const [showEditAnnouncementModal, setShowEditAnnouncementModal] = useState(false);
+  const [showDeleteAnnouncementModal, setShowDeleteAnnouncementModal] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [announcementToDelete, setAnnouncementToDelete] = useState(null);
+  const [isDeletingAnnouncement, setIsDeletingAnnouncement] = useState(false);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -88,8 +136,129 @@ const Sports = () => {
 
   // Fetch data based on active tab
   useEffect(() => {
-    fetchData();
-  }, [activeTab, pagination.current_page, filters]);
+    if (!showCalendar) {
+      if (activeTab === 'fixtures') {
+        fetchFixtures();
+      } else if (activeTab === 'teams') {
+        fetchTeams();
+      } else if (activeTab === 'announcements') {
+        fetchAnnouncements();
+      } else {
+        fetchData();
+      }
+    }
+  }, [activeTab, pagination.current_page, activeSearchTerm, statusFilter, categoryFilter, activeTeamSearchTerm, teamCategoryFilter, activeAnnouncementSearchTerm, announcementTypeFilter, announcementPriorityFilter, announcementCategoryFilter, showCalendar]);
+
+  const fetchFixtures = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        page: pagination.current_page,
+        limit: pagination.items_per_page,
+        search: activeSearchTerm,
+        status: statusFilter,
+        sport_category_id: categoryFilter
+      };
+
+      const response = await axios.get(`${BASE_URL}/sports/fixtures`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        params
+      });
+      
+      const fixturesData = response.data.data || [];
+      setFixtures(fixturesData);
+      
+      // Update pagination
+      const paginationData = response.data.pagination || {
+        current_page: 1,
+        total_pages: 1,
+        total_items: fixturesData.length,
+        items_per_page: pagination.items_per_page
+      };
+      setPagination(paginationData);
+    } catch (err) {
+      console.error('Error fetching fixtures:', err);
+      setError('Failed to fetch fixtures');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        page: pagination.current_page,
+        limit: pagination.items_per_page,
+        search: activeTeamSearchTerm,
+        sport_category_id: teamCategoryFilter
+      };
+
+      const response = await axios.get(`${BASE_URL}/sports/teams`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        params
+      });
+      
+      const teamsData = response.data.data || [];
+      setTeams(teamsData);
+      
+      // Update pagination
+      const paginationData = response.data.pagination || {
+        current_page: 1,
+        total_pages: 1,
+        total_items: teamsData.length,
+        items_per_page: pagination.items_per_page
+      };
+      setPagination(paginationData);
+    } catch (err) {
+      console.error('Error fetching teams:', err);
+      setError('Failed to fetch teams');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAnnouncements = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        page: pagination.current_page,
+        limit: pagination.items_per_page,
+        search: activeAnnouncementSearchTerm,
+        announcement_type: announcementTypeFilter,
+        priority: announcementPriorityFilter,
+        sport_category_id: announcementCategoryFilter
+      };
+
+      const response = await axios.get(`${BASE_URL}/sports/announcements`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        params
+      });
+      
+      const announcementsData = response.data.data || [];
+      setAnnouncements(announcementsData);
+      
+      // Update pagination
+      const paginationData = response.data.pagination || {
+        current_page: 1,
+        total_pages: 1,
+        total_items: announcementsData.length,
+        items_per_page: pagination.items_per_page
+      };
+      setPagination(paginationData);
+    } catch (err) {
+      console.error('Error fetching announcements:', err);
+      setError('Failed to fetch announcements');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -104,14 +273,6 @@ const Sports = () => {
 
       let response;
       switch (activeTab) {
-        case 'fixtures':
-          response = await axios.get(`${BASE_URL}/sports/fixtures`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-            params
-          });
-          setFixtures(response.data.data || []);
-          setPagination(response.data.pagination || pagination);
-          break;
         case 'teams':
           response = await axios.get(`${BASE_URL}/sports/teams`, {
             headers: { 'Authorization': `Bearer ${token}` },
@@ -205,14 +366,237 @@ const Sports = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
-      fetchData();
+      if (type === 'fixture') {
+        fetchFixtures();
+        showToast('Fixture deleted successfully', 'success');
+      } else {
+        fetchData();
+      }
     } catch (err) {
       console.error('Error deleting item:', err);
       setError('Failed to delete item');
+      showToast('Failed to delete item', 'error');
+    }
+  };
+  
+  // Toast functions
+  const showToast = (message, type = 'success', duration = 3000) => {
+    setToast({ message, type, visible: true });
+    
+    if (duration > 0) {
+      setTimeout(() => {
+        setToast(prev => ({ ...prev, visible: false }));
+        setTimeout(() => {
+          setToast({ message: null, type: 'success', visible: false });
+        }, 300);
+      }, duration);
     }
   };
 
+  const getToastIcon = (type) => {
+    const iconProps = {
+      width: "20",
+      height: "20",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    };
+
+    if (type === 'success') {
+      return (
+        <svg {...iconProps}>
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      );
+    }
+    if (type === 'error') {
+      return (
+        <svg {...iconProps}>
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      );
+    }
+    return null;
+  };
+
+  const getToastBackgroundColor = (type) => {
+    switch (type) {
+      case 'success': return '#10b981';
+      case 'error': return '#ef4444';
+      case 'info': return '#2563eb';
+      case 'warning': return '#f59e0b';
+      default: return '#10b981';
+    }
+  };
+  
+  // Fixtures handlers
+  const handleSearchFixtures = (e) => {
+    e.preventDefault();
+    setActiveSearchTerm(searchTerm);
+    setPagination(prev => ({ ...prev, current_page: 1 }));
+  };
+  
+  const handleViewFixture = async (fixture) => {
+    setSelectedFixture(fixture);
+    setShowViewFixtureModal(true);
+  };
+  
+  const handleEditFixture = (fixture) => {
+    setEditingItem(fixture);
+    setShowEditFixtureModal(true);
+  };
+  
+  const handleDeleteFixtureClick = (fixture) => {
+    setFixtureToDelete(fixture);
+    setShowDeleteFixtureModal(true);
+  };
+  
+  const handleConfirmDeleteFixture = async () => {
+    if (!fixtureToDelete) return;
+
+    setIsDeletingFixture(true);
+    try {
+      await axios.delete(`${BASE_URL}/sports/fixtures/${fixtureToDelete.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      await fetchFixtures();
+      setShowDeleteFixtureModal(false);
+      setFixtureToDelete(null);
+      showToast('Fixture deleted successfully', 'success');
+    } catch (err) {
+      console.error('Error deleting fixture:', err);
+      showToast('Failed to delete fixture', 'error');
+    } finally {
+      setIsDeletingFixture(false);
+    }
+  };
+  
+  const handleFixtureModalSuccess = () => {
+    fetchFixtures();
+    setShowAddFixtureModal(false);
+    setShowEditFixtureModal(false);
+    setEditingItem(null);
+  };
+  
+  // Teams handlers
+  const handleSearchTeams = (e) => {
+    e.preventDefault();
+    setActiveTeamSearchTerm(teamSearchTerm);
+    setPagination(prev => ({ ...prev, current_page: 1 }));
+  };
+  
+  const handleViewTeam = async (team) => {
+    setSelectedTeam(team);
+    setShowViewTeamModal(true);
+  };
+  
+  const handleEditTeam = (team) => {
+    setEditingItem(team);
+    setShowEditTeamModal(true);
+  };
+  
+  const handleDeleteTeamClick = (team) => {
+    setTeamToDelete(team);
+    setShowDeleteTeamModal(true);
+  };
+  
+  const handleConfirmDeleteTeam = async () => {
+    if (!teamToDelete) return;
+
+    setIsDeletingTeam(true);
+    try {
+      await axios.delete(`${BASE_URL}/sports/teams/${teamToDelete.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      await fetchTeams();
+      setShowDeleteTeamModal(false);
+      setTeamToDelete(null);
+      showToast('Team deleted successfully', 'success');
+    } catch (err) {
+      console.error('Error deleting team:', err);
+      showToast('Failed to delete team', 'error');
+    } finally {
+      setIsDeletingTeam(false);
+    }
+  };
+  
+  const handleTeamModalSuccess = () => {
+    fetchTeams();
+    setShowAddTeamModal(false);
+    setShowEditTeamModal(false);
+    setEditingItem(null);
+  };
+  
+  // Announcements handlers
+  const handleSearchAnnouncements = (e) => {
+    e.preventDefault();
+    setActiveAnnouncementSearchTerm(announcementSearchTerm);
+    setPagination(prev => ({ ...prev, current_page: 1 }));
+  };
+  
+  const handleViewAnnouncement = async (announcement) => {
+    setSelectedAnnouncement(announcement);
+    setShowViewAnnouncementModal(true);
+  };
+  
+  const handleEditAnnouncement = (announcement) => {
+    setEditingItem(announcement);
+    setShowEditAnnouncementModal(true);
+  };
+  
+  const handleDeleteAnnouncementClick = (announcement) => {
+    setAnnouncementToDelete(announcement);
+    setShowDeleteAnnouncementModal(true);
+  };
+  
+  const handleConfirmDeleteAnnouncement = async () => {
+    if (!announcementToDelete) return;
+
+    setIsDeletingAnnouncement(true);
+    try {
+      await axios.delete(`${BASE_URL}/sports/announcements/${announcementToDelete.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      await fetchAnnouncements();
+      setShowDeleteAnnouncementModal(false);
+      setAnnouncementToDelete(null);
+      showToast('Announcement deleted successfully', 'success');
+    } catch (err) {
+      console.error('Error deleting announcement:', err);
+      showToast('Failed to delete announcement', 'error');
+    } finally {
+      setIsDeletingAnnouncement(false);
+    }
+  };
+  
+  const handleAnnouncementModalSuccess = () => {
+    fetchAnnouncements();
+    setShowAddAnnouncementModal(false);
+    setShowEditAnnouncementModal(false);
+    setEditingItem(null);
+  };
+
   const getStatusColor = (status) => {
+    const colors = {
+      scheduled: { background: '#dbeafe', color: '#1e40af' },
+      ongoing: { background: '#fef3c7', color: '#92400e' },
+      completed: { background: '#d1fae5', color: '#065f46' },
+      cancelled: { background: '#fee2e2', color: '#991b1b' },
+      postponed: { background: '#f3f4f6', color: '#374151' }
+    };
+    return colors[status] || { background: '#f3f4f6', color: '#374151' };
+  };
+  
+  const getStatusColorClass = (status) => {
     const colors = {
       scheduled: 'bg-blue-100 text-blue-800',
       ongoing: 'bg-yellow-100 text-yellow-800',
@@ -225,6 +609,16 @@ const Sports = () => {
 
   const getPriorityColor = (priority) => {
     const colors = {
+      urgent: { background: '#fee2e2', color: '#991b1b' },
+      high: { background: '#fed7aa', color: '#9a3412' },
+      medium: { background: '#dbeafe', color: '#1e40af' },
+      low: { background: '#f3f4f6', color: '#374151' }
+    };
+    return colors[priority] || { background: '#f3f4f6', color: '#374151' };
+  };
+  
+  const getPriorityColorClass = (priority) => {
+    const colors = {
       urgent: 'bg-red-100 text-red-800',
       high: 'bg-orange-100 text-orange-800',
       medium: 'bg-blue-100 text-blue-800',
@@ -233,184 +627,961 @@ const Sports = () => {
     return colors[priority] || 'bg-gray-100 text-gray-800';
   };
 
-  const renderFixtures = () => (
-    <div className="space-y-3">
-      {fixtures.map((fixture) => (
-        <div key={fixture.id} className="bg-white shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-2">
-                <FontAwesomeIcon 
-                  icon={getSportIcon(fixture.sport_category_icon)} 
-                  className="h-4 w-4 text-gray-600" 
-                />
-                <h3 className="text-sm font-semibold text-gray-800">{fixture.title}</h3>
-                <span className={`px-2 py-0.5 text-xs font-medium ${getStatusColor(fixture.status)}`}>
-                  {fixture.status}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-gray-600">
-                <div className="flex items-center space-x-1">
-                  <FontAwesomeIcon icon={faCalendarAlt} className="h-3 w-3" />
-                  <span>{new Date(fixture.fixture_date).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <FontAwesomeIcon icon={faUsers} className="h-3 w-3" />
-                  <span>{fixture.home_team_name} vs {fixture.away_team_name}</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <FontAwesomeIcon icon={faTrophy} className="h-3 w-3" />
-                  <span>{fixture.venue}</span>
-                </div>
-              </div>
+  const renderFixtures = () => {
+    const displayStart = fixtures.length > 0 ? (pagination.current_page - 1) * pagination.items_per_page + 1 : 0;
+    const displayEnd = Math.min(pagination.current_page * pagination.items_per_page, pagination.total_items || fixtures.length);
+    const hasData = fixtures.length > 0;
 
-              {fixture.result_home_score !== null && (
-                <div className="mt-2 p-2 bg-gray-50">
-                  <div className="text-xs font-medium text-gray-700">Result</div>
-                  <div className="text-sm font-bold text-gray-900">
-                    {fixture.result_home_score} - {fixture.result_away_score}
-                  </div>
-                  {fixture.result_notes && (
-                    <div className="text-xs text-gray-600 mt-1">{fixture.result_notes}</div>
-                  )}
-                </div>
+    return (
+      <div className="reports-container" style={{ 
+        height: '100%', 
+        maxHeight: '100%', 
+        overflow: 'hidden', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        position: 'relative' 
+      }}>
+        {/* Report Header */}
+        <div className="report-header" style={{ flexShrink: 0 }}>
+          <div className="report-header-content">
+            <h2 className="report-title">Fixtures</h2>
+            <p className="report-subtitle">Manage sports fixtures and matches.</p>
+          </div>
+          <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={() => {
+                setEditingItem(null);
+                setShowAddFixtureModal(true);
+              }}
+              className="btn-checklist"
+            >
+              <FontAwesomeIcon icon={faPlus} />
+              Add Fixture
+            </button>
+          </div>
+        </div>
+
+        {/* Filters Section */}
+        <div className="report-filters" style={{ flexShrink: 0 }}>
+          <div className="report-filters-left">
+            {/* Search Bar */}
+            <form onSubmit={handleSearchFixtures} className="filter-group">
+              <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <FontAwesomeIcon icon={faSearch} className="search-icon" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by title, teams, or venue..."
+                  className="filter-input search-input"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setActiveSearchTerm('');
+                      setPagination(prev => ({ ...prev, current_page: 1 }));
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      padding: '4px 6px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '20px',
+                      height: '20px'
+                    }}
+                    title="Clear search"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </form>
+            
+            {/* Status Filter */}
+            <div className="filter-group">
+              <label className="filter-label" style={{ marginRight: '8px' }}>Status:</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPagination(prev => ({ ...prev, current_page: 1 }));
+                }}
+                className="filter-input"
+                style={{ minWidth: '150px', width: '150px' }}
+              >
+                <option value="">All Status</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="ongoing">Ongoing</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="postponed">Postponed</option>
+              </select>
+              {statusFilter && (
+                <button
+                  onClick={() => {
+                    setStatusFilter('');
+                    setPagination(prev => ({ ...prev, current_page: 1 }));
+                  }}
+                  style={{
+                    marginLeft: '8px',
+                    padding: '6px 10px',
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    color: 'var(--text-secondary)'
+                  }}
+                  title="Clear status filter"
+                >
+                  ×
+                </button>
               )}
             </div>
-
-            <div className="flex space-x-1">
-              <button
-                onClick={() => handleEdit(fixture)}
-                className="p-1.5 text-gray-600 hover:bg-gray-100 transition-colors"
-                title="Edit Fixture"
+            
+            {/* Category Filter */}
+            <div className="filter-group">
+              <label className="filter-label" style={{ marginRight: '8px' }}>Category:</label>
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setPagination(prev => ({ ...prev, current_page: 1 }));
+                }}
+                className="filter-input"
+                style={{ minWidth: '180px', width: '180px' }}
               >
-                <FontAwesomeIcon icon={faEdit} className="h-3 w-3" />
-              </button>
-              <button
-                onClick={() => handleDelete(fixture.id, 'fixture')}
-                className="p-1.5 text-red-600 hover:bg-red-50 transition-colors"
-                title="Delete Fixture"
-              >
-                <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
-              </button>
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              {categoryFilter && (
+                <button
+                  onClick={() => {
+                    setCategoryFilter('');
+                    setPagination(prev => ({ ...prev, current_page: 1 }));
+                  }}
+                  style={{
+                    marginLeft: '8px',
+                    padding: '6px 10px',
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    color: 'var(--text-secondary)'
+                  }}
+                  title="Clear category filter"
+                >
+                  ×
+                </button>
+              )}
             </div>
           </div>
         </div>
-      ))}
-    </div>
-  );
 
-  const renderTeams = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {teams.map((team) => (
-        <div key={team.id} className="bg-white shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center space-x-2 mb-3">
-            <FontAwesomeIcon 
-              icon={getSportIcon(team.sport_category_icon)} 
-              className="h-4 w-4 text-gray-600" 
-            />
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800">{team.name}</h3>
-              <p className="text-xs text-gray-600">{team.sport_category_name}</p>
-            </div>
+        {/* Error Display */}
+        {error && (
+          <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem' }}>
+            {error}
           </div>
+        )}
 
-          {team.description && (
-            <p className="text-xs text-gray-600 mb-3">{team.description}</p>
+        {/* Table Container */}
+        <div className="report-content-container ecl-table-container" style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          flex: 1, 
+          overflow: 'auto', 
+          minHeight: 0,
+          padding: 0,
+          height: '100%'
+        }}>
+          {loading && fixtures.length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+              Loading fixtures...
+            </div>
+          ) : (
+            <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+              <thead style={{ 
+                position: 'sticky', 
+                top: 0, 
+                zIndex: 10, 
+                background: 'var(--sidebar-bg)' 
+              }}>
+                <tr>
+                  <th style={{ padding: '6px 10px' }}>TITLE</th>
+                  <th style={{ padding: '6px 10px' }}>DATE</th>
+                  <th style={{ padding: '6px 10px' }}>TEAMS</th>
+                  <th style={{ padding: '6px 10px' }}>VENUE</th>
+                  <th style={{ padding: '6px 10px' }}>STATUS</th>
+                  <th style={{ padding: '6px 10px' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fixtures.map((fixture, index) => (
+                  <tr 
+                    key={fixture.id} 
+                    style={{ 
+                      height: '32px', 
+                      backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                    }}
+                  >
+                    <td style={{ padding: '4px 10px' }}>
+                      {fixture.title}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      {new Date(fixture.fixture_date).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      {fixture.home_team_name} vs {fixture.away_team_name}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      {fixture.venue || 'N/A'}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      <span 
+                        className="px-2 py-0.5 text-xs font-medium"
+                        style={{
+                          background: getStatusColor(fixture.status).background,
+                          color: getStatusColor(fixture.status).color,
+                          borderRadius: '4px',
+                          display: 'inline-block'
+                        }}
+                      >
+                        {fixture.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <button
+                          onClick={() => handleViewFixture(fixture)}
+                          style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          title="View"
+                        >
+                          <FontAwesomeIcon icon={faEye} />
+                        </button>
+                        <button
+                          onClick={() => handleEditFixture(fixture)}
+                          style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          title="Edit"
+                        >
+                          <FontAwesomeIcon icon={faEdit} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteFixtureClick(fixture)}
+                          style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          title="Delete"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {/* Empty placeholder rows to always show 25 rows */}
+                {Array.from({ length: Math.max(0, 25 - fixtures.length) }).map((_, index) => (
+                  <tr 
+                    key={`empty-${index}`}
+                    style={{ 
+                      height: '32px', 
+                      backgroundColor: (fixtures.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                    }}
+                  >
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
+        </div>
 
-          <div className="space-y-1 text-xs text-gray-600">
-            {team.coach_name && (
-              <div className="flex items-center space-x-1">
-                <FontAwesomeIcon icon={faUsers} className="h-3 w-3" />
-                <span>Coach: {team.coach_name}</span>
+        {/* Pagination Footer */}
+        <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+          <div className="table-footer-left">
+            Showing {displayStart} to {displayEnd} of {pagination.total_items || fixtures.length} results.
+          </div>
+          <div className="table-footer-right">
+            {!activeSearchTerm && pagination.total_pages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  className="pagination-btn"
+                  onClick={() => setPagination(prev => ({ ...prev, current_page: Math.max(1, prev.current_page - 1) }))}
+                  disabled={pagination.current_page === 1}
+                >
+                  Previous
+                </button>
+                <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
+                  Page {pagination.current_page} of {pagination.total_pages}
+                </span>
+                <button
+                  className="pagination-btn"
+                  onClick={() => setPagination(prev => ({ ...prev, current_page: Math.min(prev.total_pages, prev.current_page + 1) }))}
+                  disabled={pagination.current_page === pagination.total_pages}
+                >
+                  Next
+                </button>
               </div>
             )}
-            <div className="flex items-center space-x-1">
-              <FontAwesomeIcon icon={faUsers} className="h-3 w-3" />
-              <span>{team.participant_count} members</span>
-            </div>
+            {!activeSearchTerm && pagination.total_pages <= 1 && (
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                All data displayed
+              </div>
+            )}
           </div>
+        </div>
+      </div>
+    );
+  };
 
-          <div className="flex space-x-1 mt-3">
+  const renderTeams = () => {
+    const displayStart = teams.length > 0 ? (pagination.current_page - 1) * pagination.items_per_page + 1 : 0;
+    const displayEnd = Math.min(pagination.current_page * pagination.items_per_page, pagination.total_items || teams.length);
+    const hasData = teams.length > 0;
+
+    return (
+      <div className="reports-container" style={{ 
+        height: '100%', 
+        maxHeight: '100%', 
+        overflow: 'hidden', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        position: 'relative' 
+      }}>
+        {/* Report Header */}
+        <div className="report-header" style={{ flexShrink: 0 }}>
+          <div className="report-header-content">
+            <h2 className="report-title">Teams</h2>
+            <p className="report-subtitle">Manage sports teams and members.</p>
+          </div>
+          <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
-              onClick={() => navigate(`/dashboard/sports/teams/${team.id}`)}
-              className="flex-1 px-2 py-1 text-gray-600 hover:bg-gray-50 transition-colors text-xs font-medium"
+              onClick={() => {
+                setEditingItem(null);
+                setShowAddTeamModal(true);
+              }}
+              className="btn-checklist"
             >
-              View Details
-            </button>
-            <button
-              onClick={() => handleEdit(team)}
-              className="p-1.5 text-gray-600 hover:bg-gray-100 transition-colors"
-              title="Edit Team"
-            >
-              <FontAwesomeIcon icon={faEdit} className="h-3 w-3" />
-            </button>
-            <button
-              onClick={() => handleDelete(team.id, 'team')}
-              className="p-1.5 text-red-600 hover:bg-red-50 transition-colors"
-              title="Delete Team"
-            >
-              <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
+              <FontAwesomeIcon icon={faPlus} />
+              Add Team
             </button>
           </div>
         </div>
-      ))}
-    </div>
-  );
 
-  const renderAnnouncements = () => (
-    <div className="space-y-3">
-      {announcements.map((announcement) => (
-        <div key={announcement.id} className="bg-white shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-2">
-                <FontAwesomeIcon icon={faBullhorn} className="h-4 w-4 text-gray-600" />
-                <h3 className="text-sm font-semibold text-gray-800">{announcement.title}</h3>
-                <span className={`px-2 py-0.5 text-xs font-medium ${getPriorityColor(announcement.priority)}`}>
-                  {announcement.priority}
-                </span>
-                <span className={`px-2 py-0.5 text-xs font-medium ${getStatusColor(announcement.status)}`}>
-                  {announcement.status}
-                </span>
-              </div>
-
-              <p className="text-xs text-gray-600 mb-3">{announcement.content}</p>
-
-              <div className="flex items-center space-x-3 text-xs text-gray-500">
-                <span>Type: {announcement.announcement_type}</span>
-                {announcement.sport_category_name && (
-                  <span>Sport: {announcement.sport_category_name}</span>
+        {/* Filters Section */}
+        <div className="report-filters" style={{ flexShrink: 0 }}>
+          <div className="report-filters-left">
+            {/* Search Bar */}
+            <form onSubmit={handleSearchTeams} className="filter-group">
+              <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <FontAwesomeIcon icon={faSearch} className="search-icon" />
+                <input
+                  type="text"
+                  value={teamSearchTerm}
+                  onChange={(e) => setTeamSearchTerm(e.target.value)}
+                  placeholder="Search by team name, coach, or category..."
+                  className="filter-input search-input"
+                />
+                {teamSearchTerm && (
+                  <button
+                    onClick={() => {
+                      setTeamSearchTerm('');
+                      setActiveTeamSearchTerm('');
+                      setPagination(prev => ({ ...prev, current_page: 1 }));
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      padding: '4px 6px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '20px',
+                      height: '20px'
+                    }}
+                    title="Clear search"
+                  >
+                    ×
+                  </button>
                 )}
-                {announcement.team_name && (
-                  <span>Team: {announcement.team_name}</span>
-                )}
-                <span>Created: {new Date(announcement.created_at).toLocaleDateString()}</span>
               </div>
-            </div>
-
-            <div className="flex space-x-1">
-              <button
-                onClick={() => handleEdit(announcement)}
-                className="p-1.5 text-gray-600 hover:bg-gray-100 transition-colors"
-                title="Edit Announcement"
+            </form>
+            
+            {/* Category Filter */}
+            <div className="filter-group">
+              <label className="filter-label" style={{ marginRight: '8px' }}>Category:</label>
+              <select
+                value={teamCategoryFilter}
+                onChange={(e) => {
+                  setTeamCategoryFilter(e.target.value);
+                  setPagination(prev => ({ ...prev, current_page: 1 }));
+                }}
+                className="filter-input"
+                style={{ minWidth: '180px', width: '180px' }}
               >
-                <FontAwesomeIcon icon={faEdit} className="h-3 w-3" />
-              </button>
-              <button
-                onClick={() => handleDelete(announcement.id, 'announcement')}
-                className="p-1.5 text-red-600 hover:bg-red-50 transition-colors"
-                title="Delete Announcement"
-              >
-                <FontAwesomeIcon icon={faTrash} className="h-3 w-3" />
-              </button>
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              {teamCategoryFilter && (
+                <button
+                  onClick={() => {
+                    setTeamCategoryFilter('');
+                    setPagination(prev => ({ ...prev, current_page: 1 }));
+                  }}
+                  style={{
+                    marginLeft: '8px',
+                    padding: '6px 10px',
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    color: 'var(--text-secondary)'
+                  }}
+                  title="Clear category filter"
+                >
+                  ×
+                </button>
+              )}
             </div>
           </div>
         </div>
-      ))}
-    </div>
-  );
+
+        {/* Error Display */}
+        {error && (
+          <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem' }}>
+            {error}
+          </div>
+        )}
+
+        {/* Table Container */}
+        <div className="report-content-container ecl-table-container" style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          flex: 1, 
+          overflow: 'auto', 
+          minHeight: 0,
+          padding: 0,
+          height: '100%'
+        }}>
+          {loading && teams.length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+              Loading teams...
+            </div>
+          ) : (
+            <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+              <thead style={{ 
+                position: 'sticky', 
+                top: 0, 
+                zIndex: 10, 
+                background: 'var(--sidebar-bg)' 
+              }}>
+                <tr>
+                  <th style={{ padding: '6px 10px' }}>TEAM NAME</th>
+                  <th style={{ padding: '6px 10px' }}>CATEGORY</th>
+                  <th style={{ padding: '6px 10px' }}>COACH</th>
+                  <th style={{ padding: '6px 10px' }}>MEMBERS</th>
+                  <th style={{ padding: '6px 10px' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teams.map((team, index) => (
+                  <tr 
+                    key={team.id} 
+                    style={{ 
+                      height: '32px', 
+                      backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                    }}
+                  >
+                    <td style={{ padding: '4px 10px' }}>
+                      {team.name}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      {team.sport_category_name || 'N/A'}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      {team.coach_name || 'N/A'}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      {team.participant_count || 0}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <button
+                          onClick={() => handleViewTeam(team)}
+                          style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          title="View"
+                        >
+                          <FontAwesomeIcon icon={faEye} />
+                        </button>
+                        <button
+                          onClick={() => handleEditTeam(team)}
+                          style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          title="Edit"
+                        >
+                          <FontAwesomeIcon icon={faEdit} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTeamClick(team)}
+                          style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          title="Delete"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {/* Empty placeholder rows to always show 25 rows */}
+                {Array.from({ length: Math.max(0, 25 - teams.length) }).map((_, index) => (
+                  <tr 
+                    key={`empty-${index}`}
+                    style={{ 
+                      height: '32px', 
+                      backgroundColor: (teams.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                    }}
+                  >
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+          <div className="table-footer-left">
+            Showing {displayStart} to {displayEnd} of {pagination.total_items || teams.length} results.
+          </div>
+          <div className="table-footer-right">
+            {!activeTeamSearchTerm && pagination.total_pages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  className="pagination-btn"
+                  onClick={() => setPagination(prev => ({ ...prev, current_page: Math.max(1, prev.current_page - 1) }))}
+                  disabled={pagination.current_page === 1}
+                >
+                  Previous
+                </button>
+                <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
+                  Page {pagination.current_page} of {pagination.total_pages}
+                </span>
+                <button
+                  className="pagination-btn"
+                  onClick={() => setPagination(prev => ({ ...prev, current_page: Math.min(prev.total_pages, prev.current_page + 1) }))}
+                  disabled={pagination.current_page === pagination.total_pages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+            {!activeTeamSearchTerm && pagination.total_pages <= 1 && (
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                All data displayed
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAnnouncements = () => {
+    const displayStart = announcements.length > 0 ? (pagination.current_page - 1) * pagination.items_per_page + 1 : 0;
+    const displayEnd = Math.min(pagination.current_page * pagination.items_per_page, pagination.total_items || announcements.length);
+    const hasData = announcements.length > 0;
+
+    return (
+      <div className="reports-container" style={{ 
+        height: '100%', 
+        maxHeight: '100%', 
+        overflow: 'hidden', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        position: 'relative' 
+      }}>
+        {/* Report Header */}
+        <div className="report-header" style={{ flexShrink: 0 }}>
+          <div className="report-header-content">
+            <h2 className="report-title">Announcements</h2>
+            <p className="report-subtitle">Manage sports announcements and updates.</p>
+          </div>
+          <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={() => {
+                setEditingItem(null);
+                setShowAddAnnouncementModal(true);
+              }}
+              className="btn-checklist"
+            >
+              <FontAwesomeIcon icon={faPlus} />
+              Add Announcement
+            </button>
+          </div>
+        </div>
+
+        {/* Filters Section */}
+        <div className="report-filters" style={{ flexShrink: 0 }}>
+          <div className="report-filters-left">
+            {/* Search Bar */}
+            <form onSubmit={handleSearchAnnouncements} className="filter-group">
+              <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <FontAwesomeIcon icon={faSearch} className="search-icon" />
+                <input
+                  type="text"
+                  value={announcementSearchTerm}
+                  onChange={(e) => setAnnouncementSearchTerm(e.target.value)}
+                  placeholder="Search by title, content, or type..."
+                  className="filter-input search-input"
+                />
+                {announcementSearchTerm && (
+                  <button
+                    onClick={() => {
+                      setAnnouncementSearchTerm('');
+                      setActiveAnnouncementSearchTerm('');
+                      setPagination(prev => ({ ...prev, current_page: 1 }));
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '8px',
+                      padding: '4px 6px',
+                      background: 'transparent',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '20px',
+                      height: '20px'
+                    }}
+                    title="Clear search"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </form>
+            
+            {/* Type Filter */}
+            <div className="filter-group">
+              <label className="filter-label" style={{ marginRight: '8px' }}>Type:</label>
+              <select
+                value={announcementTypeFilter}
+                onChange={(e) => {
+                  setAnnouncementTypeFilter(e.target.value);
+                  setPagination(prev => ({ ...prev, current_page: 1 }));
+                }}
+                className="filter-input"
+                style={{ minWidth: '150px', width: '150px' }}
+              >
+                <option value="">All Types</option>
+                <option value="fixture">Fixture</option>
+                <option value="result">Result</option>
+                <option value="general">General</option>
+                <option value="training">Training</option>
+                <option value="meeting">Meeting</option>
+              </select>
+              {announcementTypeFilter && (
+                <button
+                  onClick={() => {
+                    setAnnouncementTypeFilter('');
+                    setPagination(prev => ({ ...prev, current_page: 1 }));
+                  }}
+                  style={{
+                    marginLeft: '8px',
+                    padding: '6px 10px',
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    color: 'var(--text-secondary)'
+                  }}
+                  title="Clear type filter"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            
+            {/* Priority Filter */}
+            <div className="filter-group">
+              <label className="filter-label" style={{ marginRight: '8px' }}>Priority:</label>
+              <select
+                value={announcementPriorityFilter}
+                onChange={(e) => {
+                  setAnnouncementPriorityFilter(e.target.value);
+                  setPagination(prev => ({ ...prev, current_page: 1 }));
+                }}
+                className="filter-input"
+                style={{ minWidth: '150px', width: '150px' }}
+              >
+                <option value="">All Priorities</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              {announcementPriorityFilter && (
+                <button
+                  onClick={() => {
+                    setAnnouncementPriorityFilter('');
+                    setPagination(prev => ({ ...prev, current_page: 1 }));
+                  }}
+                  style={{
+                    marginLeft: '8px',
+                    padding: '6px 10px',
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    color: 'var(--text-secondary)'
+                  }}
+                  title="Clear priority filter"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            
+            {/* Category Filter */}
+            <div className="filter-group">
+              <label className="filter-label" style={{ marginRight: '8px' }}>Category:</label>
+              <select
+                value={announcementCategoryFilter}
+                onChange={(e) => {
+                  setAnnouncementCategoryFilter(e.target.value);
+                  setPagination(prev => ({ ...prev, current_page: 1 }));
+                }}
+                className="filter-input"
+                style={{ minWidth: '180px', width: '180px' }}
+              >
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              {announcementCategoryFilter && (
+                <button
+                  onClick={() => {
+                    setAnnouncementCategoryFilter('');
+                    setPagination(prev => ({ ...prev, current_page: 1 }));
+                  }}
+                  style={{
+                    marginLeft: '8px',
+                    padding: '6px 10px',
+                    background: 'transparent',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.7rem',
+                    color: 'var(--text-secondary)'
+                  }}
+                  title="Clear category filter"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem' }}>
+            {error}
+          </div>
+        )}
+
+        {/* Table Container */}
+        <div className="report-content-container ecl-table-container" style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          flex: 1, 
+          overflow: 'auto', 
+          minHeight: 0,
+          padding: 0,
+          height: '100%'
+        }}>
+          {loading && announcements.length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+              Loading announcements...
+            </div>
+          ) : (
+            <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+              <thead style={{ 
+                position: 'sticky', 
+                top: 0, 
+                zIndex: 10, 
+                background: 'var(--sidebar-bg)' 
+              }}>
+                <tr>
+                  <th style={{ padding: '6px 10px' }}>TITLE</th>
+                  <th style={{ padding: '6px 10px' }}>TYPE</th>
+                  <th style={{ padding: '6px 10px' }}>PRIORITY</th>
+                  <th style={{ padding: '6px 10px' }}>CATEGORY</th>
+                  <th style={{ padding: '6px 10px' }}>CREATED</th>
+                  <th style={{ padding: '6px 10px' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {announcements.map((announcement, index) => (
+                  <tr 
+                    key={announcement.id} 
+                    style={{ 
+                      height: '32px', 
+                      backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                    }}
+                  >
+                    <td style={{ padding: '4px 10px' }}>
+                      {announcement.title}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      {announcement.announcement_type || 'N/A'}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      <span 
+                        className="px-2 py-0.5 text-xs font-medium"
+                        style={{
+                          background: getPriorityColor(announcement.priority).background,
+                          color: getPriorityColor(announcement.priority).color,
+                          borderRadius: '4px',
+                          display: 'inline-block'
+                        }}
+                      >
+                        {announcement.priority || 'N/A'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      {announcement.sport_category_name || 'N/A'}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      {new Date(announcement.created_at).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: '4px 10px' }}>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <button
+                          onClick={() => handleViewAnnouncement(announcement)}
+                          style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          title="View"
+                        >
+                          <FontAwesomeIcon icon={faEye} />
+                        </button>
+                        <button
+                          onClick={() => handleEditAnnouncement(announcement)}
+                          style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          title="Edit"
+                        >
+                          <FontAwesomeIcon icon={faEdit} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAnnouncementClick(announcement)}
+                          style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          title="Delete"
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {/* Empty placeholder rows to always show 25 rows */}
+                {Array.from({ length: Math.max(0, 25 - announcements.length) }).map((_, index) => (
+                  <tr 
+                    key={`empty-${index}`}
+                    style={{ 
+                      height: '32px', 
+                      backgroundColor: (announcements.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                    }}
+                  >
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+          <div className="table-footer-left">
+            Showing {displayStart} to {displayEnd} of {pagination.total_items || announcements.length} results.
+          </div>
+          <div className="table-footer-right">
+            {!activeAnnouncementSearchTerm && pagination.total_pages > 1 && (
+              <div className="pagination-controls">
+                <button
+                  className="pagination-btn"
+                  onClick={() => setPagination(prev => ({ ...prev, current_page: Math.max(1, prev.current_page - 1) }))}
+                  disabled={pagination.current_page === 1}
+                >
+                  Previous
+                </button>
+                <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
+                  Page {pagination.current_page} of {pagination.total_pages}
+                </span>
+                <button
+                  className="pagination-btn"
+                  onClick={() => setPagination(prev => ({ ...prev, current_page: Math.min(prev.total_pages, prev.current_page + 1) }))}
+                  disabled={pagination.current_page === pagination.total_pages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+            {!activeAnnouncementSearchTerm && pagination.total_pages <= 1 && (
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                All data displayed
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderFilters = () => (
     <div className="bg-white shadow-sm border border-gray-200 p-4 mb-4">
@@ -558,7 +1729,7 @@ const Sports = () => {
     );
   };
 
-  if (loading) {
+  if (loading && activeTab !== 'fixtures') {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-gray-500">Loading sports data...</div>
@@ -567,112 +1738,525 @@ const Sports = () => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-gray-800">Sports Management</h1>
-          <p className="text-sm text-gray-600">Manage sports fixtures, teams, and announcements</p>
-        </div>
-        <button
-          onClick={handleCreate}
-          className="px-3 py-1.5 bg-gray-700 text-white text-sm hover:bg-gray-800 transition-colors"
-        >
-          <FontAwesomeIcon icon={faPlus} className="h-3 w-3 mr-1" />
-          Add {activeTab === 'fixtures' ? 'Fixture' : activeTab === 'teams' ? 'Team' : 'Announcement'}
-        </button>
-      </div>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {showCalendar ? (
+        <SportsCalendar />
+      ) : (
+        <>
+          {activeTab === 'fixtures' && renderFixtures()}
+          {activeTab === 'teams' && renderTeams()}
+          {activeTab === 'announcements' && renderAnnouncements()}
+        </>
+      )}
 
-      {/* Tabs */}
-      <div className="border-b border-gray-300">
-        <nav className="-mb-px flex space-x-6">
-          {[
-            { id: 'fixtures', label: 'Fixtures', icon: faCalendarAlt },
-            { id: 'teams', label: 'Teams', icon: faUsers },
-            { id: 'announcements', label: 'Announcements', icon: faBullhorn }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-1.5 px-1 border-b-2 font-medium text-xs ${
-                activeTab === tab.id
-                  ? 'border-gray-600 text-gray-800'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-400'
-              }`}
-            >
-              <FontAwesomeIcon icon={tab.icon} className="h-3 w-3 mr-1" />
-              {tab.label}
-            </button>
-          ))}
-          <button
-            onClick={() => setShowCalendar(!showCalendar)}
-            className={`py-1.5 px-1 border-b-2 font-medium text-xs ${
-              showCalendar
-                ? 'border-gray-600 text-gray-800'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-400'
-            }`}
+      {/* Fixtures Modals */}
+      {activeTab === 'fixtures' && (
+        <>
+          <CreateFixtureModal
+            isOpen={showAddFixtureModal || showEditFixtureModal}
+            onClose={() => {
+              setShowAddFixtureModal(false);
+              setShowEditFixtureModal(false);
+              setEditingItem(null);
+            }}
+            onSuccess={handleFixtureModalSuccess}
+            editingFixture={editingItem}
+          />
+          
+          {/* View Fixture Modal */}
+          {showViewFixtureModal && selectedFixture && (
+            <div className="modal-overlay" onClick={() => setShowViewFixtureModal(false)}>
+              <div 
+                className="modal-dialog" 
+                onClick={(e) => e.stopPropagation()}
+                style={{ maxWidth: '600px' }}
+              >
+                <div className="modal-header">
+                  <h3 className="modal-title">Fixture Details</h3>
+                  <button className="modal-close-btn" onClick={() => setShowViewFixtureModal(false)}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+                
+                <div className="modal-body">
+                  <div style={{ display: 'grid', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Title</label>
+                      <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                        {selectedFixture.title}
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Date</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                          {new Date(selectedFixture.fixture_date).toLocaleDateString()}
+                        </div>
+                      </div>
+                      
+                      <div className="form-group">
+                        <label className="form-label">Status</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                          <span 
+                            className="px-2 py-0.5 text-xs font-medium"
+                            style={{
+                              background: getStatusColor(selectedFixture.status).background,
+                              color: getStatusColor(selectedFixture.status).color,
+                              borderRadius: '4px',
+                              display: 'inline-block'
+                            }}
+                          >
+                            {selectedFixture.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Teams</label>
+                      <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                        {selectedFixture.home_team_name} vs {selectedFixture.away_team_name}
+                      </div>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Venue</label>
+                      <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                        {selectedFixture.venue || 'N/A'}
+                      </div>
+                    </div>
+                    
+                    {selectedFixture.result_home_score !== null && (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                          <div className="form-group">
+                            <label className="form-label">Home Score</label>
+                            <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                              {selectedFixture.result_home_score}
+                            </div>
+                          </div>
+                          
+                          <div className="form-group">
+                            <label className="form-label">Away Score</label>
+                            <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                              {selectedFixture.result_away_score}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {selectedFixture.result_notes && (
+                          <div className="form-group">
+                            <label className="form-label">Result Notes</label>
+                            <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                              {selectedFixture.result_notes}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="modal-footer">
+                  <button 
+                    className="modal-btn modal-btn-cancel" 
+                    onClick={() => setShowViewFixtureModal(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Delete Fixture Modal */}
+          {showDeleteFixtureModal && fixtureToDelete && (
+            <div className="modal-overlay" onClick={() => setShowDeleteFixtureModal(false)}>
+              <div 
+                className="modal-dialog" 
+                onClick={(e) => e.stopPropagation()}
+                style={{ maxWidth: '400px' }}
+              >
+                <div className="modal-header">
+                  <h3 className="modal-title">Delete Fixture</h3>
+                  <button className="modal-close-btn" onClick={() => setShowDeleteFixtureModal(false)}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+                
+                <div className="modal-body">
+                  <p style={{ marginBottom: '16px', fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    Are you sure you want to delete this fixture? This action cannot be undone.
+                  </p>
+                  
+                  <div style={{ 
+                    padding: '12px', 
+                    background: '#f9fafb', 
+                    borderRadius: '4px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Fixture Information
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                      <strong>Title:</strong> {fixtureToDelete.title}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                      <strong>Date:</strong> {new Date(fixtureToDelete.fixture_date).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="modal-footer">
+                  <button 
+                    className="modal-btn modal-btn-cancel" 
+                    onClick={() => setShowDeleteFixtureModal(false)}
+                    disabled={isDeletingFixture}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className="modal-btn modal-btn-delete" 
+                    onClick={handleConfirmDeleteFixture}
+                    disabled={isDeletingFixture}
+                  >
+                    {isDeletingFixture ? 'Deleting...' : 'Delete Fixture'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+      
+      {/* Teams Modals */}
+      {activeTab === 'teams' && (
+        <>
+          <CreateTeamModal
+            isOpen={showAddTeamModal || showEditTeamModal}
+            onClose={() => {
+              setShowAddTeamModal(false);
+              setShowEditTeamModal(false);
+              setEditingItem(null);
+            }}
+            onSuccess={handleTeamModalSuccess}
+            editingTeam={editingItem}
+          />
+          
+          {/* View Team Modal */}
+          {showViewTeamModal && selectedTeam && (
+            <div className="modal-overlay" onClick={() => setShowViewTeamModal(false)}>
+              <div 
+                className="modal-dialog" 
+                onClick={(e) => e.stopPropagation()}
+                style={{ maxWidth: '600px' }}
+              >
+                <div className="modal-header">
+                  <h3 className="modal-title">Team Details</h3>
+                  <button className="modal-close-btn" onClick={() => setShowViewTeamModal(false)}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+                
+                <div className="modal-body">
+                  <div style={{ display: 'grid', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Team Name</label>
+                      <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                        {selectedTeam.name}
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Sport Category</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                          {selectedTeam.sport_category_name || 'N/A'}
+                        </div>
+                      </div>
+                      
+                      <div className="form-group">
+                        <label className="form-label">Members</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                          {selectedTeam.participant_count || 0}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {selectedTeam.coach_name && (
+                      <div className="form-group">
+                        <label className="form-label">Coach</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                          {selectedTeam.coach_name}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {selectedTeam.description && (
+                      <div className="form-group">
+                        <label className="form-label">Description</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px', minHeight: '60px' }}>
+                          {selectedTeam.description}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="modal-footer">
+                  <button 
+                    className="modal-btn modal-btn-cancel" 
+                    onClick={() => setShowViewTeamModal(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Delete Team Modal */}
+          {showDeleteTeamModal && teamToDelete && (
+            <div className="modal-overlay" onClick={() => setShowDeleteTeamModal(false)}>
+              <div 
+                className="modal-dialog" 
+                onClick={(e) => e.stopPropagation()}
+                style={{ maxWidth: '400px' }}
+              >
+                <div className="modal-header">
+                  <h3 className="modal-title">Delete Team</h3>
+                  <button className="modal-close-btn" onClick={() => setShowDeleteTeamModal(false)}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+                
+                <div className="modal-body">
+                  <p style={{ marginBottom: '16px', fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    Are you sure you want to delete this team? This action cannot be undone.
+                  </p>
+                  
+                  <div style={{ 
+                    padding: '12px', 
+                    background: '#f9fafb', 
+                    borderRadius: '4px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Team Information
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                      <strong>Name:</strong> {teamToDelete.name}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                      <strong>Category:</strong> {teamToDelete.sport_category_name || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="modal-footer">
+                  <button 
+                    className="modal-btn modal-btn-cancel" 
+                    onClick={() => setShowDeleteTeamModal(false)}
+                    disabled={isDeletingTeam}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className="modal-btn modal-btn-delete" 
+                    onClick={handleConfirmDeleteTeam}
+                    disabled={isDeletingTeam}
+                  >
+                    {isDeletingTeam ? 'Deleting...' : 'Delete Team'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+      
+      {/* Announcements Modals */}
+      {activeTab === 'announcements' && (
+        <>
+          <CreateAnnouncementModal
+            isOpen={showAddAnnouncementModal || showEditAnnouncementModal}
+            onClose={() => {
+              setShowAddAnnouncementModal(false);
+              setShowEditAnnouncementModal(false);
+              setEditingItem(null);
+            }}
+            onSuccess={handleAnnouncementModalSuccess}
+            editingAnnouncement={editingItem}
+          />
+          
+          {/* View Announcement Modal */}
+          {showViewAnnouncementModal && selectedAnnouncement && (
+            <div className="modal-overlay" onClick={() => setShowViewAnnouncementModal(false)}>
+              <div 
+                className="modal-dialog" 
+                onClick={(e) => e.stopPropagation()}
+                style={{ maxWidth: '600px' }}
+              >
+                <div className="modal-header">
+                  <h3 className="modal-title">Announcement Details</h3>
+                  <button className="modal-close-btn" onClick={() => setShowViewAnnouncementModal(false)}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+                
+                <div className="modal-body">
+                  <div style={{ display: 'grid', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Title</label>
+                      <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                        {selectedAnnouncement.title}
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Type</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                          {selectedAnnouncement.announcement_type || 'N/A'}
+                        </div>
+                      </div>
+                      
+                      <div className="form-group">
+                        <label className="form-label">Priority</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                          <span 
+                            className="px-2 py-0.5 text-xs font-medium"
+                            style={{
+                              background: getPriorityColor(selectedAnnouncement.priority).background,
+                              color: getPriorityColor(selectedAnnouncement.priority).color,
+                              borderRadius: '4px',
+                              display: 'inline-block'
+                            }}
+                          >
+                            {selectedAnnouncement.priority || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {selectedAnnouncement.sport_category_name && (
+                      <div className="form-group">
+                        <label className="form-label">Sport Category</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                          {selectedAnnouncement.sport_category_name}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {selectedAnnouncement.team_name && (
+                      <div className="form-group">
+                        <label className="form-label">Team</label>
+                        <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                          {selectedAnnouncement.team_name}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="form-group">
+                      <label className="form-label">Content</label>
+                      <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px', minHeight: '60px' }}>
+                        {selectedAnnouncement.content}
+                      </div>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Created</label>
+                      <div style={{ padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                        {new Date(selectedAnnouncement.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="modal-footer">
+                  <button 
+                    className="modal-btn modal-btn-cancel" 
+                    onClick={() => setShowViewAnnouncementModal(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Delete Announcement Modal */}
+          {showDeleteAnnouncementModal && announcementToDelete && (
+            <div className="modal-overlay" onClick={() => setShowDeleteAnnouncementModal(false)}>
+              <div 
+                className="modal-dialog" 
+                onClick={(e) => e.stopPropagation()}
+                style={{ maxWidth: '400px' }}
+              >
+                <div className="modal-header">
+                  <h3 className="modal-title">Delete Announcement</h3>
+                  <button className="modal-close-btn" onClick={() => setShowDeleteAnnouncementModal(false)}>
+                    <FontAwesomeIcon icon={faTimes} />
+                  </button>
+                </div>
+                
+                <div className="modal-body">
+                  <p style={{ marginBottom: '16px', fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                    Are you sure you want to delete this announcement? This action cannot be undone.
+                  </p>
+                  
+                  <div style={{ 
+                    padding: '12px', 
+                    background: '#f9fafb', 
+                    borderRadius: '4px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Announcement Information
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                      <strong>Title:</strong> {announcementToDelete.title}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                      <strong>Type:</strong> {announcementToDelete.announcement_type || 'N/A'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="modal-footer">
+                  <button 
+                    className="modal-btn modal-btn-cancel" 
+                    onClick={() => setShowDeleteAnnouncementModal(false)}
+                    disabled={isDeletingAnnouncement}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className="modal-btn modal-btn-delete" 
+                    onClick={handleConfirmDeleteAnnouncement}
+                    disabled={isDeletingAnnouncement}
+                  >
+                    {isDeletingAnnouncement ? 'Deleting...' : 'Delete Announcement'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Success Toast */}
+      {toast.visible && toast.message && (
+        <div className="success-toast">
+          <div 
+            className="success-toast-content" 
+            style={{ background: getToastBackgroundColor(toast.type) }}
           >
-            <FontAwesomeIcon icon={faCalendarAlt} className="h-3 w-3 mr-1" />
-            Calendar
-          </button>
-        </nav>
-      </div>
-
-      {/* Filters */}
-      {renderFilters()}
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 p-3">
-          <div className="flex items-center">
-            <FontAwesomeIcon icon={faExclamationTriangle} className="h-4 w-4 text-red-400 mr-2" />
-            <span className="text-sm text-red-700">{error}</span>
+            {getToastIcon(toast.type)}
+            <span>{toast.message}</span>
           </div>
         </div>
-      )}
-
-      {/* Content */}
-      <div>
-        {showCalendar ? (
-          <SportsCalendar />
-        ) : (
-          <>
-            {activeTab === 'fixtures' && renderFixtures()}
-            {activeTab === 'teams' && renderTeams()}
-            {activeTab === 'announcements' && renderAnnouncements()}
-          </>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {renderPagination()}
-
-      {/* Modals */}
-      {activeTab === 'fixtures' && (
-        <CreateFixtureModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={handleModalSuccess}
-          editingFixture={editingItem}
-        />
-      )}
-      
-      {activeTab === 'teams' && (
-        <CreateTeamModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={handleModalSuccess}
-          editingTeam={editingItem}
-        />
-      )}
-      
-      {activeTab === 'announcements' && (
-        <CreateAnnouncementModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={handleModalSuccess}
-          editingAnnouncement={editingItem}
-        />
       )}
     </div>
   );
