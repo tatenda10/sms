@@ -103,15 +103,17 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', authToken);
         localStorage.setItem('user', JSON.stringify(userData));
         
+        // Set loading to false immediately after successful login
+        setIsLoading(false);
+        
         return { success: true, user: userData };
       } else {
         throw new Error(data.error || 'Username or password is wrong');
       }
     } catch (error) {
       console.error('❌ Login error:', error);
-      throw error;
-    } finally {
       setIsLoading(false);
+      throw error;
     }
   };
 
