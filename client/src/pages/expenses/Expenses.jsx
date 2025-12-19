@@ -268,7 +268,7 @@ const Expenses = () => {
       {error && (
         <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', flexShrink: 0 }}>
           {error}
-        </div>
+      </div>
       )}
 
       {/* Filters Section */}
@@ -484,8 +484,8 @@ const Expenses = () => {
                   <td style={{ padding: '4px 10px' }}>&nbsp;</td>
                   <td style={{ padding: '4px 10px' }}>&nbsp;</td>
                   <td style={{ padding: '4px 10px' }}>&nbsp;</td>
-                </tr>
-              ))}
+                  </tr>
+                ))}
               </tbody>
             </table>
         )}
@@ -521,9 +521,9 @@ const Expenses = () => {
           {totalPages <= 1 && (
             <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
               All data displayed
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
       </div>
       {/* View Modal */}
       {showViewModal && (
@@ -546,7 +546,7 @@ const Expenses = () => {
                 </div>
                 <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                   <div style={{ height: '32px', width: '80px', background: '#e5e7eb', borderRadius: '4px' }}></div>
-                </div>
+            </div>
               </>
             ) : viewExpense ? (
               // Content State
@@ -632,8 +632,8 @@ const Expenses = () => {
                       </div>
                       <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
                         {viewExpense.created_at || 'N/A'}
-                      </div>
-                    </div>
+                </div>
+                </div>
                 </div>
                 </div>
                 <div className="modal-footer">
@@ -652,10 +652,10 @@ const Expenses = () => {
                     Close
                   </button>
                 </div>
-              </div>
+                </div>
             )}
-          </div>
-        </div>
+                </div>
+              </div>
       )}
 
       {/* Add Expense Modal */}

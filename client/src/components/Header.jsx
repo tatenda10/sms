@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faBell, 
-  faUser, 
-  faCog, 
-  faSignOutAlt, 
+import {
+  faBell,
+  faUser,
+  faCog,
+  faSignOutAlt,
   faBars,
   faCalendarAlt,
   faUsers,
@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useSports } from '../contexts/SportsContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import logo from '../assets/logo.png';
+import logo from '../assets/brooklyne.png';
 
 const Header = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
@@ -21,14 +21,14 @@ const Header = ({ onMenuClick }) => {
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
-  
+
   // Get sports context (will return default if not in provider)
   const sportsContext = useSports();
   const { activeTab: activeSportsTab, setActiveTab: onSportsTabChange, showCalendar } = sportsContext;
-  
+
   // Check if we're on the sports page
   const isSportsPage = location.pathname.startsWith('/dashboard/sports');
-  
+
   // Determine active tab for display (calendar is shown separately)
   const displayActiveTab = showCalendar ? 'calendar' : activeSportsTab;
 
@@ -86,13 +86,20 @@ const Header = ({ onMenuClick }) => {
             <FontAwesomeIcon icon={faBars} className="h-6 w-6" aria-hidden="true" />
           </button>
           <img src={logo} alt="Logo" className="top-nav-logo" />
+          <span className="hidden md:inline" style={{
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            color: 'var(--text-primary)',
+            marginLeft: '4px',
+            whiteSpace: 'nowrap'
+          }}>Brooklyn Private School</span>
         </div>
 
         {/* Center - Sports Navigation Menu */}
         {isSportsPage && (
-          <div className="top-nav-center" style={{ 
-            position: 'absolute', 
-            left: '50%', 
+          <div className="top-nav-center" style={{
+            position: 'absolute',
+            left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex',
             alignItems: 'center',
@@ -168,13 +175,13 @@ const Header = ({ onMenuClick }) => {
               <p className="top-nav-username">{user?.username || 'User'}</p>
               <p className="top-nav-user-role">{getUserRole()}</p>
             </div>
-            <div 
+            <div
               className="top-nav-avatar"
               onClick={() => setShowDropdown(!showDropdown)}
             >
               {getInitials()}
             </div>
-            
+
             {/* Dropdown Menu */}
             {showDropdown && (
               <div className="avatar-dropdown">

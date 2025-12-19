@@ -1,17 +1,17 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faTachometerAlt, 
-  faUserGraduate, 
+import {
+  faTachometerAlt,
+  faUserGraduate,
   faUsers,
-  faSchool, 
-  faCalendarAlt, 
-  faChartBar, 
+  faSchool,
+  faCalendarAlt,
+  faChartBar,
   faBed,
   faRoute,
   faTrophy,
-  faCreditCard, 
+  faCreditCard,
   faMoneyBillWave,
   faShoppingCart,
   faList,
@@ -24,7 +24,7 @@ import {
   faSignOutAlt,
   faHome
 } from '@fortawesome/free-solid-svg-icons';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo(2).png';
 
 const Sidebar = ({ open, setOpen }) => {
   const location = useLocation();
@@ -33,35 +33,35 @@ const Sidebar = ({ open, setOpen }) => {
   const mainSections = [
     // 1. Overview & Entry Point
     { name: 'Dashboard', href: '/dashboard', icon: faHome },
-    
+
     // 2. Student Management (Core Workflow)
     { name: 'Students', href: '/dashboard/students', icon: faUserGraduate },
     { name: 'Classes', href: '/dashboard/classes', icon: faSchool },
     { name: 'Timetables', href: '/dashboard/timetables', icon: faCalendarAlt },
     { name: 'Results', href: '/dashboard/results', icon: faChartBar },
-    
+
     // 3. Student Services (Optional Services)
     { name: 'Boarding', href: '/dashboard/boarding', icon: faBed },
     { name: 'Transport', href: '/dashboard/transport/routes', icon: faRoute },
     { name: 'Sports', href: '/dashboard/sports', icon: faTrophy },
-    
+
     // 4. Financial Management (Billing & Payments)
     { name: 'Student Billing', href: '/dashboard/fees-payment', icon: faCreditCard },
-    
+
     // 5. Accounting & Operations
     { name: 'Accounting', href: '/dashboard/accounting/chart-of-accounts', icon: faMoneyBillWave },
     { name: 'Expenses', href: '/dashboard/expenses/expenses', icon: faShoppingCart },
     { name: 'Procurement', href: '/dashboard/procurement', icon: faList },
     { name: 'Payroll', href: '/dashboard/payroll', icon: faCalculator },
-    
+
     // 6. Asset & Inventory Management
     { name: 'Inventory', href: '/dashboard/inventory', icon: faFileAlt },
     { name: 'Fixed Assets', href: '/dashboard/assets', icon: faWarehouse },
-    
+
     // 7. Reporting & Analytics
     { name: 'Financial Reports', href: '/dashboard/reports/income-statement', icon: faChartLine },
     { name: 'Analytics', href: '/dashboard/analytics/expense-analysis', icon: faChartPie },
-    
+
     // 8. System Administration
     { name: 'Admin', href: '/dashboard/settings', icon: faCog },
   ];
@@ -73,7 +73,7 @@ const Sidebar = ({ open, setOpen }) => {
     // Determine if this item should be active - only one at a time
     const currentPath = location.pathname.trim();
     let shouldBeActive = false;
-    
+
     if (item.name === 'Dashboard') {
       // Dashboard is ONLY active when exactly on /dashboard or /dashboard/ (no sub-routes)
       shouldBeActive = (currentPath === '/dashboard' || currentPath === '/dashboard/');
@@ -85,7 +85,7 @@ const Sidebar = ({ open, setOpen }) => {
         shouldBeActive = currentPath === item.href || currentPath.startsWith(item.href + '/');
       }
     }
-    
+
     return (
       <NavLink
         key={item.name}
@@ -109,16 +109,16 @@ const Sidebar = ({ open, setOpen }) => {
       {open && (
         <>
           {/* Backdrop */}
-          <div 
+          <div
             className="sidebar-mobile-backdrop lg:hidden"
             onClick={() => setOpen(false)}
           />
-          
+
           {/* Mobile Sidebar */}
           <aside className="sidebar-mobile lg:hidden">
             <div className="sidebar-header" style={{ justifyContent: 'space-between' }}>
               <img src={logo} alt="Logo" className="sidebar-logo" />
-              <button 
+              <button
                 onClick={() => setOpen(false)}
                 className="text-gray-600 hover:text-gray-900 p-1"
               >
