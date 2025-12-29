@@ -8,10 +8,16 @@ import {
   faBars,
   faCalendarAlt,
   faUsers,
-  faBullhorn
+  faBullhorn,
+  faMoneyBillWave,
+  faShoppingCart,
+  faList,
+  faWarehouse,
+  faChartLine
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useSports } from '../contexts/SportsContext';
+import { useAccounting } from '../contexts/AccountingContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/brooklyne.png';
 
@@ -26,8 +32,54 @@ const Header = ({ onMenuClick }) => {
   const sportsContext = useSports();
   const { activeTab: activeSportsTab, setActiveTab: onSportsTabChange, showCalendar } = sportsContext;
 
+  // Get accounting context (will return default if not in provider)
+  const accountingContext = useAccounting();
+  const { activeTab: activeAccountingTab, setActiveTab: onAccountingTabChange } = accountingContext;
+
   // Check if we're on the sports page
   const isSportsPage = location.pathname.startsWith('/dashboard/sports');
+
+  // Check if we're on an accounting page
+  const isAccountingPage = location.pathname.startsWith('/dashboard/accounting') || 
+                           location.pathname.startsWith('/dashboard/expenses') ||
+                           location.pathname.startsWith('/dashboard/procurement') ||
+                           location.pathname.startsWith('/dashboard/assets') ||
+                           location.pathname.startsWith('/dashboard/reports');
+
+  // Set active accounting tab based on current route
+  useEffect(() => {
+    if (isAccountingPage && onAccountingTabChange) {
+      if (location.pathname.startsWith('/dashboard/accounting')) {
+        onAccountingTabChange('chart-of-accounts');
+      } else if (location.pathname.startsWith('/dashboard/expenses')) {
+        onAccountingTabChange('expenses');
+      } else if (location.pathname.startsWith('/dashboard/procurement')) {
+        onAccountingTabChange('procurement');
+      } else if (location.pathname.startsWith('/dashboard/assets')) {
+        onAccountingTabChange('fixed-assets');
+      } else if (location.pathname.startsWith('/dashboard/reports')) {
+        onAccountingTabChange('financial-reports');
+      }
+    }
+  }, [location.pathname, isAccountingPage, onAccountingTabChange]);
+
+  // Determine active accounting tab from route (for display)
+  const getActiveAccountingTab = () => {
+    if (location.pathname.startsWith('/dashboard/accounting')) {
+      return 'chart-of-accounts';
+    } else if (location.pathname.startsWith('/dashboard/expenses')) {
+      return 'expenses';
+    } else if (location.pathname.startsWith('/dashboard/procurement')) {
+      return 'procurement';
+    } else if (location.pathname.startsWith('/dashboard/assets')) {
+      return 'fixed-assets';
+    } else if (location.pathname.startsWith('/dashboard/reports')) {
+      return 'financial-reports';
+    }
+    return activeAccountingTab;
+  };
+
+  const displayActiveAccountingTab = getActiveAccountingTab();
 
   // Determine active tab for display (calendar is shown separately)
   const displayActiveTab = showCalendar ? 'calendar' : activeSportsTab;
@@ -152,9 +204,71 @@ const Header = ({ onMenuClick }) => {
             ))}
           </div>
         )}
-        {!isSportsPage && (
+        {isAccountingPage && (
+          <div className="top-nav-center" style={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0'
+          }}>
+            {[
+              { id: 'chart-of-accounts', label: 'Chart of Accounts', icon: faMoneyBillWave, path: '/dashboard/accounting/chart-of-accounts' },
+              { id: 'expenses', label: 'Expenses', icon: faShoppingCart, path: '/dashboard/expenses/expenses' },
+              { id: 'procurement', label: 'Procurement', icon: faList, path: '/dashboard/procurement' },
+              { id: 'fixed-assets', label: 'Fixed Assets', icon: faWarehouse, path: '/dashboard/assets' },
+              { id: 'financial-reports', label: 'Financial Reports', icon: faChartLine, path: '/dashboard/reports/income-statement' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (onAccountingTabChange) {
+                    onAccountingTabChange(tab.id);
+                  }
+                  navigate(tab.path);
+                }}
+                className={`top-nav-menu-item ${displayActiveAccountingTab === tab.id ? 'active' : ''}`}
+                style={{
+                  padding: '12px 20px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: displayActiveAccountingTab === tab.id ? '#2563eb' : 'var(--text-secondary)',
+                  borderBottom: displayActiveAccountingTab === tab.id ? '2px solid #2563eb' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  borderTop: 'none',
+                  borderLeft: 'none',
+                  borderRight: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  if (displayActiveAccountingTab !== tab.id) {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (displayActiveAccountingTab !== tab.id) {
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={tab.icon} style={{ fontSize: '0.75rem' }} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {!isSportsPage && !isAccountingPage && (
           <div className="top-nav-center">
-            {/* Empty when not on sports page */}
+            {/* Empty when not on sports or accounting page */}
           </div>
         )}
 

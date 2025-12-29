@@ -26,18 +26,26 @@ const Payslips = () => {
   
   const [payslips, setPayslips] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState(searchParams.get('period') || '');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [showPayslipModal, setShowPayslipModal] = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState(null);
   const [currencies, setCurrencies] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPayslips, setTotalPayslips] = useState(0);
+  const [limit] = useState(25);
 
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
   useEffect(() => {
-    loadPayslips();
     loadCurrencies();
-  }, [selectedPeriod, selectedDepartment]);
+  }, []);
+
+  useEffect(() => {
+    loadPayslips();
+  }, [currentPage, activeSearchTerm, selectedPeriod, selectedDepartment]);
 
   const loadPayslips = async () => {
     try {
@@ -45,12 +53,18 @@ const Payslips = () => {
       setError(null);
       
       // Build query parameters
-      const params = new URLSearchParams();
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: limit
+      });
+      if (activeSearchTerm) {
+        params.append('search', activeSearchTerm);
+      }
       if (selectedPeriod) {
         params.append('pay_period', selectedPeriod);
       }
       if (selectedDepartment && selectedDepartment !== 'all') {
-        // Note: We'll need to filter by department after fetching since it's not a direct field
+        params.append('department', selectedDepartment);
       }
       
       const response = await axios.get(`${BASE_URL}/payroll/payslips?${params}`, {
@@ -58,7 +72,15 @@ const Payslips = () => {
       });
       
       if (response.data.success) {
-        setPayslips(response.data.data);
+        setPayslips(response.data.data || []);
+        if (response.data.pagination) {
+          setTotalPages(response.data.pagination.pages || 1);
+          setTotalPayslips(response.data.pagination.total || 0);
+        } else {
+          // Fallback if no pagination data
+          setTotalPayslips(response.data.data?.length || 0);
+          setTotalPages(1);
+        }
       } else {
         setError('Failed to load payslips');
       }
@@ -67,6 +89,12 @@ const Payslips = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setActiveSearchTerm(searchTerm);
+    setCurrentPage(1);
   };
 
   const loadCurrencies = async () => {
@@ -83,14 +111,9 @@ const Payslips = () => {
     }
   };
 
-  const filteredPayslips = payslips.filter(payslip => {
-    const matchesSearch = payslip.employee_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payslip.employee_id?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPeriod = !selectedPeriod || payslip.pay_period === selectedPeriod;
-    const matchesDepartment = selectedDepartment === 'all' || payslip.department_name === selectedDepartment;
-    
-    return matchesSearch && matchesPeriod && matchesDepartment;
-  });
+  // Calculate display ranges for pagination
+  const displayStart = payslips.length > 0 ? (currentPage - 1) * limit + 1 : 0;
+  const displayEnd = Math.min(currentPage * limit, totalPayslips);
 
   const handleViewPayslip = async (payslip) => {
     try {
@@ -304,142 +327,273 @@ const Payslips = () => {
     });
   };
 
+  if (loading && payslips.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading payslips...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-white border border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-medium text-gray-900">Employee Payslips</h1>
-            <p className="text-xs text-gray-500 mt-1">View and manage employee payslips</p>
-          </div>
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative' 
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">Employee Payslips</h2>
+          <p className="report-subtitle">View and manage employee payslips.</p>
+        </div>
+        <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={() => navigate('/dashboard/payroll')}
-            className="text-gray-600 hover:text-gray-800 text-xs"
+            style={{
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-color)',
+              padding: '8px 16px',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              cursor: 'pointer'
+            }}
           >
             Back to Payroll
           </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white border border-gray-200 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Search Employee</label>
-            <div className="relative">
-              <FontAwesomeIcon icon={faSearch} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
+      {/* Filters Section */}
+      <div className="report-filters" style={{ flexShrink: 0 }}>
+        <div className="report-filters-left">
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="filter-group">
+            <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <FontAwesomeIcon icon={faSearch} className="search-icon" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Name or employee number..."
-                className="w-full pl-6 pr-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                placeholder="Search by employee name or ID..."
+                className="filter-input search-input"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setActiveSearchTerm('');
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    padding: '4px 6px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '20px',
+                    height: '20px'
+                  }}
+                  title="Clear search"
+                >
+                  ×
+                </button>
+              )}
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Pay Period</label>
+          </form>
+          
+          {/* Pay Period Filter */}
+          <div className="filter-group">
+            <label className="filter-label" style={{ marginRight: '8px' }}>Period:</label>
             <input
               type="month"
               value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+              onChange={(e) => {
+                setSelectedPeriod(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="filter-input"
+              style={{ minWidth: '150px', width: '150px' }}
             />
+            {selectedPeriod && (
+              <button
+                onClick={() => {
+                  setSelectedPeriod('');
+                  setCurrentPage(1);
+                }}
+                style={{
+                  marginLeft: '8px',
+                  padding: '6px 10px',
+                  background: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  color: 'var(--text-secondary)'
+                }}
+                title="Clear period filter"
+              >
+                ×
+              </button>
+            )}
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Department</label>
+          
+          {/* Department Filter */}
+          <div className="filter-group">
+            <label className="filter-label" style={{ marginRight: '8px' }}>Department:</label>
             <select
               value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+              onChange={(e) => {
+                setSelectedDepartment(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="filter-input"
+              style={{ minWidth: '150px', width: '150px' }}
             >
               <option value="all">All Departments</option>
               <option value="Teaching">Teaching Staff</option>
               <option value="Administration">Administration</option>
               <option value="Support">Support Staff</option>
             </select>
-          </div>
-          <div className="flex items-end">
-            <button className="bg-gray-900 text-white px-3 py-1.5 text-xs hover:bg-gray-800 flex items-center space-x-1">
-              <FontAwesomeIcon icon={faFilter} className="text-xs" />
-              <span>Filter</span>
-            </button>
+            {selectedDepartment !== 'all' && (
+              <button
+                onClick={() => {
+                  setSelectedDepartment('all');
+                  setCurrentPage(1);
+                }}
+                style={{
+                  marginLeft: '8px',
+                  padding: '6px 10px',
+                  background: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  color: 'var(--text-secondary)'
+                }}
+                title="Clear department filter"
+              >
+                ×
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Payslips Table */}
-      <div className="bg-white border border-gray-200">
-        <div className="px-4 py-3 border-b border-gray-200">
-          <h2 className="text-sm font-medium text-gray-900">
-            Payslips ({filteredPayslips.length})
-          </h2>
+      {/* Error Display */}
+      {error && (
+        <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem' }}>
+          {error}
         </div>
-        
-        <div className="overflow-x-auto">
-          {filteredPayslips.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500 text-sm">No payslips found</div>
-              <div className="text-gray-400 text-xs mt-1">Try adjusting your filters or create a new payslip</div>
-            </div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+      )}
+
+      {/* Table Container */}
+      <div className="report-content-container ecl-table-container" style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        flex: 1, 
+        overflow: 'auto', 
+        minHeight: 0,
+        padding: 0,
+        height: '100%'
+      }}>
+        {loading && payslips.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+            Loading payslips...
+          </div>
+        ) : (
+          <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+            <thead style={{ 
+              position: 'sticky', 
+              top: 0, 
+              zIndex: 10, 
+              background: 'var(--sidebar-bg)' 
+            }}>
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pay Period</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Gross Pay</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Deductions</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Net Pay</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th style={{ padding: '6px 10px' }}>EMPLOYEE</th>
+                <th style={{ padding: '6px 10px' }}>DEPARTMENT</th>
+                <th style={{ padding: '6px 10px' }}>PAY PERIOD</th>
+                <th style={{ padding: '6px 10px' }}>GROSS PAY</th>
+                <th style={{ padding: '6px 10px' }}>DEDUCTIONS</th>
+                <th style={{ padding: '6px 10px' }}>NET PAY</th>
+                <th style={{ padding: '6px 10px' }}>STATUS</th>
+                <th style={{ padding: '6px 10px' }}>ACTIONS</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPayslips.map((payslip) => (
-                <tr key={payslip.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2">
+            <tbody>
+              {payslips.map((payslip, index) => (
+                <tr 
+                  key={payslip.id} 
+                  style={{ 
+                    height: '32px', 
+                    backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                  }}
+                >
+                  <td style={{ padding: '4px 10px' }}>
                     <div>
-                      <div className="text-xs font-medium text-gray-900">{payslip.employee_name}</div>
-                      <div className="text-xs text-gray-500">{payslip.employee_id}</div>
+                      <div style={{ fontWeight: 500 }}>{payslip.employee_name}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{payslip.employee_id}</div>
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-xs text-gray-900">{payslip.department_name || 'No Department'}</td>
-                  <td className="px-4 py-2 text-xs text-gray-900">{payslip.pay_period}</td>
-                  <td className="px-4 py-2 text-xs text-gray-900">{formatCurrency(payslip.total_earnings, payslip.currency)}</td>
-                  <td className="px-4 py-2 text-xs text-red-600">{formatCurrency(payslip.total_deductions, payslip.currency)}</td>
-                  <td className="px-4 py-2 text-xs font-medium text-green-600">{formatCurrency(payslip.net_pay, payslip.currency)}</td>
-                  <td className="px-4 py-2">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      payslip.status === 'processed' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
+                  <td style={{ padding: '4px 10px' }}>
+                    {payslip.department_name || 'No Department'}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {payslip.pay_period}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {formatCurrency(payslip.total_earnings, payslip.currency)}
+                  </td>
+                  <td style={{ padding: '4px 10px', color: '#dc2626' }}>
+                    {formatCurrency(payslip.total_deductions, payslip.currency)}
+                  </td>
+                  <td style={{ padding: '4px 10px', fontWeight: 600, color: '#10b981' }}>
+                    {formatCurrency(payslip.net_pay, payslip.currency)}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      fontSize: '0.7rem',
+                      fontWeight: 500,
+                      borderRadius: '4px',
+                      backgroundColor: payslip.status === 'processed' ? '#d1fae5' : '#fef3c7',
+                      color: payslip.status === 'processed' ? '#065f46' : '#92400e'
+                    }}>
                       {payslip.status === 'processed' ? 'Processed' : 'Pending'}
                     </span>
                   </td>
-                  <td className="px-4 py-2">
-                    <div className="flex space-x-1">
+                  <td style={{ padding: '4px 10px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                       <button
                         onClick={() => handleViewPayslip(payslip)}
-                        className="text-blue-600 hover:text-blue-800 text-xs"
-                        title="View Payslip"
+                        style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="View"
                       >
                         <FontAwesomeIcon icon={faEye} />
                       </button>
                       <button
                         onClick={() => handleDownloadPayslip(payslip)}
-                        className="text-green-600 hover:text-green-800 text-xs"
-                        title="Download PDF"
+                        style={{ color: '#10b981', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="Download"
                       >
                         <FontAwesomeIcon icon={faDownload} />
                       </button>
                       <button
                         onClick={() => handlePrintPayslip(payslip)}
-                        className="text-purple-600 hover:text-purple-800 text-xs"
-                        title="Print Payslip"
+                        style={{ color: '#8b5cf6', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="Print"
                       >
                         <FontAwesomeIcon icon={faPrint} />
                       </button>
@@ -447,31 +601,77 @@ const Payslips = () => {
                   </td>
                 </tr>
               ))}
+              {/* Empty placeholder rows to always show 25 rows */}
+              {Array.from({ length: Math.max(0, 25 - payslips.length) }).map((_, index) => (
+                <tr 
+                  key={`empty-${index}`}
+                  style={{ 
+                    height: '32px', 
+                    backgroundColor: (payslips.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                  }}
+                >
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                </tr>
+              ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      {/* Pagination Footer - Separate Container */}
+      <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+        <div className="table-footer-left">
+          Showing {displayStart} to {displayEnd} of {totalPayslips || 0} results.
+        </div>
+        <div className="table-footer-right">
+          {!activeSearchTerm && totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
+          {!activeSearchTerm && totalPages <= 1 && (
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+              All data displayed
+            </div>
           )}
         </div>
       </div>
 
-             {/* Payslip Detail Modal */}
-       {showPayslipModal && selectedPayslip && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                       <div className="bg-white w-full max-w-4xl max-h-[95vh] overflow-y-auto mx-4" style={{
-              scrollbarWidth: 'thin',
-              scrollbarColor: '#d1d5db #f3f4f6'
-            }}>
-             {/* Close Button */}
-             <div className="flex justify-end p-4">
-               <button
-                 onClick={() => setShowPayslipModal(false)}
-                 className="text-gray-400 hover:text-gray-600"
-               >
-                 <FontAwesomeIcon icon={faTimes} className="text-lg" />
+      {/* Payslip Detail Modal */}
+      {showPayslipModal && selectedPayslip && (
+        <div className="modal-overlay" onClick={() => setShowPayslipModal(false)}>
+          <div className="modal-dialog" style={{ maxWidth: '90vw', width: '90vw', maxHeight: '95vh' }} onClick={(e) => e.stopPropagation()}>
+             <div className="modal-header">
+               <h3 className="modal-title">Payslip Details</h3>
+               <button className="modal-close-btn" onClick={() => setShowPayslipModal(false)}>
+                 <FontAwesomeIcon icon={faTimes} />
                </button>
              </div>
              
-                           {/* Payslip Content */}
-              <div className="p-6">
+                           <div className="modal-body" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
                 {/* Header */}
                 <div className="flex justify-between items-start mb-6">
                   <div>
@@ -596,23 +796,10 @@ const Payslips = () => {
                   </button>
                 </div>
              </div>
-           </div>
-         </div>
-       )}
-
-      {/* Loading State */}
-      {loading && (
-        <div className="bg-blue-50 border border-blue-200 p-3 text-xs text-blue-700">
-          Loading payslips...
+          </div>
         </div>
       )}
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 p-3 text-xs text-red-700">
-          {error}
-        </div>
-      )}
     </div>
   );
 };

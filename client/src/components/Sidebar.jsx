@@ -50,16 +50,12 @@ const Sidebar = ({ open, setOpen }) => {
 
     // 5. Accounting & Operations
     { name: 'Accounting', href: '/dashboard/accounting/chart-of-accounts', icon: faMoneyBillWave },
-    { name: 'Expenses', href: '/dashboard/expenses/expenses', icon: faShoppingCart },
-    { name: 'Procurement', href: '/dashboard/procurement', icon: faList },
     { name: 'Payroll', href: '/dashboard/payroll', icon: faCalculator },
 
     // 6. Asset & Inventory Management
     { name: 'Inventory', href: '/dashboard/inventory', icon: faFileAlt },
-    { name: 'Fixed Assets', href: '/dashboard/assets', icon: faWarehouse },
 
     // 7. Reporting & Analytics
-    { name: 'Financial Reports', href: '/dashboard/reports/income-statement', icon: faChartLine },
     { name: 'Analytics', href: '/dashboard/analytics/expense-analysis', icon: faChartPie },
 
     // 8. System Administration

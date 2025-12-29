@@ -166,52 +166,123 @@ const ExpenseAnalysis = () => {
     return null;
   };
 
-  return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="bg-white border border-gray-200">
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <FontAwesomeIcon icon={faChartPie} className="text-gray-600 text-sm" />
-              <h1 className="text-lg font-semibold text-gray-900">Expense Analysis</h1>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button className="px-3 py-1 text-xs bg-gray-100 text-gray-700 hover:bg-gray-200">
-                <FontAwesomeIcon icon={faDownload} className="mr-1" />
-                Export
-              </button>
-              <button className="px-3 py-1 text-xs bg-gray-100 text-gray-700 hover:bg-gray-200">
-                <FontAwesomeIcon icon={faPrint} className="mr-1" />
-                Print
-              </button>
-            </div>
-          </div>
-        </div>
+  const tabs = [
+    { id: 'breakdown', name: 'Expense Breakdown', icon: faChartPie },
+    { id: 'cost-per-student', name: 'Cost Per Student', icon: faUsers },
+    { id: 'trends', name: 'Expense Trends', icon: faChartLine }
+  ];
 
-        {/* Filters */}
-        <div className="px-4 py-3 border-b border-gray-200">
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex items-center space-x-2">
-              <FontAwesomeIcon icon={faFilter} className="text-gray-400 text-xs" />
-              <span className="text-xs font-medium text-gray-700">Year:</span>
+  return (
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative' 
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">Expense Analysis</h2>
+          <p className="report-subtitle">Analyze and track expense trends and breakdowns.</p>
+        </div>
+        <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button 
+            className="btn-checklist"
+            style={{ fontSize: '0.7rem', padding: '6px 12px' }}
+          >
+            <FontAwesomeIcon icon={faDownload} style={{ marginRight: '4px', fontSize: '0.7rem' }} />
+            Export
+          </button>
+          <button 
+            className="btn-checklist"
+            style={{ fontSize: '0.7rem', padding: '6px 12px' }}
+          >
+            <FontAwesomeIcon icon={faPrint} style={{ marginRight: '4px', fontSize: '0.7rem' }} />
+            Print
+          </button>
+        </div>
+      </div>
+
+      {/* Filters and Tabs Section */}
+      <div className="report-filters" style={{ flexShrink: 0 }}>
+        <div className="report-filters-left" style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          {/* Tabs */}
+          <div className="filter-group" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  border: `1px solid ${activeTab === tab.id ? '#2563eb' : 'var(--border-color)'}`,
+                  borderRadius: '4px',
+                  background: activeTab === tab.id ? '#2563eb' : 'transparent',
+                  color: activeTab === tab.id ? 'white' : 'var(--text-primary)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.currentTarget.style.background = '#f3f4f6';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={tab.icon} style={{ fontSize: '0.7rem' }} />
+                <span>{tab.name}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div className="filter-group" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FontAwesomeIcon icon={faFilter} style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }} />
+              <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--text-primary)' }}>Year:</span>
               <input 
                 type="number"
                 value={filters.year}
                 onChange={(e) => handleFilterChange('year', parseInt(e.target.value) || new Date().getFullYear())}
-                className="border border-gray-300 px-2 py-1 text-xs w-20 focus:outline-none focus:border-gray-400"
+                style={{
+                  width: '80px',
+                  padding: '4px 8px',
+                  fontSize: '0.7rem',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  outline: 'none'
+                }}
                 placeholder="2024"
                 min="2000"
                 max="2100"
               />
             </div>
             
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-medium text-gray-700">Month:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--text-primary)' }}>Month:</span>
               <select 
                 value={filters.month}
                 onChange={(e) => handleFilterChange('month', e.target.value)}
-                className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '0.7rem',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  outline: 'none',
+                  minWidth: '120px'
+                }}
               >
                 {Array.from({length: 12}, (_, i) => i + 1).map(month => (
                   <option key={month} value={month}>
@@ -221,12 +292,19 @@ const ExpenseAnalysis = () => {
               </select>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-medium text-gray-700">Period:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--text-primary)' }}>Period:</span>
               <select 
                 value={filters.period}
                 onChange={(e) => handleFilterChange('period', e.target.value)}
-                className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-gray-400"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '0.7rem',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  outline: 'none',
+                  minWidth: '100px'
+                }}
               >
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
@@ -236,58 +314,54 @@ const ExpenseAnalysis = () => {
             <button 
               onClick={handleSearch}
               disabled={loading}
-              className="px-4 py-1 text-xs bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              className="btn-checklist"
+              style={{ fontSize: '0.7rem', padding: '6px 12px', whiteSpace: 'nowrap' }}
             >
               {loading ? (
-                <FontAwesomeIcon icon={faSpinner} className="animate-spin mr-1" />
+                <FontAwesomeIcon icon={faSpinner} className="animate-spin" style={{ marginRight: '4px', fontSize: '0.7rem' }} />
               ) : (
-                <FontAwesomeIcon icon={faCalendarAlt} className="mr-1" />
+                <FontAwesomeIcon icon={faCalendarAlt} style={{ marginRight: '4px', fontSize: '0.7rem' }} />
               )}
               Search
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-4">
-            {[
-              { id: 'breakdown', label: 'Expense Breakdown', icon: faChartPie },
-              { id: 'cost-per-student', label: 'Cost Per Student', icon: faUsers },
-              { id: 'trends', label: 'Expense Trends', icon: faChartLine }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-3 px-1 border-b-2 text-xs font-medium ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <FontAwesomeIcon icon={tab.icon} className="mr-1" />
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+      {/* Content Container */}
+      <div className="report-content-container" style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        flex: 1, 
+        overflow: 'auto', 
+        minHeight: 0,
+        padding: '20px 30px'
+      }}>
+        {error && (
+          <div style={{ 
+            padding: '10px', 
+            background: '#fee2e2', 
+            border: '1px solid #fecaca', 
+            color: '#dc2626', 
+            fontSize: '0.75rem', 
+            marginBottom: '16px', 
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <FontAwesomeIcon icon={faExclamationTriangle} style={{ fontSize: '0.7rem' }} />
+            {error}
+          </div>
+        )}
 
-        {/* Content */}
-        <div className="p-4">
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs">
-              <FontAwesomeIcon icon={faExclamationTriangle} className="mr-1" />
-              {error}
-            </div>
-          )}
-
-          {activeTab === 'breakdown' && (
-            <div className="space-y-6">
-              {expenseBreakdown ? (
-                <>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 p-4">
-                      <h4 className="text-sm font-medium text-gray-900 mb-4">Expenses by Category</h4>
+        {activeTab === 'breakdown' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {expenseBreakdown ? (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
+                  <div style={{ background: '#f9fafb', padding: '16px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                    <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Expenses by Category</h4>
                       <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                           <Pie
@@ -308,111 +382,111 @@ const ExpenseAnalysis = () => {
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="space-y-4">
-                      <div className="bg-blue-50 p-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-blue-900">Total Expenses</span>
-                          <span className="text-lg font-bold text-blue-900">
-                            {formatCurrency(expenseBreakdown.total_expenses)}
-                          </span>
-                        </div>
-                        <div className="text-xs text-blue-700 mt-1">
-                          Period: {expenseBreakdown.period}
-                        </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ background: '#eff6ff', padding: '16px', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e40af' }}>Total Expenses</span>
+                        <span style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e40af' }}>
+                          {formatCurrency(expenseBreakdown.total_expenses)}
+                        </span>
                       </div>
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-900">Top Categories</h4>
-                        {expenseBreakdown.expenses.slice(0, 5).map((expense, index) => (
-                          <div key={expense.category_name} className="flex justify-between items-center py-1">
-                            <span className="text-xs text-gray-700">{expense.category_name}</span>
-                            <div className="text-right">
-                              <span className="text-xs font-medium text-gray-900">
-                                {formatCurrency(expense.total_amount)}
-                              </span>
-                              <span className="text-xs text-gray-500 ml-2">
-                                ({expense.percentage}%)
-                              </span>
-                            </div>
-                          </div>
-                        ))}
+                      <div style={{ fontSize: '0.7rem', color: '#1e3a8a', marginTop: '4px' }}>
+                        Period: {expenseBreakdown.period}
                       </div>
                     </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Click "Search" to load expense breakdown data
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'cost-per-student' && (
-            <div className="space-y-6">
-              {costPerStudent ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-blue-900">Total Expenses</span>
-                        <FontAwesomeIcon icon={faDollarSign} className="text-blue-600" />
-                      </div>
-                      <div className="text-lg font-bold text-blue-900 mt-1">
-                        {formatCurrency(costPerStudent.total_expenses)}
-                      </div>
-                    </div>
-                    <div className="bg-green-50 p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-green-900">Active Students</span>
-                        <FontAwesomeIcon icon={faUsers} className="text-green-600" />
-                      </div>
-                      <div className="text-lg font-bold text-green-900 mt-1">
-                        {costPerStudent.active_students}
-                      </div>
-                    </div>
-                    <div className="bg-purple-50 p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-purple-900">Cost Per Student</span>
-                        <FontAwesomeIcon icon={faDollarSign} className="text-purple-600" />
-                      </div>
-                      <div className="text-lg font-bold text-purple-900 mt-1">
-                        {formatCurrency(costPerStudent.cost_per_student)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-4">Cost Per Student by Category</h4>
-                    <div className="space-y-2">
-                      {costPerStudent.expenses_by_category.map((expense, index) => (
-                        <div key={expense.category_name} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
-                          <span className="text-xs text-gray-700">{expense.category_name}</span>
-                          <div className="text-right">
-                            <div className="text-xs font-medium text-gray-900">
-                              {formatCurrency(expense.cost_per_student)} per student
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Total: {formatCurrency(expense.total_amount)}
-                            </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Top Categories</h4>
+                      {expenseBreakdown.expenses.slice(0, 5).map((expense, index) => (
+                        <div key={expense.category_name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{expense.category_name}</span>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                              {formatCurrency(expense.total_amount)}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '8px' }}>
+                              ({expense.percentage}%)
+                            </span>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
+                  </div>
                 </>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Click "Search" to load cost per student analysis
-                </div>
-              )}
-            </div>
-          )}
+            ) : (
+              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                Click "Search" to load expense breakdown data
+              </div>
+            )}
+          </div>
+        )}
 
-          {activeTab === 'trends' && (
-            <div className="space-y-6">
-              {expenseTrends ? (
-                <>
-                  <div className="bg-gray-50 p-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-4">Expense Trends ({expenseTrends.period_type})</h4>
+        {activeTab === 'cost-per-student' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {costPerStudent ? (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                  <div style={{ background: '#eff6ff', padding: '16px', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#1e40af' }}>Total Expenses</span>
+                      <FontAwesomeIcon icon={faDollarSign} style={{ color: '#2563eb', fontSize: '0.875rem' }} />
+                    </div>
+                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#1e40af', marginTop: '4px' }}>
+                      {formatCurrency(costPerStudent.total_expenses)}
+                    </div>
+                  </div>
+                  <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#166534' }}>Active Students</span>
+                      <FontAwesomeIcon icon={faUsers} style={{ color: '#10b981', fontSize: '0.875rem' }} />
+                    </div>
+                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#166534', marginTop: '4px' }}>
+                      {costPerStudent.active_students}
+                    </div>
+                  </div>
+                  <div style={{ background: '#faf5ff', padding: '16px', borderRadius: '4px', border: '1px solid #e9d5ff' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#6b21a8' }}>Cost Per Student</span>
+                      <FontAwesomeIcon icon={faDollarSign} style={{ color: '#8b5cf6', fontSize: '0.875rem' }} />
+                    </div>
+                    <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#6b21a8', marginTop: '4px' }}>
+                      {formatCurrency(costPerStudent.cost_per_student)}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ background: '#f9fafb', padding: '16px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Cost Per Student by Category</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {costPerStudent.expenses_by_category.map((expense, index) => (
+                      <div key={expense.category_name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: index < costPerStudent.expenses_by_category.length - 1 ? '1px solid var(--border-color)' : 'none' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{expense.category_name}</span>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                            {formatCurrency(expense.cost_per_student)} per student
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            Total: {formatCurrency(expense.total_amount)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                Click "Search" to load cost per student analysis
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'trends' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {expenseTrends ? (
+              <>
+                <div style={{ background: '#f9fafb', padding: '16px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Expense Trends ({expenseTrends.period_type})</h4>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={expenseTrends.trends}>
                         <CartesianGrid strokeDasharray="3 3" />
@@ -436,31 +510,30 @@ const ExpenseAnalysis = () => {
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-900">Trend Data</h4>
-                    {expenseTrends.trends.map((trend, index) => (
-                      <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
-                        <span className="text-xs text-gray-700">{trend.period_label}</span>
-                        <div className="text-right">
-                          <div className="text-xs font-medium text-gray-900">
-                            {formatCurrency(trend.total_expenses)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {trend.transaction_count} transactions
-                          </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>Trend Data</h4>
+                  {expenseTrends.trends.map((trend, index) => (
+                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: index < expenseTrends.trends.length - 1 ? '1px solid var(--border-color)' : 'none' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{trend.period_label}</span>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                          {formatCurrency(trend.total_expenses)}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {trend.transaction_count} transactions
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Click "Search" to load expense trends
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                Click "Search" to load expense trends
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

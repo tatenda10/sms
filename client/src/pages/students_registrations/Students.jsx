@@ -155,17 +155,17 @@ const Students = () => {
         setTotalPages(1);
         setTotalStudents(filteredData.length);
       } else {
-        // Check if we're searching
-        if (activeSearchTerm && activeSearchTerm.trim() !== '') {
-          console.log('🔍 Searching for:', activeSearchTerm);
-          // Search mode - no pagination
-          const response = await axios.get(`${BASE_URL}/students/search`, {
-            params: { query: activeSearchTerm.trim() },
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
+      // Check if we're searching
+      if (activeSearchTerm && activeSearchTerm.trim() !== '') {
+        console.log('🔍 Searching for:', activeSearchTerm);
+        // Search mode - no pagination
+        const response = await axios.get(`${BASE_URL}/students/search`, {
+          params: { query: activeSearchTerm.trim() },
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
           filteredData = response.data.data || [];
           
@@ -176,21 +176,21 @@ const Students = () => {
           
           console.log('🔍 Search results:', filteredData);
           setStudents(filteredData);
-          setTotalPages(1); // Search results are not paginated
+        setTotalPages(1); // Search results are not paginated
           setTotalStudents(filteredData.length);
-        } else {
-          console.log('📄 Fetching page:', currentPage);
-          // Normal pagination mode
-          const response = await axios.get(`${BASE_URL}/students`, {
-            params: {
-              page: currentPage,
-              limit: limit
-            },
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
+      } else {
+        console.log('📄 Fetching page:', currentPage);
+        // Normal pagination mode
+        const response = await axios.get(`${BASE_URL}/students`, {
+          params: {
+            page: currentPage,
+            limit: limit
+          },
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
           filteredData = response.data.data || [];
           
@@ -198,16 +198,16 @@ const Students = () => {
           if (genderFilter && genderFilter !== '') {
             filteredData = filteredData.filter(student => student.Gender === genderFilter);
           }
-          
-          const data = response.data;
-          console.log('📊 Pagination data:', data.pagination);
-          console.log('📊 Raw response:', data);
-          const totalPages = data.pagination?.totalPages || 1;
+
+        const data = response.data;
+        console.log('📊 Pagination data:', data.pagination);
+        console.log('📊 Raw response:', data);
+        const totalPages = data.pagination?.totalPages || 1;
           const totalStudents = genderFilter ? filteredData.length : (data.pagination?.totalStudents || 0);
-          console.log('📊 Setting totalPages:', totalPages, 'totalStudents:', totalStudents);
+        console.log('📊 Setting totalPages:', totalPages, 'totalStudents:', totalStudents);
           setStudents(filteredData);
-          setTotalPages(totalPages);
-          setTotalStudents(totalStudents);
+        setTotalPages(totalPages);
+        setTotalStudents(totalStudents);
         }
       }
     } catch (err) {
@@ -556,7 +556,7 @@ const Students = () => {
         const errorData = err.response.data;
         if (errorData?.error) {
           errorMessage = errorData.error;
-        } else {
+      } else {
           errorMessage = errorData?.message || `Server Error (${err.response.status})`;
         }
       } else if (err.request) {
@@ -734,7 +734,7 @@ const Students = () => {
       {/* Filters Section */}
       <div className="report-filters" style={{ flexShrink: 0 }}>
         <div className="report-filters-left">
-          {/* Search Bar */}
+      {/* Search Bar */}
           <form onSubmit={handleSearch} className="filter-group">
             <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <FontAwesomeIcon icon={faSearch} className="search-icon" />
@@ -790,7 +790,7 @@ const Students = () => {
               <option value="Female">Female</option>
             </select>
             {genderFilter && (
-              <button
+          <button
                 onClick={handleClearGenderFilter}
                 style={{
                   marginLeft: '8px',
@@ -805,7 +805,7 @@ const Students = () => {
                 title="Clear gender filter"
               >
                 ×
-              </button>
+          </button>
             )}
           </div>
           
@@ -827,7 +827,7 @@ const Students = () => {
               ))}
             </select>
             {classFilter && (
-              <button
+            <button 
                 onClick={handleClearClassFilter}
                 style={{
                   marginLeft: '8px',
@@ -842,8 +842,8 @@ const Students = () => {
                 title="Clear class filter"
               >
                 ×
-              </button>
-            )}
+            </button>
+        )}
           </div>
         </div>
       </div>
@@ -884,8 +884,8 @@ const Students = () => {
                 <th style={{ padding: '6px 10px' }}>GENDER</th>
                 <th style={{ padding: '6px 10px' }}>STATUS</th>
                 <th style={{ padding: '6px 10px' }}>ACTIONS</th>
-              </tr>
-            </thead>
+                  </tr>
+                </thead>
             <tbody>
               {students.map((student, index) => (
                 <tr 
@@ -896,20 +896,20 @@ const Students = () => {
                   }}
                 >
                   <td style={{ padding: '4px 10px' }}>
-                    {student.RegNumber}
-                  </td>
+                          {student.RegNumber}
+                      </td>
                   <td style={{ padding: '4px 10px' }}>
-                    {student.Name}
-                  </td>
+                          {student.Name}
+                      </td>
                   <td style={{ padding: '4px 10px' }}>
-                    {student.Surname}
-                  </td>
+                          {student.Surname}
+                      </td>
                   <td style={{ padding: '4px 10px' }}>
-                    {student.Gender || 'N/A'}
-                  </td>
+                          {student.Gender || 'N/A'}
+                      </td>
                   <td style={{ padding: '4px 10px' }}>
-                    {student.Active || 'Unknown'}
-                  </td>
+                          {student.Active || 'Unknown'}
+                      </td>
                   <td style={{ padding: '4px 10px' }}>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                       <button
@@ -926,17 +926,17 @@ const Students = () => {
                       >
                         <FontAwesomeIcon icon={faEdit} />
                       </button>
-                      <button
+                          <button
                         onClick={() => handleDeleteClick(student)}
                         style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                         title="Delete"
-                      >
+                          >
                         <FontAwesomeIcon icon={faTrash} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               {/* Empty placeholder rows to always show 25 rows */}
               {Array.from({ length: Math.max(0, 25 - students.length) }).map((_, index) => (
                 <tr 
@@ -954,8 +954,8 @@ const Students = () => {
                   <td style={{ padding: '4px 10px' }}>&nbsp;</td>
                 </tr>
               ))}
-            </tbody>
-          </table>
+                </tbody>
+              </table>
         )}
       </div>
 
@@ -963,17 +963,17 @@ const Students = () => {
       <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
         <div className="table-footer-left">
           Showing {displayStart} to {displayEnd} of {totalStudents || 0} results.
-        </div>
+          </div>
         <div className="table-footer-right">
           {!activeSearchTerm && totalPages > 1 && (
             <div className="pagination-controls">
-              <button
+            <button
                 className="pagination-btn"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </button>
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
               <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
                 Page {currentPage} of {totalPages}
               </span>
@@ -1061,7 +1061,7 @@ const Students = () => {
                               onChange={handleInputChange}
                               required
                             />
-                            <button
+                  <button
                               type="button"
                               onClick={handleGenerateRegNumber}
                               disabled={generatingRegNumber}
@@ -1075,7 +1075,7 @@ const Students = () => {
                               }}
                             >
                               {generatingRegNumber ? 'Generating...' : 'Generate'}
-                            </button>
+                  </button>
                           </div>
                         </div>
                         
@@ -1251,7 +1251,7 @@ const Students = () => {
                   <button className="modal-btn modal-btn-cancel" onClick={handleCloseModal}>
                     Cancel
                   </button>
-                  <button 
+                  <button
                     className="modal-btn modal-btn-confirm" 
                     onClick={handleSave}
                     disabled={!isFormValid() || isLoading}
@@ -1703,7 +1703,7 @@ const Students = () => {
                   <button className="modal-btn modal-btn-cancel" onClick={handleCloseEditModal}>
                     Cancel
                   </button>
-                  <button 
+                  <button
                     className="modal-btn modal-btn-confirm" 
                     onClick={handleUpdateStudent}
                     disabled={!isEditFormValid() || isSaving}
@@ -1782,7 +1782,7 @@ const Students = () => {
             </div>
             
             <div className="modal-footer">
-              <button 
+            <button
                 className="modal-btn modal-btn-cancel" 
                 onClick={handleCloseDeleteModal}
                 disabled={isDeleting}
@@ -1795,7 +1795,7 @@ const Students = () => {
                 disabled={isDeleting}
               >
                 {isDeleting ? 'Deleting...' : 'Delete Student'}
-              </button>
+            </button>
             </div>
           </div>
         </div>

@@ -14,46 +14,82 @@ import ChangePassword from './ChangePassword';
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('users');
 
+  const tabs = [
+    { id: 'users', name: 'User Management', icon: faUsers },
+    { id: 'roles', name: 'Role Management', icon: faUserShield },
+    { id: 'password', name: 'Change Password', icon: faKey }
+  ];
+
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Settings</h1>
-            <p className="text-xs text-gray-500">
-              Manage system users, roles, and account settings
-            </p>
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative' 
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">Settings</h2>
+          <p className="report-subtitle">Manage system users, roles, and account settings.</p>
+        </div>
+        <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        </div>
+      </div>
+
+      {/* Tabs Section */}
+      <div className="report-filters" style={{ flexShrink: 0 }}>
+        <div className="report-filters-left">
+          <div className="filter-group" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  border: `1px solid ${activeTab === tab.id ? '#2563eb' : 'var(--border-color)'}`,
+                  borderRadius: '4px',
+                  background: activeTab === tab.id ? '#2563eb' : 'transparent',
+                  color: activeTab === tab.id ? 'white' : 'var(--text-primary)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.currentTarget.style.background = '#f3f4f6';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== tab.id) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={tab.icon} style={{ fontSize: '0.7rem' }} />
+                <span>{tab.name}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="mb-6">
-        <nav className="flex space-x-8 border-b border-gray-200">
-          {[
-            { id: 'users', label: 'User Management', icon: faUsers },
-            { id: 'roles', label: 'Role Management', icon: faUserShield },
-            { id: 'password', label: 'Change Password', icon: faKey }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-xs flex items-center ${
-                activeTab === tab.id
-                  ? 'border-gray-700 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <FontAwesomeIcon icon={tab.icon} className="mr-2 h-3 w-3" />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      <div className="min-h-96">
+      {/* Content Container */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        flex: 1, 
+        overflow: 'hidden', 
+        minHeight: 0
+      }}>
         {activeTab === 'users' && <UserManagement />}
         {activeTab === 'roles' && <RoleManagement />}
         {activeTab === 'password' && <ChangePassword />}
