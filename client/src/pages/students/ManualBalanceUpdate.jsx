@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faSearch, 
-  faUser, 
-  faMoneyBillWave, 
-  faPlus, 
+import {
+  faSearch,
+  faUser,
+  faMoneyBillWave,
+  faPlus,
   faMinus,
   faSave,
   faTimes,
@@ -59,13 +59,13 @@ const ManualBalanceUpdate = () => {
       setLoading(true);
       setError(null);
       const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-      
+
       // Get current balance
       const balanceResponse = await axios.get(
         `${BASE_URL}/students/${student.RegNumber}/balance`,
         { headers: authHeaders }
       );
-      
+
       setSelectedStudent(student);
       setCurrentBalance(balanceResponse.data.balance || 0);
       setFormData({
@@ -103,7 +103,7 @@ const ManualBalanceUpdate = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!selectedStudent) {
       setError('Please select a student first');
       return;
@@ -123,9 +123,9 @@ const ManualBalanceUpdate = () => {
       setLoading(true);
       setError(null);
       setSuccess(null);
-      
+
       const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-      
+
       const adjustmentData = {
         student_id: selectedStudent.RegNumber,
         adjustment_type: formData.adjustment_type,
@@ -133,14 +133,14 @@ const ManualBalanceUpdate = () => {
         description: formData.description,
         reference: formData.reference || `MBU-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
       };
-      
+
       await axios.post(`${BASE_URL}/students/manual-balance-adjustment`, adjustmentData, { headers: authHeaders });
-      
+
       setSuccess('Opening balance recorded successfully! This historical debt has been added to the student account.');
-      
+
       // Small delay to ensure database is updated
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Refresh student balance
       console.log('🔄 Refreshing balance for student:', selectedStudent.RegNumber);
       const balanceResponse = await axios.get(
@@ -149,7 +149,7 @@ const ManualBalanceUpdate = () => {
       );
       console.log('🔄 Balance response:', balanceResponse.data);
       setCurrentBalance(balanceResponse.data.balance || 0);
-      
+
       // Reset form
       setFormData({
         adjustment_type: 'debit',
@@ -157,7 +157,7 @@ const ManualBalanceUpdate = () => {
         description: 'Opening Balance - Historical Debt',
         reference: ''
       });
-      
+
     } catch (error) {
       console.error('Error updating balance:', error);
       setError(error.response?.data?.error || 'Failed to update student balance');
@@ -214,7 +214,7 @@ const ManualBalanceUpdate = () => {
             <div className="px-4 py-3 border-b border-gray-200">
               <h3 className="text-sm font-medium text-gray-900">Search Student</h3>
             </div>
-            
+
             <div className="p-4">
               <div className="flex gap-2 mb-4">
                 <input
@@ -271,7 +271,7 @@ const ManualBalanceUpdate = () => {
                       </p>
                       <p className="text-blue-700 text-xs">Reg: {selectedStudent.RegNumber}</p>
                       <p className="text-blue-700 text-xs">
-                        Current Balance: 
+                        Current Balance:
                         <span className={`font-bold ml-1 ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           ${Math.abs(currentBalance).toFixed(2)} {currentBalance >= 0 ? 'Credit' : 'Debit'}
                         </span>
@@ -294,7 +294,7 @@ const ManualBalanceUpdate = () => {
             <div className="px-4 py-3 border-b border-gray-200">
               <h3 className="text-sm font-medium text-gray-900">Opening Balance Entry</h3>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-4">
               {/* Success/Error Messages */}
               {success && (
@@ -303,7 +303,7 @@ const ManualBalanceUpdate = () => {
                   {success}
                 </div>
               )}
-              
+
               {error && (
                 <div className="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 text-xs">
                   <FontAwesomeIcon icon={faExclamationTriangle} className="mr-2" />
@@ -399,15 +399,15 @@ const ManualBalanceUpdate = () => {
 
               {/* Form Actions */}
               <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={clearSelection}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 text-xs font-medium border border-gray-300"
                 >
                   Clear
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={loading || !selectedStudent}
                   className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium flex items-center"
                 >

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faSearch, 
-  faPlus, 
-  faEye, 
-  faEdit, 
+import {
+  faSearch,
+  faPlus,
+  faEye,
+  faEdit,
   faTrash,
   faUserGraduate,
   faPhone,
@@ -33,7 +33,7 @@ const Students = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalStudents, setTotalStudents] = useState(0);
   const [limit] = useState(25);
-  
+
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,15 +54,15 @@ const Students = () => {
     guardianPhoneNumber: '',
     relationshipToStudent: ''
   });
-  
+
   // Toast states
   const [toast, setToast] = useState({ message: null, type: 'success', visible: false });
-  
+
   // View modal states
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewModalLoading, setViewModalLoading] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  
+
   // Edit modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [editModalLoading, setEditModalLoading] = useState(false);
@@ -83,7 +83,7 @@ const Students = () => {
   });
   const [editFormError, setEditFormError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Delete modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
@@ -121,9 +121,9 @@ const Students = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       let filteredData = [];
-      
+
       // If class filter is selected, fetch students from that class
       if (classFilter && classFilter !== '') {
         console.log('📚 Fetching students for class:', classFilter);
@@ -135,79 +135,79 @@ const Students = () => {
         });
 
         filteredData = response.data.data || [];
-        
+
         // Apply search filter if active
         if (activeSearchTerm && activeSearchTerm.trim() !== '') {
           const searchLower = activeSearchTerm.trim().toLowerCase();
-          filteredData = filteredData.filter(student => 
+          filteredData = filteredData.filter(student =>
             (student.Name && student.Name.toLowerCase().includes(searchLower)) ||
             (student.Surname && student.Surname.toLowerCase().includes(searchLower)) ||
             (student.RegNumber && student.RegNumber.toLowerCase().includes(searchLower))
           );
         }
-        
+
         // Apply gender filter if selected
         if (genderFilter && genderFilter !== '') {
           filteredData = filteredData.filter(student => student.Gender === genderFilter);
         }
-        
+
         setStudents(filteredData);
         setTotalPages(1);
         setTotalStudents(filteredData.length);
       } else {
-      // Check if we're searching
-      if (activeSearchTerm && activeSearchTerm.trim() !== '') {
-        console.log('🔍 Searching for:', activeSearchTerm);
-        // Search mode - no pagination
-        const response = await axios.get(`${BASE_URL}/students/search`, {
-          params: { query: activeSearchTerm.trim() },
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        // Check if we're searching
+        if (activeSearchTerm && activeSearchTerm.trim() !== '') {
+          console.log('🔍 Searching for:', activeSearchTerm);
+          // Search mode - no pagination
+          const response = await axios.get(`${BASE_URL}/students/search`, {
+            params: { query: activeSearchTerm.trim() },
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
 
           filteredData = response.data.data || [];
-          
+
           // Apply gender filter if selected
           if (genderFilter && genderFilter !== '') {
             filteredData = filteredData.filter(student => student.Gender === genderFilter);
           }
-          
+
           console.log('🔍 Search results:', filteredData);
           setStudents(filteredData);
-        setTotalPages(1); // Search results are not paginated
+          setTotalPages(1); // Search results are not paginated
           setTotalStudents(filteredData.length);
-      } else {
-        console.log('📄 Fetching page:', currentPage);
-        // Normal pagination mode
-        const response = await axios.get(`${BASE_URL}/students`, {
-          params: {
-            page: currentPage,
-            limit: limit
-          },
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        } else {
+          console.log('📄 Fetching page:', currentPage);
+          // Normal pagination mode
+          const response = await axios.get(`${BASE_URL}/students`, {
+            params: {
+              page: currentPage,
+              limit: limit
+            },
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
 
           filteredData = response.data.data || [];
-          
+
           // Apply gender filter if selected
           if (genderFilter && genderFilter !== '') {
             filteredData = filteredData.filter(student => student.Gender === genderFilter);
           }
 
-        const data = response.data;
-        console.log('📊 Pagination data:', data.pagination);
-        console.log('📊 Raw response:', data);
-        const totalPages = data.pagination?.totalPages || 1;
+          const data = response.data;
+          console.log('📊 Pagination data:', data.pagination);
+          console.log('📊 Raw response:', data);
+          const totalPages = data.pagination?.totalPages || 1;
           const totalStudents = genderFilter ? filteredData.length : (data.pagination?.totalStudents || 0);
-        console.log('📊 Setting totalPages:', totalPages, 'totalStudents:', totalStudents);
+          console.log('📊 Setting totalPages:', totalPages, 'totalStudents:', totalStudents);
           setStudents(filteredData);
-        setTotalPages(totalPages);
-        setTotalStudents(totalStudents);
+          setTotalPages(totalPages);
+          setTotalStudents(totalStudents);
         }
       }
     } catch (err) {
@@ -227,12 +227,22 @@ const Students = () => {
     }
   };
 
+  // Live search effect
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      console.log('🔍 Auto-searching for:', searchTerm);
+      setActiveSearchTerm(searchTerm);
+      setCurrentPage(1);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log('🔍 Starting search with term:', searchTerm);
+    console.log('🔍 Manual search triggered:', searchTerm);
     setActiveSearchTerm(searchTerm);
     setCurrentPage(1);
-    // fetchStudents will be called via useEffect
   };
 
   const handleClearSearch = () => {
@@ -297,7 +307,7 @@ const Students = () => {
 
       const studentData = response.data.data;
       const guardian = studentData.guardians?.[0];
-      
+
       setEditFormData({
         regNumber: studentData.RegNumber || '',
         name: studentData.Name || '',
@@ -367,7 +377,7 @@ const Students = () => {
     } catch (err) {
       console.error('Error updating student:', err);
       let errorMessage = 'An unexpected error occurred';
-      
+
       if (err.response) {
         const errorData = err.response.data;
         if (errorData?.error) {
@@ -380,7 +390,7 @@ const Students = () => {
       } else {
         errorMessage = err.message || 'An unexpected error occurred';
       }
-      
+
       setEditFormError(errorMessage);
     } finally {
       setIsSaving(false);
@@ -430,13 +440,13 @@ const Students = () => {
     } catch (err) {
       console.error('Error deleting student:', err);
       let errorMessage = 'Failed to delete student';
-      
+
       if (err.response) {
         errorMessage = err.response.data?.message || `Server Error (${err.response.status})`;
       } else if (err.request) {
         errorMessage = 'No response from server. Please check your internet connection.';
       }
-      
+
       showToast(errorMessage, 'error');
     } finally {
       setIsDeleting(false);
@@ -505,21 +515,21 @@ const Students = () => {
   const handleGenerateRegNumber = async () => {
     setGeneratingRegNumber(true);
     setFormError(null);
-    
+
     try {
       let regNumber;
       let attempts = 0;
       const maxAttempts = 10;
-      
+
       do {
         regNumber = generateRegNumber();
         attempts++;
-        
+
         if (attempts >= maxAttempts) {
           throw new Error('Unable to generate unique registration number. Please try again.');
         }
       } while (await checkRegNumberExists(regNumber));
-      
+
       setFormData(prev => ({ ...prev, regNumber }));
     } catch (err) {
       setFormError(`Error generating registration number: ${err.message}`);
@@ -544,19 +554,19 @@ const Students = () => {
       // Refresh the list
       await fetchStudents();
       handleCloseModal();
-      
+
       // Show success toast
       const studentName = `${formData.name} ${formData.surname}`;
       showToast(`Student ${studentName} has been successfully added!`, 'success');
     } catch (err) {
       console.error('Error adding student:', err);
       let errorMessage = 'An unexpected error occurred';
-      
+
       if (err.response) {
         const errorData = err.response.data;
         if (errorData?.error) {
           errorMessage = errorData.error;
-      } else {
+        } else {
           errorMessage = errorData?.message || `Server Error (${err.response.status})`;
         }
       } else if (err.request) {
@@ -564,7 +574,7 @@ const Students = () => {
       } else {
         errorMessage = err.message || 'An unexpected error occurred';
       }
-      
+
       setFormError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -574,7 +584,7 @@ const Students = () => {
   // Toast functions
   const showToast = (message, type = 'success', duration = 3000) => {
     setToast({ message, type, visible: true });
-    
+
     if (duration > 0) {
       setTimeout(() => {
         setToast(prev => ({ ...prev, visible: false }));
@@ -706,13 +716,13 @@ const Students = () => {
   }
 
   return (
-    <div className="reports-container" style={{ 
-      height: '100%', 
-      maxHeight: '100%', 
-      overflow: 'hidden', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      position: 'relative' 
+    <div className="reports-container" style={{
+      height: '100%',
+      maxHeight: '100%',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative'
     }}>
       {/* Report Header */}
       <div className="report-header" style={{ flexShrink: 0 }}>
@@ -734,7 +744,7 @@ const Students = () => {
       {/* Filters Section */}
       <div className="report-filters" style={{ flexShrink: 0 }}>
         <div className="report-filters-left">
-      {/* Search Bar */}
+          {/* Search Bar */}
           <form onSubmit={handleSearch} className="filter-group">
             <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <FontAwesomeIcon icon={faSearch} className="search-icon" />
@@ -775,7 +785,7 @@ const Students = () => {
               )}
             </div>
           </form>
-          
+
           {/* Gender Filter */}
           <div className="filter-group">
             <label className="filter-label" style={{ marginRight: '8px' }}>Gender:</label>
@@ -790,7 +800,7 @@ const Students = () => {
               <option value="Female">Female</option>
             </select>
             {genderFilter && (
-          <button
+              <button
                 onClick={handleClearGenderFilter}
                 style={{
                   marginLeft: '8px',
@@ -805,10 +815,10 @@ const Students = () => {
                 title="Clear gender filter"
               >
                 ×
-          </button>
+              </button>
             )}
           </div>
-          
+
           {/* Class Filter */}
           <div className="filter-group">
             <label className="filter-label" style={{ marginRight: '8px' }}>Class:</label>
@@ -827,7 +837,7 @@ const Students = () => {
               ))}
             </select>
             {classFilter && (
-            <button 
+              <button
                 onClick={handleClearClassFilter}
                 style={{
                   marginLeft: '8px',
@@ -842,8 +852,8 @@ const Students = () => {
                 title="Clear class filter"
               >
                 ×
-            </button>
-        )}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -856,11 +866,11 @@ const Students = () => {
       )}
 
       {/* Table Container */}
-      <div className="report-content-container ecl-table-container" style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        flex: 1, 
-        overflow: 'auto', 
+      <div className="report-content-container ecl-table-container" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        overflow: 'auto',
         minHeight: 0,
         padding: 0,
         height: '100%'
@@ -871,11 +881,11 @@ const Students = () => {
           </div>
         ) : (
           <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
-            <thead style={{ 
-              position: 'sticky', 
-              top: 0, 
-              zIndex: 10, 
-              background: 'var(--sidebar-bg)' 
+            <thead style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              background: 'var(--sidebar-bg)'
             }}>
               <tr>
                 <th style={{ padding: '6px 10px' }}>REG NUMBER</th>
@@ -884,32 +894,32 @@ const Students = () => {
                 <th style={{ padding: '6px 10px' }}>GENDER</th>
                 <th style={{ padding: '6px 10px' }}>STATUS</th>
                 <th style={{ padding: '6px 10px' }}>ACTIONS</th>
-                  </tr>
-                </thead>
+              </tr>
+            </thead>
             <tbody>
               {students.map((student, index) => (
-                <tr 
-                  key={student.RegNumber} 
-                  style={{ 
-                    height: '32px', 
-                    backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                <tr
+                  key={student.RegNumber}
+                  style={{
+                    height: '32px',
+                    backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6'
                   }}
                 >
                   <td style={{ padding: '4px 10px' }}>
-                          {student.RegNumber}
-                      </td>
+                    {student.RegNumber}
+                  </td>
                   <td style={{ padding: '4px 10px' }}>
-                          {student.Name}
-                      </td>
+                    {student.Name}
+                  </td>
                   <td style={{ padding: '4px 10px' }}>
-                          {student.Surname}
-                      </td>
+                    {student.Surname}
+                  </td>
                   <td style={{ padding: '4px 10px' }}>
-                          {student.Gender || 'N/A'}
-                      </td>
+                    {student.Gender || 'N/A'}
+                  </td>
                   <td style={{ padding: '4px 10px' }}>
-                          {student.Active || 'Unknown'}
-                      </td>
+                    {student.Active || 'Unknown'}
+                  </td>
                   <td style={{ padding: '4px 10px' }}>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                       <button
@@ -926,24 +936,24 @@ const Students = () => {
                       >
                         <FontAwesomeIcon icon={faEdit} />
                       </button>
-                          <button
+                      <button
                         onClick={() => handleDeleteClick(student)}
                         style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                         title="Delete"
-                          >
+                      >
                         <FontAwesomeIcon icon={faTrash} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
               {/* Empty placeholder rows to always show 25 rows */}
               {Array.from({ length: Math.max(0, 25 - students.length) }).map((_, index) => (
-                <tr 
+                <tr
                   key={`empty-${index}`}
-                  style={{ 
-                    height: '32px', 
-                    backgroundColor: (students.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                  style={{
+                    height: '32px',
+                    backgroundColor: (students.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6'
                   }}
                 >
                   <td style={{ padding: '4px 10px' }}>&nbsp;</td>
@@ -954,8 +964,8 @@ const Students = () => {
                   <td style={{ padding: '4px 10px' }}>&nbsp;</td>
                 </tr>
               ))}
-                </tbody>
-              </table>
+            </tbody>
+          </table>
         )}
       </div>
 
@@ -963,17 +973,17 @@ const Students = () => {
       <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
         <div className="table-footer-left">
           Showing {displayStart} to {displayEnd} of {totalStudents || 0} results.
-          </div>
+        </div>
         <div className="table-footer-right">
           {!activeSearchTerm && totalPages > 1 && (
             <div className="pagination-controls">
-            <button
+              <button
                 className="pagination-btn"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </button>
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
               <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
                 Page {currentPage} of {totalPages}
               </span>
@@ -997,9 +1007,9 @@ const Students = () => {
       {/* Add Student Modal */}
       {showAddModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
-          <div 
-            className="modal-dialog" 
-            onClick={(e) => e.stopPropagation()} 
+          <div
+            className="modal-dialog"
+            onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '800px', minHeight: isLoading ? '400px' : 'auto' }}
           >
             {isLoading ? (
@@ -1030,14 +1040,14 @@ const Students = () => {
                     </svg>
                   </button>
                 </div>
-                
+
                 <div className="modal-body">
                   {formError && (
                     <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
                       {formError}
                     </div>
                   )}
-                  
+
                   <form onSubmit={handleSave} className="modal-form">
                     {/* Student Information Section */}
                     <div style={{ marginBottom: '24px' }}>
@@ -1045,7 +1055,7 @@ const Students = () => {
                         <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#2563eb' }} />
                         Student Information
                       </h4>
-                      
+
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                         <div className="form-group">
                           <label className="form-label">
@@ -1061,24 +1071,24 @@ const Students = () => {
                               onChange={handleInputChange}
                               required
                             />
-                  <button
+                            <button
                               type="button"
                               onClick={handleGenerateRegNumber}
                               disabled={generatingRegNumber}
                               className="modal-btn"
-                              style={{ 
-                                background: '#6b7280', 
-                                color: 'white', 
+                              style={{
+                                background: '#6b7280',
+                                color: 'white',
                                 padding: '6px 12px',
                                 whiteSpace: 'nowrap',
                                 fontSize: '0.7rem'
                               }}
                             >
                               {generatingRegNumber ? 'Generating...' : 'Generate'}
-                  </button>
+                            </button>
                           </div>
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             First Name <span className="required">*</span>
@@ -1093,7 +1103,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             Surname <span className="required">*</span>
@@ -1108,7 +1118,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             Date of Birth <span className="required">*</span>
@@ -1122,7 +1132,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">National ID Number</label>
                           <input
@@ -1134,7 +1144,7 @@ const Students = () => {
                             onChange={handleInputChange}
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             Gender <span className="required">*</span>
@@ -1151,7 +1161,7 @@ const Students = () => {
                             <option value="Female">Female</option>
                           </select>
                         </div>
-                        
+
                         <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                           <label className="form-label">Address</label>
                           <input
@@ -1172,7 +1182,7 @@ const Students = () => {
                         <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#10b981' }} />
                         Guardian Information
                       </h4>
-                      
+
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                         <div className="form-group">
                           <label className="form-label">
@@ -1188,7 +1198,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             Guardian Surname <span className="required">*</span>
@@ -1203,7 +1213,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">Guardian National ID</label>
                           <input
@@ -1215,7 +1225,7 @@ const Students = () => {
                             onChange={handleInputChange}
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">Relationship to Student</label>
                           <input
@@ -1227,7 +1237,7 @@ const Students = () => {
                             onChange={handleInputChange}
                           />
                         </div>
-                        
+
                         <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                           <label className="form-label">
                             Guardian Phone Number <span className="required">*</span>
@@ -1246,13 +1256,13 @@ const Students = () => {
                     </div>
                   </form>
                 </div>
-                
+
                 <div className="modal-footer">
                   <button className="modal-btn modal-btn-cancel" onClick={handleCloseModal}>
                     Cancel
                   </button>
                   <button
-                    className="modal-btn modal-btn-confirm" 
+                    className="modal-btn modal-btn-confirm"
                     onClick={handleSave}
                     disabled={!isFormValid() || isLoading}
                   >
@@ -1268,9 +1278,9 @@ const Students = () => {
       {/* View Student Modal */}
       {showViewModal && (
         <div className="modal-overlay" onClick={handleCloseViewModal}>
-          <div 
-            className="modal-dialog" 
-            onClick={(e) => e.stopPropagation()} 
+          <div
+            className="modal-dialog"
+            onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '800px', minHeight: viewModalLoading ? '400px' : 'auto' }}
           >
             {viewModalLoading ? (
@@ -1302,7 +1312,7 @@ const Students = () => {
                     </svg>
                   </button>
                 </div>
-                
+
                 <div className="modal-body">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {/* Student Information Section */}
@@ -1311,7 +1321,7 @@ const Students = () => {
                         <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#2563eb' }} />
                         Student Information
                       </h4>
-                      
+
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 30px' }}>
                         <div>
                           <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
@@ -1321,7 +1331,7 @@ const Students = () => {
                             {selectedStudent.RegNumber || 'N/A'}
                           </div>
                         </div>
-                        
+
                         <div>
                           <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                             First Name
@@ -1330,7 +1340,7 @@ const Students = () => {
                             {selectedStudent.Name || 'N/A'}
                           </div>
                         </div>
-                        
+
                         <div>
                           <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                             Surname
@@ -1339,7 +1349,7 @@ const Students = () => {
                             {selectedStudent.Surname || 'N/A'}
                           </div>
                         </div>
-                        
+
                         <div>
                           <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                             Date of Birth
@@ -1348,7 +1358,7 @@ const Students = () => {
                             {formatDate(selectedStudent.DateOfBirth) || 'N/A'}
                           </div>
                         </div>
-                        
+
                         <div>
                           <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                             National ID Number
@@ -1357,7 +1367,7 @@ const Students = () => {
                             {selectedStudent.NationalIDNumber || 'N/A'}
                           </div>
                         </div>
-                        
+
                         <div>
                           <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                             Gender
@@ -1366,7 +1376,7 @@ const Students = () => {
                             {selectedStudent.Gender || 'N/A'}
                           </div>
                         </div>
-                        
+
                         <div style={{ gridColumn: '1 / -1' }}>
                           <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                             Address
@@ -1375,7 +1385,7 @@ const Students = () => {
                             {selectedStudent.Address || 'N/A'}
                           </div>
                         </div>
-                        
+
                         <div>
                           <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                             Status
@@ -1394,7 +1404,7 @@ const Students = () => {
                           <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#10b981' }} />
                           Guardian Information
                         </h4>
-                        
+
                         {selectedStudent.guardians.map((guardian, index) => (
                           <div key={index} style={{ marginBottom: index < selectedStudent.guardians.length - 1 ? '20px' : '0' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 30px' }}>
@@ -1406,7 +1416,7 @@ const Students = () => {
                                   {guardian.Name || 'N/A'}
                                 </div>
                               </div>
-                              
+
                               <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                                   Guardian Surname
@@ -1415,7 +1425,7 @@ const Students = () => {
                                   {guardian.Surname || 'N/A'}
                                 </div>
                               </div>
-                              
+
                               <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                                   National ID Number
@@ -1424,7 +1434,7 @@ const Students = () => {
                                   {guardian.NationalIDNumber || 'N/A'}
                                 </div>
                               </div>
-                              
+
                               <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                                   Phone Number
@@ -1433,7 +1443,7 @@ const Students = () => {
                                   {guardian.PhoneNumber || 'N/A'}
                                 </div>
                               </div>
-                              
+
                               <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                                   Relationship to Student
@@ -1449,7 +1459,7 @@ const Students = () => {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="modal-footer">
                   <button className="modal-btn modal-btn-cancel" onClick={handleCloseViewModal}>
                     Close
@@ -1464,9 +1474,9 @@ const Students = () => {
       {/* Edit Student Modal */}
       {showEditModal && (
         <div className="modal-overlay" onClick={handleCloseEditModal}>
-          <div 
-            className="modal-dialog" 
-            onClick={(e) => e.stopPropagation()} 
+          <div
+            className="modal-dialog"
+            onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '800px', minHeight: editModalLoading ? '400px' : 'auto' }}
           >
             {editModalLoading ? (
@@ -1497,14 +1507,14 @@ const Students = () => {
                     </svg>
                   </button>
                 </div>
-                
+
                 <div className="modal-body">
                   {editFormError && (
                     <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
                       {editFormError}
                     </div>
                   )}
-                  
+
                   <form onSubmit={handleUpdateStudent} className="modal-form">
                     {/* Student Information Section */}
                     <div style={{ marginBottom: '24px' }}>
@@ -1512,7 +1522,7 @@ const Students = () => {
                         <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#2563eb' }} />
                         Student Information
                       </h4>
-                      
+
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                         <div className="form-group">
                           <label className="form-label">
@@ -1530,7 +1540,7 @@ const Students = () => {
                             style={{ backgroundColor: '#f9fafb', cursor: 'not-allowed' }}
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             First Name <span className="required">*</span>
@@ -1545,7 +1555,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             Surname <span className="required">*</span>
@@ -1560,7 +1570,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             Date of Birth <span className="required">*</span>
@@ -1574,7 +1584,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">National ID Number</label>
                           <input
@@ -1586,7 +1596,7 @@ const Students = () => {
                             onChange={handleEditInputChange}
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             Gender <span className="required">*</span>
@@ -1603,7 +1613,7 @@ const Students = () => {
                             <option value="Female">Female</option>
                           </select>
                         </div>
-                        
+
                         <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                           <label className="form-label">Address</label>
                           <input
@@ -1624,7 +1634,7 @@ const Students = () => {
                         <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#10b981' }} />
                         Guardian Information
                       </h4>
-                      
+
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                         <div className="form-group">
                           <label className="form-label">
@@ -1640,7 +1650,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">
                             Guardian Surname <span className="required">*</span>
@@ -1655,7 +1665,7 @@ const Students = () => {
                             required
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">Guardian National ID</label>
                           <input
@@ -1667,7 +1677,7 @@ const Students = () => {
                             onChange={handleEditInputChange}
                           />
                         </div>
-                        
+
                         <div className="form-group">
                           <label className="form-label">Relationship to Student</label>
                           <input
@@ -1679,7 +1689,7 @@ const Students = () => {
                             onChange={handleEditInputChange}
                           />
                         </div>
-                        
+
                         <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                           <label className="form-label">
                             Guardian Phone Number <span className="required">*</span>
@@ -1698,13 +1708,13 @@ const Students = () => {
                     </div>
                   </form>
                 </div>
-                
+
                 <div className="modal-footer">
                   <button className="modal-btn modal-btn-cancel" onClick={handleCloseEditModal}>
                     Cancel
                   </button>
                   <button
-                    className="modal-btn modal-btn-confirm" 
+                    className="modal-btn modal-btn-confirm"
                     onClick={handleUpdateStudent}
                     disabled={!isEditFormValid() || isSaving}
                   >
@@ -1720,9 +1730,9 @@ const Students = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && studentToDelete && (
         <div className="modal-overlay" onClick={handleCloseDeleteModal}>
-          <div 
-            className="modal-dialog" 
-            onClick={(e) => e.stopPropagation()} 
+          <div
+            className="modal-dialog"
+            onClick={(e) => e.stopPropagation()}
             style={{ maxWidth: '500px' }}
           >
             <div className="modal-header">
@@ -1734,16 +1744,16 @@ const Students = () => {
                 </svg>
               </button>
             </div>
-            
+
             <div className="modal-body">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '50%', 
-                  background: '#fee2e2', 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  background: '#fee2e2',
+                  display: 'flex',
+                  alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0
                 }}>
@@ -1762,10 +1772,10 @@ const Students = () => {
                   </p>
                 </div>
               </div>
-              
-              <div style={{ 
-                padding: '12px', 
-                background: '#f9fafb', 
+
+              <div style={{
+                padding: '12px',
+                background: '#f9fafb',
                 borderRadius: '4px',
                 border: '1px solid #e5e7eb'
               }}>
@@ -1780,22 +1790,22 @@ const Students = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="modal-footer">
-            <button
-                className="modal-btn modal-btn-cancel" 
+              <button
+                className="modal-btn modal-btn-cancel"
                 onClick={handleCloseDeleteModal}
                 disabled={isDeleting}
               >
                 Cancel
               </button>
-              <button 
-                className="modal-btn modal-btn-delete" 
+              <button
+                className="modal-btn modal-btn-delete"
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
               >
                 {isDeleting ? 'Deleting...' : 'Delete Student'}
-            </button>
+              </button>
             </div>
           </div>
         </div>
@@ -1804,8 +1814,8 @@ const Students = () => {
       {/* Success Toast */}
       {toast.visible && toast.message && (
         <div className="success-toast">
-          <div 
-            className="success-toast-content" 
+          <div
+            className="success-toast-content"
             style={{ background: getToastBackgroundColor(toast.type) }}
           >
             {getToastIcon(toast.type)}

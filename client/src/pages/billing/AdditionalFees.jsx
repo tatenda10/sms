@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faDollarSign, 
-  faPlus, 
-  faEdit, 
-  faTrash, 
+import {
+  faDollarSign,
+  faPlus,
+  faEdit,
+  faTrash,
   faUsers,
   faBook,
   faFileAlt,
@@ -104,10 +104,10 @@ const AdditionalFees = () => {
   const handleCreateStructure = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       console.log('Creating fee structure with data:', formData);
-      
+
       const response = await fetch(`${BASE_URL}/additional-fees/structures`, {
         method: 'POST',
         headers: {
@@ -120,7 +120,7 @@ const AdditionalFees = () => {
       console.log('Response status:', response.status);
       const data = await response.json();
       console.log('Response data:', data);
-      
+
       if (data.success) {
         alert('Fee structure created successfully');
         setShowCreateModal(false);
@@ -157,7 +157,7 @@ const AdditionalFees = () => {
 
     setLoading(true);
     setShowBulkConfirmModal(false);
-    
+
     try {
       const bulkData = {
         fee_structure_id: selectedStructure.id,
@@ -216,296 +216,324 @@ const AdditionalFees = () => {
 
   return (
     <>
-    <div className="min-h-screen bg-gray-50 py-2 md:py-6">
-      <div className="w-full px-2 md:px-4 lg:px-8">
-        {/* Header */}
-        <div className="mb-4 md:mb-6">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div>
-              <h1 className="text-lg md:text-xl font-bold text-gray-900">Additional Fees Management</h1>
-              <p className="text-xs md:text-sm text-gray-600">Manage textbook, registration, and report book fees</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-              <div className="flex items-center space-x-2">
-                <label className="text-xs font-medium text-gray-700">Academic Year:</label>
-                <input
-                  type="text"
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  placeholder="e.g., 2025"
-                  className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded w-20"
-                />
+      <div className="min-h-screen bg-gray-50 py-2 md:py-6">
+        <div className="w-full px-2 md:px-4 lg:px-8">
+          {/* Header */}
+          <div className="mb-4 md:mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <div>
+                <h1 className="text-lg md:text-xl font-bold text-gray-900">Additional Fees Management</h1>
+                <p className="text-xs md:text-sm text-gray-600">Manage textbook, registration, and report book fees</p>
               </div>
-              <button
-                onClick={() => {
-                  loadFeeStructures();
-                  loadCurrencies();
-                }}
-                className="bg-gray-600 text-white px-3 py-2 text-xs hover:bg-gray-700 flex items-center w-full sm:w-auto justify-center"
-              >
-                <FontAwesomeIcon icon={faRefresh} className="mr-1" />
-                Refresh
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="mb-4 md:mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-2 md:space-x-8 overflow-x-auto">
-              <button
-                onClick={() => setActiveTab('structures')}
-                className={`py-2 px-1 border-b-2 font-medium text-xs flex items-center space-x-1 whitespace-nowrap ${
-                  activeTab === 'structures'
-                    ? 'border-gray-900 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <FontAwesomeIcon icon={faCog} className="text-xs" />
-                <span>Fee Structures</span>
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 md:gap-6">
-
-          {/* Fee Structures Tab */}
-          {activeTab === 'structures' && (
-            <div className="bg-white border border-gray-200 overflow-hidden">
-              <div className="px-3 md:px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <h3 className="text-sm md:text-base font-medium text-gray-900">Fee Structures</h3>
-                <button 
-                  className="bg-gray-900 text-white px-3 py-2 text-xs hover:bg-gray-800 flex items-center w-full sm:w-auto justify-center"
-                  onClick={() => setShowCreateModal(true)}
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                <div className="flex items-center space-x-2">
+                  <label className="text-xs font-medium text-gray-700">Academic Year:</label>
+                  <input
+                    type="text"
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    placeholder="e.g., 2025"
+                    className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded w-20"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    loadFeeStructures();
+                    loadCurrencies();
+                  }}
+                  className="bg-gray-600 text-white px-3 py-2 text-xs hover:bg-gray-700 flex items-center w-full sm:w-auto justify-center"
                 >
-                  <FontAwesomeIcon icon={faPlus} className="mr-1" />
-                  Add Fee Structure
+                  <FontAwesomeIcon icon={faRefresh} className="mr-1" />
+                  Refresh
                 </button>
               </div>
-              
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Fee Name
-                      </th>
-                      <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                        Description
-                      </th>
-                      <th className="px-2 md:px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                        Type
-                      </th>
-                      <th className="px-2 md:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                        Status
-                      </th>
-                      <th className="px-2 md:px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {feeStructures.map(structure => (
-                      <tr key={structure.id} className="hover:bg-gray-50">
-                        <td className="px-2 md:px-3 py-2 whitespace-nowrap text-xs">
-                          <div className="flex items-center">
-                            <FontAwesomeIcon 
-                              icon={structure.fee_type === 'annual' ? faBook : faFileAlt} 
-                              className="mr-2 text-gray-400" 
-                            />
-                            <div>
-                              <div className="font-medium text-gray-900">{structure.fee_name}</div>
-                              <div className="text-gray-500 sm:hidden">{structure.description}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-2 md:px-3 py-2 text-xs text-gray-900 hidden sm:table-cell">{structure.description}</td>
-                        <td className="px-2 md:px-3 py-2 text-xs text-right font-medium text-gray-900">
-                          ${(parseFloat(structure.amount) || 0).toFixed(2)}
-                        </td>
-                        <td className="px-2 md:px-3 py-2 whitespace-nowrap text-xs hidden md:table-cell">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            structure.fee_type === 'annual' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                          }`}>
-                            {structure.fee_type}
-                          </span>
-                        </td>
-                        <td className="px-2 md:px-3 py-2 whitespace-nowrap text-xs hidden lg:table-cell">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            structure.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {structure.is_active ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
-                        <td className="px-2 md:px-3 py-2 whitespace-nowrap text-xs text-center">
-                          <div className="flex justify-center space-x-1">
-                            <button className="text-gray-600 hover:text-gray-900 p-1" title="Edit">
-                              <FontAwesomeIcon icon={faEdit} />
-                            </button>
-                            <button className="text-red-600 hover:text-red-900 p-1" title="Delete">
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
-                            {structure.fee_type === 'annual' && (
-                              <button 
-                                className="text-blue-600 hover:text-blue-900 p-1"
-                                onClick={() => handleBulkGenerateForStructure(structure.id)}
-                                title="Generate for all students"
-                              >
-                                <FontAwesomeIcon icon={faBook} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             </div>
-          )}
+          </div>
 
+          {/* Tabs */}
+          <div className="mb-4 md:mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-2 md:space-x-8 overflow-x-auto">
+                <button
+                  onClick={() => setActiveTab('structures')}
+                  className={`py-2 px-1 border-b-2 font-medium text-xs flex items-center space-x-1 whitespace-nowrap ${activeTab === 'structures'
+                      ? 'border-gray-900 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                >
+                  <FontAwesomeIcon icon={faCog} className="text-xs" />
+                  <span>Fee Structures</span>
+                </button>
+              </nav>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:gap-6">
+
+            {/* Fee Structures Tab */}
+            {activeTab === 'structures' && (
+              <div className="report-content-container ecl-table-container" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                overflow: 'auto',
+                minHeight: 0,
+                padding: 0,
+                height: '100%'
+              }}>
+                <div className="px-3 md:px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                  <h3 className="text-sm md:text-base font-medium text-gray-900">Fee Structures</h3>
+                  <button
+                    className="btn-checklist"
+                    onClick={() => setShowCreateModal(true)}
+                  >
+                    <FontAwesomeIcon icon={faPlus} />
+                    Add Fee Structure
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+                    <thead style={{
+                      position: 'sticky',
+                      top: 0,
+                      zIndex: 10,
+                      background: 'var(--sidebar-bg)'
+                    }}>
+                      <tr>
+                        <th style={{ padding: '6px 10px' }}>Fee Name</th>
+                        <th style={{ padding: '6px 10px' }} className="hidden sm:table-cell">Description</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'right' }}>Amount</th>
+                        <th style={{ padding: '6px 10px' }} className="hidden md:table-cell">Type</th>
+                        <th style={{ padding: '6px 10px' }} className="hidden lg:table-cell">Status</th>
+                        <th style={{ padding: '6px 10px', textAlign: 'center' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {feeStructures.map((structure, index) => (
+                        <tr
+                          key={structure.id}
+                          style={{
+                            height: '32px',
+                            backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                          }}
+                        >
+                          <td style={{ padding: '4px 10px' }}>
+                            <div className="flex items-center">
+                              <FontAwesomeIcon
+                                icon={structure.fee_type === 'annual' ? faBook : faFileAlt}
+                                className="mr-2 text-gray-400"
+                              />
+                              <div>
+                                <div style={{ fontWeight: 500, color: '#111827' }}>{structure.fee_name}</div>
+                                <div className="sm:hidden" style={{ color: '#6b7280' }}>{structure.description}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '4px 10px', color: '#111827' }} className="hidden sm:table-cell">{structure.description}</td>
+                          <td style={{ padding: '4px 10px', textAlign: 'right', fontWeight: 500, color: '#111827' }}>
+                            ${(parseFloat(structure.amount) || 0).toFixed(2)}
+                          </td>
+                          <td style={{ padding: '4px 10px' }} className="hidden md:table-cell">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${structure.fee_type === 'annual' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                              }`}>
+                              {structure.fee_type}
+                            </span>
+                          </td>
+                          <td style={{ padding: '4px 10px' }} className="hidden lg:table-cell">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${structure.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
+                              {structure.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '4px 10px' }}>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center' }}>
+                              <button
+                                style={{ color: '#4b5563', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                title="Edit"
+                              >
+                                <FontAwesomeIcon icon={faEdit} />
+                              </button>
+                              <button
+                                style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                title="Delete"
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
+                              </button>
+                              {structure.fee_type === 'annual' && (
+                                <button
+                                  style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                  onClick={() => handleBulkGenerateForStructure(structure.id)}
+                                  title="Generate for all students"
+                                >
+                                  <FontAwesomeIcon icon={faBook} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
       </div>
-    </div>
 
       {/* Create Fee Structure Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white shadow-xl max-w-md w-full mx-4">
-            <div className="px-3 md:px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-sm md:text-base font-medium text-gray-900">Create Fee Structure</h3>
-              <button 
-                type="button" 
-                className="text-gray-400 hover:text-gray-600"
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Create Fee Structure</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
                 onClick={() => setShowCreateModal(false)}
               >
-                <FontAwesomeIcon icon={faTimes} className="text-sm" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
-            <form onSubmit={handleCreateStructure}>
-              <div className="p-3 md:p-4 space-y-3 md:space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Fee Name</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                    name="fee_name"
-                    value={formData.fee_name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-                  <textarea 
-                    className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows="3"
-                  ></textarea>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Amount</label>
-                    <input 
-                      type="number" 
-                      className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                      name="amount"
-                      value={formData.amount}
+
+            <div className="modal-body">
+              <form onSubmit={handleCreateStructure} className="modal-form">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Fee Name</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="fee_name"
+                      value={formData.fee_name}
                       onChange={handleInputChange}
-                      step="0.01"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Currency</label>
-                    <select 
-                      className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                      name="currency_id"
-                      value={formData.currency_id}
+                  <div className="form-group">
+                    <label className="form-label">Description</label>
+                    <textarea
+                      className="form-control"
+                      name="description"
+                      value={formData.description}
                       onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Select Currency</option>
-                      {currencies.map(currency => (
-                        <option key={currency.id} value={currency.id}>
-                          {currency.name} ({currency.code})
-                        </option>
-                      ))}
-                    </select>
+                      rows="3"
+                    ></textarea>
                   </div>
-                  <div className="sm:col-span-2 lg:col-span-1">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Fee Type</label>
-                    <select 
-                      className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                      name="fee_type"
-                      value={formData.fee_type}
-                      onChange={handleInputChange}
-                    >
-                      <option value="one_time">One Time</option>
-                      <option value="annual">Annual</option>
-                    </select>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Amount</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        name="amount"
+                        value={formData.amount}
+                        onChange={handleInputChange}
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Currency</label>
+                      <select
+                        className="form-control"
+                        name="currency_id"
+                        value={formData.currency_id}
+                        onChange={handleInputChange}
+                        required
+                      >
+                        <option value="">Select Currency</option>
+                        {currencies.map(currency => (
+                          <option key={currency.id} value={currency.id}>
+                            {currency.name} ({currency.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 1fr) 1fr', gap: '16px' }}>
+                    <div className="form-group">
+                      <label className="form-label">Fee Type</label>
+                      <select
+                        className="form-control"
+                        name="fee_type"
+                        value={formData.fee_type}
+                        onChange={handleInputChange}
+                      >
+                        <option value="one_time">One Time</option>
+                        <option value="annual">Annual</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Academic Year</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="academic_year"
+                        value={formData.academic_year || selectedYear}
+                        onChange={handleInputChange}
+                        placeholder="e.g., 2025"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Academic Year</label>
-                  <input 
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                    name="academic_year"
-                    value={formData.academic_year || selectedYear}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 2025"
-                    required
-                  />
+
+                {/* Form actions moved to modal-footer but kept inside form context if needed, but standard is outside. 
+                    React form submission works with button type="submit" inside form. 
+                    Structure requires button in modal-footer. */}
+                <div className="modal-footer" style={{ marginTop: '20px' }}>
+                  <button
+                    type="button"
+                    className="modal-btn modal-btn-cancel"
+                    onClick={() => setShowCreateModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="modal-btn modal-btn-confirm"
+                    disabled={loading}
+                  >
+                    {loading ? 'Creating...' : 'Create Structure'}
+                  </button>
                 </div>
-              </div>
-              <div className="px-3 md:px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-2">
-                <button 
-                  type="button" 
-                  className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 w-full sm:w-auto"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="px-3 py-2 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 w-full sm:w-auto"
-                  disabled={loading}
-                >
-                  {loading ? 'Creating...' : 'Create Structure'}
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* Bulk Generate Confirmation Modal */}
       {showBulkConfirmModal && selectedStructure && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white shadow-xl max-w-md w-full mx-4">
-            <div className="px-3 md:px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-sm md:text-base font-medium text-gray-900">Confirm Bulk Generation</h3>
-              <button 
-                type="button" 
-                className="text-gray-400 hover:text-gray-600"
+        <div className="modal-overlay" onClick={() => {
+          setShowBulkConfirmModal(false);
+          setSelectedStructure(null);
+        }}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Confirm Bulk Generation</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
                 onClick={() => {
                   setShowBulkConfirmModal(false);
                   setSelectedStructure(null);
                 }}
               >
-                <FontAwesomeIcon icon={faTimes} className="text-sm" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
-            
-            <div className="p-3 md:p-4">
+
+            <div className="modal-body">
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">
                   <FontAwesomeIcon icon={faExclamationTriangle} className="text-yellow-500 text-xl" />
@@ -524,24 +552,25 @@ const AdditionalFees = () => {
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(e.target.value)}
                         placeholder="e.g., 2025"
-                        className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded w-20"
+                        className="form-control"
+                        style={{ width: '80px', display: 'inline-block', padding: '2px 6px' }}
                       />
                     </div>
                   </div>
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200">
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
                     <p className="text-xs text-yellow-800">
-                      <strong>Warning:</strong> This will create fee assignments for <strong>ALL students</strong> in the system. 
+                      <strong>Warning:</strong> This will create fee assignments for <strong>ALL students</strong> in the system.
                       This action cannot be undone.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <div className="px-3 md:px-4 py-3 border-t border-gray-200 flex flex-col sm:flex-row justify-end gap-2">
-              <button 
-                type="button" 
-                className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 w-full sm:w-auto"
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="modal-btn modal-btn-cancel"
                 onClick={() => {
                   setShowBulkConfirmModal(false);
                   setSelectedStructure(null);
@@ -549,9 +578,10 @@ const AdditionalFees = () => {
               >
                 Cancel
               </button>
-              <button 
-                type="button" 
-                className="px-3 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 w-full sm:w-auto"
+              <button
+                type="button"
+                className="modal-btn modal-btn-confirm"
+                style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}
                 onClick={confirmBulkGenerate}
                 disabled={loading}
               >
