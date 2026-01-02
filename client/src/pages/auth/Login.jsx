@@ -44,7 +44,7 @@ const Login = () => {
         <div className="login-container">
             <div className="login-left">
                 <div className="login-welcome-container">
-                    <h2 className="login-welcome-text">Welcome to Brooklyn Private Junior School</h2>
+                    <h2 className="login-welcome-text">Welcome to Brooklyn Private School</h2>
                 </div>
                 <div className="login-card">
                     <div className="login-header">
@@ -101,8 +101,8 @@ const Login = () => {
                             <a href="#" className="forgot-password-link">Forgot Password?</a>
                         </div>
 
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             className="login-submit-btn"
                             disabled={loading}
                             style={{ opacity: loading ? 0.6 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
