@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faSearch, 
-  faDollarSign, 
-  faUserGraduate, 
+import {
+  faSearch,
+  faDollarSign,
+  faUserGraduate,
   faExclamationTriangle,
   faEye,
   faFileAlt,
   faDownload,
   faPrint,
-  faRefresh
+  faRefresh,
+  faClose
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import BASE_URL from '../../contexts/Api';
@@ -27,7 +28,7 @@ const StudentBalances = () => {
     currentPage: 1,
     totalPages: 1,
     totalStudents: 0,
-    limit: 20,
+    limit: 25,
     hasNextPage: false,
     hasPreviousPage: false
   });
@@ -45,7 +46,7 @@ const StudentBalances = () => {
       const params = new URLSearchParams({
         page: pagination.currentPage,
         limit: pagination.limit,
-        ...(activeSearchTerm && { search: activeSearchTerm })
+        ...(activeSearchTerm && { search: activeSearchTerm.trim() })
       });
 
       const response = await axios.get(`${BASE_URL}/students/balances/outstanding?${params}`, {
@@ -55,7 +56,6 @@ const StudentBalances = () => {
       if (response.data.success) {
         setStudents(response.data.data);
         setPagination(response.data.pagination);
-        setSummary(response.data.summary);
       }
     } catch (error) {
       console.error('Error fetching student balances:', error);
@@ -79,8 +79,15 @@ const StudentBalances = () => {
     }
   };
 
-  const handleSearch = () => {
+  const handleSearch = (e) => {
+    if (e) e.preventDefault();
     setActiveSearchTerm(searchTerm);
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setActiveSearchTerm('');
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
@@ -96,6 +103,7 @@ const StudentBalances = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-GB');
   };
 
@@ -105,20 +113,17 @@ const StudentBalances = () => {
   };
 
   const handleExport = () => {
-    // Create CSV content
     const csvContent = [
-      ['Registration Number', 'Name', 'Surname', 'Class', 'Outstanding Balance', 'Last Transaction Date'],
-             ...students.map(student => [
-         student.RegNumber,
-         student.Name,
-         student.Surname,
-         'Not Assigned',
-         Math.abs(student.current_balance).toFixed(2),
-         student.last_transaction_date ? formatDate(student.last_transaction_date) : 'N/A'
-       ])
+      ['Registration Number', 'Name', 'Surname', 'Outstanding Balance', 'Last Transaction Date'],
+      ...students.map(student => [
+        student.RegNumber,
+        student.Name,
+        student.Surname,
+        Math.abs(student.current_balance).toFixed(2),
+        student.last_transaction_date ? formatDate(student.last_transaction_date) : 'N/A'
+      ])
     ].map(row => row.join(',')).join('\n');
 
-    // Download CSV
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -137,14 +142,13 @@ const StudentBalances = () => {
         <head>
           <title>Outstanding Student Balances</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
+            body { font-family: 'Nunito', sans-serif; margin: 20px; }
             .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
             .summary { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border: 1px solid #ddd; }
             table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+            th { background-color: #f2f2f2; text-transform: uppercase; }
             .amount { text-align: right; }
-            .total { font-weight: bold; background-color: #f9f9f9; }
           </style>
         </head>
         <body>
@@ -152,35 +156,31 @@ const StudentBalances = () => {
             <h1>OUTSTANDING STUDENT BALANCES</h1>
             <p>Generated on ${new Date().toLocaleDateString()}</p>
           </div>
-          
           <div class="summary">
             <h3>Summary</h3>
-            <p><strong>Total Students with Outstanding Balances:</strong> ${summary?.total_students_with_debt || 0}</p>
-            <p><strong>Total Outstanding Amount:</strong> ${formatCurrency(summary?.total_outstanding_debt || 0)}</p>
+            <p><strong>Total Students with Debt:</strong> ${summary?.total_students_with_debt || 0}</p>
+            <p><strong>Total Outstanding:</strong> ${formatCurrency(summary?.total_outstanding_debt || 0)}</p>
           </div>
-          
           <table>
             <thead>
               <tr>
                 <th>Registration No</th>
                 <th>Name</th>
                 <th>Surname</th>
-                <th>Class</th>
                 <th class="amount">Outstanding Balance</th>
                 <th>Last Transaction</th>
               </tr>
             </thead>
             <tbody>
-                             ${students.map(student => `
-                 <tr>
-                   <td>${student.RegNumber}</td>
-                   <td>${student.Name}</td>
-                   <td>${student.Surname}</td>
-                   <td>Not Assigned</td>
-                   <td class="amount">${formatCurrency(student.current_balance)}</td>
-                   <td>${student.last_transaction_date ? formatDate(student.last_transaction_date) : 'N/A'}</td>
-                 </tr>
-               `).join('')}
+              ${students.map(student => `
+                <tr>
+                  <td>${student.RegNumber}</td>
+                  <td>${student.Name}</td>
+                  <td>${student.Surname}</td>
+                  <td class="amount">${formatCurrency(student.current_balance)}</td>
+                  <td>${student.last_transaction_date ? formatDate(student.last_transaction_date) : 'N/A'}</td>
+                </tr>
+              `).join('')}
             </tbody>
           </table>
         </body>
@@ -190,237 +190,221 @@ const StudentBalances = () => {
     printWindow.print();
   };
 
+  // Calculate display ranges for pagination
+  const displayStart = students.length > 0 ? (pagination.currentPage - 1) * pagination.limit + 1 : 0;
+  const displayEnd = Math.min(pagination.currentPage * pagination.limit, pagination.totalStudents);
+
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Outstanding Student Balances</h1>
-              <p className="text-xs text-gray-600">Students with outstanding debts and payment obligations</p>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={handleRefresh}
-                className="bg-gray-600 text-white px-3 py-2 text-xs hover:bg-gray-700 flex items-center"
-              >
-                <FontAwesomeIcon icon={faRefresh} className="mr-1" />
-                Refresh
-              </button>
-              <button
-                onClick={handleExport}
-                className="bg-green-600 text-white px-3 py-2 text-xs hover:bg-green-700 flex items-center"
-              >
-                <FontAwesomeIcon icon={faDownload} className="mr-1" />
-                Export
-              </button>
-              <button
-                onClick={handlePrint}
-                className="bg-blue-600 text-white px-3 py-2 text-xs hover:bg-blue-700 flex items-center"
-              >
-                <FontAwesomeIcon icon={faPrint} className="mr-1" />
-                Print
-              </button>
-            </div>
-          </div>
+    <div className="reports-container" style={{
+      height: '100%',
+      maxHeight: '100%',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative'
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">Outstanding Student Balances</h2>
+          <p className="report-subtitle">Students with outstanding debts and payment obligations.</p>
         </div>
+        <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={handleRefresh}
+            className="btn-checklist"
+            style={{ backgroundColor: '#475569' }}
+          >
+            <FontAwesomeIcon icon={faRefresh} />
+            Refresh
+          </button>
+          <button
+            onClick={handleExport}
+            className="btn-checklist"
+            style={{ backgroundColor: '#059669' }}
+          >
+            <FontAwesomeIcon icon={faDownload} />
+            Export
+          </button>
+          <button
+            onClick={handlePrint}
+            className="btn-checklist"
+          >
+            <FontAwesomeIcon icon={faPrint} />
+            Print
+          </button>
+        </div>
+      </div>
 
-                 {/* Summary Cards */}
-         {summary && (
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-               <div className="flex items-center">
-                 <FontAwesomeIcon icon={faExclamationTriangle} className="text-red-600 text-lg mr-3" />
-                 <div>
-                   <p className="text-xs text-red-600 font-medium">Students with Debt</p>
-                   <p className="text-lg font-bold text-red-900">{summary.total_students_with_debt}</p>
-                 </div>
-               </div>
-             </div>
-             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-               <div className="flex items-center">
-                 <FontAwesomeIcon icon={faDollarSign} className="text-red-600 text-lg mr-3" />
-                 <div>
-                   <p className="text-xs text-red-600 font-medium">Total Outstanding</p>
-                   <p className="text-lg font-bold text-red-900">{formatCurrency(summary.total_outstanding_debt)}</p>
-                 </div>
-               </div>
-             </div>
-           </div>
-         )}
+      {/* Summary Section */}
+      <div className="report-filters" style={{ flexShrink: 0, padding: '10px 30px', background: '#f8fafc', borderBottom: '1px solid var(--border-color)', gap: '24px' }}>
+        {summary && (
+          <React.Fragment>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: '#dc2626', fontSize: '0.85rem' }} />
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Students with Debt</p>
+                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{summary.total_students_with_debt}</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FontAwesomeIcon icon={faDollarSign} style={{ color: '#dc2626', fontSize: '0.85rem' }} />
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Total Outstanding</p>
+                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{formatCurrency(summary.total_outstanding_debt)}</p>
+              </div>
+            </div>
+          </React.Fragment>
+        )}
+      </div>
 
-        {/* Search */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-          <div className="flex space-x-2">
-            <div className="flex-1 relative">
-              <FontAwesomeIcon icon={faSearch} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
+      {/* Filters Section */}
+      <div className="report-filters" style={{ flexShrink: 0, borderTop: 'none' }}>
+        <div className="report-filters-left">
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="filter-group">
+            <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <FontAwesomeIcon icon={faSearch} className="search-icon" />
               <input
                 type="text"
-                placeholder="Search by name or registration number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-full pl-6 pr-2 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                placeholder="Search by name or reg number..."
+                className="filter-input search-input"
+                style={{ width: '300px' }}
               />
-            </div>
-            <button
-              onClick={handleSearch}
-              className="bg-gray-900 text-white px-4 py-2 text-xs hover:bg-gray-800"
-            >
-              Search
-            </button>
-          </div>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-xs rounded">
-            {error}
-          </div>
-        )}
-
-        {/* Students Table */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <p className="text-sm text-gray-600">Loading outstanding balances...</p>
-            </div>
-          ) : students.length === 0 ? (
-            <div className="p-8 text-center">
-              <FontAwesomeIcon icon={faUserGraduate} className="text-gray-400 text-3xl mb-2" />
-              <p className="text-sm text-gray-600">
-                {activeSearchTerm ? 'No students found matching your search' : 'No students with outstanding balances'}
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Student
-                      </th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Class
-                      </th>
-                      <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Outstanding Balance
-                      </th>
-                                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                         Last Transaction
-                       </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {students.map((student) => (
-                      <tr key={student.RegNumber} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 whitespace-nowrap text-xs">
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              {student.Name} {student.Surname}
-                            </div>
-                            <div className="text-gray-500">
-                              {student.RegNumber}
-                            </div>
-                          </div>
-                        </td>
-                                                 <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
-                           Not Assigned
-                         </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-xs text-right">
-                          <span className="text-red-600 font-bold">
-                            {formatCurrency(student.current_balance)}
-                          </span>
-                        </td>
-                                                 <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
-                           {student.last_transaction_date ? formatDate(student.last_transaction_date) : 'N/A'}
-                         </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              {pagination.totalPages > 1 && (
-                <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 flex justify-between sm:hidden">
-                      <button
-                        onClick={() => handlePageChange(pagination.currentPage - 1)}
-                        disabled={!pagination.hasPreviousPage}
-                        className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => handlePageChange(pagination.currentPage + 1)}
-                        disabled={!pagination.hasNextPage}
-                        className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </div>
-                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-xs text-gray-700">
-                          Showing{' '}
-                          <span className="font-medium">
-                            {((pagination.currentPage - 1) * pagination.limit) + 1}
-                          </span>{' '}
-                          to{' '}
-                          <span className="font-medium">
-                            {Math.min(pagination.currentPage * pagination.limit, pagination.totalStudents)}
-                          </span>{' '}
-                          of{' '}
-                          <span className="font-medium">{pagination.totalStudents}</span>{' '}
-                          results
-                        </p>
-                      </div>
-                      <div>
-                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                          <button
-                            onClick={() => handlePageChange(pagination.currentPage - 1)}
-                            disabled={!pagination.hasPreviousPage}
-                            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Previous
-                          </button>
-                          
-                          {/* Page Numbers */}
-                          {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                            const pageNum = i + 1;
-                            return (
-                              <button
-                                key={pageNum}
-                                onClick={() => handlePageChange(pageNum)}
-                                className={`relative inline-flex items-center px-3 py-2 border text-xs font-medium ${
-                                  pageNum === pagination.currentPage
-                                    ? 'z-10 bg-gray-900 border-gray-900 text-white'
-                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                }`}
-                              >
-                                {pageNum}
-                              </button>
-                            );
-                          })}
-                          
-                          <button
-                            onClick={() => handlePageChange(pagination.currentPage + 1)}
-                            disabled={!pagination.hasNextPage}
-                            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-xs font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Next
-                          </button>
-                        </nav>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    padding: '4px 6px',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    color: 'var(--text-secondary)'
+                  }}
+                >
+                  ×
+                </button>
               )}
-            </>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Table Container */}
+      <div className="report-content-container ecl-table-container" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        overflow: 'auto',
+        minHeight: 0,
+        padding: 0,
+        height: '100%'
+      }}>
+        {loading && students.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+            Loading outstanding balances...
+          </div>
+        ) : (
+          <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+            <thead style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              background: 'var(--sidebar-bg)'
+            }}>
+              <tr>
+                <th style={{ padding: '6px 10px' }}>STUDENT</th>
+                <th style={{ padding: '6px 10px' }}>REG NUMBER</th>
+                <th style={{ padding: '6px 10px', textAlign: 'right' }}>OUTSTANDING BALANCE</th>
+                <th style={{ padding: '6px 10px' }}>LAST TRANSACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((student, index) => (
+                <tr
+                  key={student.RegNumber}
+                  style={{
+                    height: '32px',
+                    backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                  }}
+                >
+                  <td style={{ padding: '4px 10px', fontWeight: 600 }}>
+                    {student.Name} {student.Surname}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {student.RegNumber}
+                  </td>
+                  <td style={{ padding: '4px 10px', textAlign: 'right', color: '#dc2626', fontWeight: 700 }}>
+                    {formatCurrency(student.current_balance)}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {student.last_transaction_date ? formatDate(student.last_transaction_date) : 'N/A'}
+                  </td>
+                </tr>
+              ))}
+              {/* Empty placeholder rows to always show 25 rows */}
+              {Array.from({ length: Math.max(0, 25 - students.length) }).map((_, index) => (
+                <tr
+                  key={`empty-${index}`}
+                  style={{
+                    height: '32px',
+                    backgroundColor: (students.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                  }}
+                >
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Pagination Footer */}
+      <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+        <div className="table-footer-left">
+          Showing {displayStart} to {displayEnd} of {pagination.totalStudents || 0} results.
+        </div>
+        <div className="table-footer-right">
+          {pagination.totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={!pagination.hasPreviousPage}
+              >
+                Previous
+              </button>
+              <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={!pagination.hasNextPage}
+              >
+                Next
+              </button>
+            </div>
           )}
         </div>
       </div>

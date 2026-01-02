@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Users, BookOpen, DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight, CreditCard
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import BASE_URL from '../../contexts/Api';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, Legend 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, Legend
 } from 'recharts';
 
 const Dashboard = () => {
@@ -47,19 +47,53 @@ const Dashboard = () => {
       setLoading(true);
       const authHeaders = { Authorization: `Bearer ${token}` };
 
-      // Fetch students count
-      const studentsRes = await axios.get(`${BASE_URL}/students?page=1&limit=1`, { headers: authHeaders });
-      const totalStudents = studentsRes.data.pagination?.totalStudents || 0;
+      // Initialize local metrics
+      let totalStudents = 0;
+      let totalEmployees = 0;
+      let activeClasses = 0;
+      let allClasses = [];
+      let studentChanges = null;
+      let revenueChanges = null;
+      let balanceChanges = null;
+
+      // Fetch students count and calculate change (approximate based on creation date)
+      try {
+        const studentsRes = await axios.get(`${BASE_URL}/students?page=1&limit=1000`, { headers: authHeaders });
+        const students = studentsRes.data.data || [];
+        totalStudents = students.length || studentsRes.data.pagination?.totalStudents || 0;
+
+        if (students.length > 0) {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          const newStudents = students.filter(s => new Date(s.CreatedAt || s.created_at) > thirtyDaysAgo).length;
+          const oldStudents = totalStudents - newStudents;
+          if (oldStudents > 0) {
+            const percentChange = ((newStudents / oldStudents) * 100).toFixed(0);
+            studentChanges = { value: `${percentChange}% from last month`, type: 'increase' };
+          }
+        }
+      } catch (err) {
+        console.log('Students data not available');
+      }
 
       // Fetch employees count
-      const employeesRes = await axios.get(`${BASE_URL}/employees?page=1&limit=1`, { headers: authHeaders });
-      const totalEmployees = employeesRes.data.pagination?.totalEmployees || 0;
+      try {
+        const employeesRes = await axios.get(`${BASE_URL}/employees?page=1&limit=1`, { headers: authHeaders });
+        totalEmployees = employeesRes.data.pagination?.totalRecords || employeesRes.data.pagination?.totalEmployees || 0;
+      } catch (err) {
+        console.log('Employees count not available');
+      }
 
       // Fetch classes count
-      const classesRes = await axios.get(`${BASE_URL}/classes/gradelevel-classes?page=1&limit=1`, { headers: authHeaders });
-      const activeClasses = classesRes.data.pagination?.totalClasses || 0;
+      try {
+        const classesRes = await axios.get(`${BASE_URL}/classes/gradelevel-classes`, { headers: authHeaders });
+        allClasses = classesRes.data.data || [];
+        activeClasses = allClasses.filter(c => (c.student_count || c.StudentCount || 0) > 0).length;
+      } catch (err) {
+        console.log('Classes count not available');
+      }
 
-      // Try to fetch revenue analytics
+      // Fetch revenue analytics and calculate change
       let monthlyRevenue = 0;
       let revenueTrendsData = [];
       try {
@@ -67,34 +101,53 @@ const Dashboard = () => {
         const revenueRes = await axios.get(`${BASE_URL}/analytics/revenue/trends?year=${currentYear}&period=monthly`, { headers: authHeaders });
         if (revenueRes.data.data?.trends) {
           revenueTrendsData = revenueRes.data.data.trends;
-          // Get current month revenue
           const currentMonth = new Date().getMonth() + 1;
-          const currentMonthData = revenueTrendsData.find(t => t.period === currentMonth);
+          const currentMonthData = revenueTrendsData.find(t => (Number(t.month) === currentMonth || Number(t.period) === currentMonth));
+          const prevMonthData = revenueTrendsData.find(t => (Number(t.month) === (currentMonth - 1) || Number(t.period) === (currentMonth - 1)));
+
           monthlyRevenue = currentMonthData?.total_revenue || 0;
+          const prevRevenue = prevMonthData?.total_revenue || 0;
+
+          if (prevRevenue > 0) {
+            const diff = Number(monthlyRevenue) - Number(prevRevenue);
+            const percent = ((Math.abs(diff) / Number(prevRevenue)) * 100).toFixed(0);
+            revenueChanges = {
+              value: `${percent}% from last month`,
+              type: diff >= 0 ? 'increase' : 'decrease'
+            };
+          } else if (currentMonth === 1) {
+            revenueChanges = { value: "New Year", type: 'increase' };
+          }
         }
       } catch (err) {
         console.log('Revenue trends not available');
       }
 
-      // Try to fetch revenue breakdown
-      let revenueBySourceData = [];
-      try {
-        const currentYear = new Date().getFullYear();
-        const breakdownRes = await axios.get(`${BASE_URL}/analytics/revenue/breakdown?year=${currentYear}`, { headers: authHeaders });
-        if (breakdownRes.data.data?.revenue_sources) {
-          revenueBySourceData = breakdownRes.data.data.revenue_sources;
-        }
-      } catch (err) {
-        console.log('Revenue breakdown not available');
-      }
-
-      // Fetch student balances summary
+      // Fetch student balances and calculate health trend
+      // Fetch student balances summary from the primary endpoint
       let outstandingBalances = 0;
       try {
         const balancesRes = await axios.get(`${BASE_URL}/students/balances/summary`, { headers: authHeaders });
-        outstandingBalances = balancesRes.data.data?.total_outstanding || 0;
+        outstandingBalances = balancesRes.data.data?.total_outstanding_debt || balancesRes.data.data?.total_outstanding || 0;
       } catch (err) {
-        console.log('Balances summary not available');
+        console.log('Primary balance summary failed');
+      }
+
+      // Fetch health summary for trend
+      try {
+        const healthRes = await axios.get(`${BASE_URL}/analytics/student-finance/health-summary`, { headers: authHeaders });
+        if (healthRes.data.data) {
+          const health = healthRes.data.data;
+          if (outstandingBalances === 0) outstandingBalances = health.total_outstanding || 0;
+          const recentCollected = health.recent_activity?.amount_last_30_days || 0;
+
+          if (outstandingBalances > 0 && recentCollected > 0) {
+            const collectPercentage = ((recentCollected / (outstandingBalances + recentCollected)) * 100).toFixed(0);
+            balanceChanges = { value: `${collectPercentage}% decrease`, type: 'decrease' };
+          }
+        }
+      } catch (err) {
+        console.log('Finance health summary not available');
       }
 
       // Fetch payment statistics (last 6 months)
@@ -103,7 +156,6 @@ const Dashboard = () => {
         const paymentsRes = await axios.get(`${BASE_URL}/fees/all-payments?page=1&limit=100`, { headers: authHeaders });
         if (paymentsRes.data.data) {
           const payments = paymentsRes.data.data;
-          // Group by month
           const monthlyPayments = {};
           payments.forEach(payment => {
             const date = new Date(payment.PaymentDate || payment.created_at);
@@ -111,7 +163,7 @@ const Dashboard = () => {
             if (!monthlyPayments[month]) {
               monthlyPayments[month] = { month, amount: 0, count: 0 };
             }
-            monthlyPayments[month].amount += parseFloat(payment.Amount || 0);
+            monthlyPayments[month].amount += parseFloat(payment.Amount || payment.amount || 0);
             monthlyPayments[month].count += 1;
           });
           paymentStatsData = Object.values(monthlyPayments).slice(-6);
@@ -130,6 +182,18 @@ const Dashboard = () => {
         }
       } catch (err) {
         console.log('Expense trends not available');
+      }
+
+      // Try to fetch revenue breakdown
+      let revenueBySourceData = [];
+      try {
+        const currentYear = new Date().getFullYear();
+        const breakdownRes = await axios.get(`${BASE_URL}/analytics/revenue/breakdown?year=${currentYear}`, { headers: authHeaders });
+        if (breakdownRes.data.data?.revenue_sources) {
+          revenueBySourceData = breakdownRes.data.data.revenue_sources;
+        }
+      } catch (err) {
+        console.log('Revenue breakdown not available');
       }
 
       // Try to fetch expense breakdown
@@ -160,8 +224,8 @@ const Dashboard = () => {
       let genderData = [];
       try {
         const studentsListRes = await axios.get(`${BASE_URL}/students?page=1&limit=1000`, { headers: authHeaders });
-        if (studentsListRes.data.data) {
-          const students = studentsListRes.data.data;
+        const students = studentsListRes.data.data || [];
+        if (students.length > 0) {
           const genderCount = { Male: 0, Female: 0, Other: 0, Unknown: 0 };
           students.forEach(student => {
             const gender = student.Gender || 'Unknown';
@@ -182,18 +246,33 @@ const Dashboard = () => {
       // Create revenue vs expenses comparison
       const revenueVsExpensesData = [];
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      revenueTrendsData.forEach((revenueItem, index) => {
-        const expenseItem = expenseTrendsData.find(e => e.period === revenueItem.period) || { total_expense: 0 };
-        revenueVsExpensesData.push({
-          month: revenueItem.period_label || months[index] || `Month ${index + 1}`,
-          revenue: revenueItem.total_revenue || 0,
-          expenses: expenseItem.total_expense || 0
+      if (revenueTrendsData.length > 0) {
+        revenueTrendsData.forEach((revenueItem, index) => {
+          const expenseItem = expenseTrendsData.find(e => e.period === revenueItem.period) || { total_expense: 0 };
+          revenueVsExpensesData.push({
+            month: revenueItem.period_label || months[index] || `Month ${index + 1}`,
+            revenue: revenueItem.total_revenue || 0,
+            expenses: expenseItem.total_expense || 0
+          });
         });
-      });
+      }
 
-      // Calculate total revenue from trends
+      // Fetch fee collection efficiency metrics for pending and total collections
+      let pendingPayments = 0;
+      let totalCollectedFees = 0;
+      try {
+        const efficiencyRes = await axios.get(`${BASE_URL}/analytics/student-finance/efficiency-metrics`, { headers: authHeaders });
+        if (efficiencyRes.data.data) {
+          const efficiency = efficiencyRes.data.data;
+          pendingPayments = efficiency.payment_status?.pending || 0;
+          totalCollectedFees = (efficiency.total_collected || 0) + (efficiency.total_boarding_collected || 0);
+        }
+      } catch (err) {
+        console.log('Efficiency metrics not available');
+      }
+
+      // Summarize metrics
       const totalRevenue = revenueTrendsData.reduce((sum, item) => sum + (item.total_revenue || 0), 0);
-      const totalExpenses = expenseTrendsData.reduce((sum, item) => sum + (item.total_expense || 0), 0);
       const monthlyExpenses = expenseTrendsData.length > 0 ? expenseTrendsData[expenseTrendsData.length - 1]?.total_expense || 0 : 0;
 
       setMetrics({
@@ -201,10 +280,14 @@ const Dashboard = () => {
         totalRevenue,
         activeClasses,
         totalEmployees,
-        pendingPayments: 0,
+        pendingPayments,
         outstandingBalances,
         monthlyRevenue,
-        monthlyExpenses
+        monthlyExpenses,
+        totalCollectedFees,
+        studentChanges,
+        revenueChanges,
+        balanceChanges
       });
 
       setRevenueTrends(revenueTrendsData);
@@ -215,40 +298,19 @@ const Dashboard = () => {
       setPaymentMethods(paymentMethodsData);
       setExpenseBreakdown(expenseBreakdownData);
       setGenderDistribution(genderData);
-      
+
       // Student stats by class
-      try {
-        const classesListRes = await axios.get(`${BASE_URL}/classes/gradelevel-classes?page=1&limit=100`, { headers: authHeaders });
-        if (classesListRes.data.data) {
-          const classes = classesListRes.data.data;
-          const classStats = classes.slice(0, 6).map(cls => ({
-            name: cls.Name || cls.ClassName || 'Unknown',
-            students: Math.floor(totalStudents / classes.length) || 0
-          }));
-          setStudentStats(classStats);
-        } else {
-          setStudentStats([
-            { name: 'Grade 1', students: Math.floor(totalStudents * 0.15) },
-            { name: 'Grade 2', students: Math.floor(totalStudents * 0.18) },
-            { name: 'Grade 3', students: Math.floor(totalStudents * 0.20) },
-            { name: 'Grade 4', students: Math.floor(totalStudents * 0.17) },
-            { name: 'Grade 5', students: Math.floor(totalStudents * 0.15) },
-            { name: 'Grade 6', students: Math.floor(totalStudents * 0.15) }
-          ]);
-        }
-      } catch (err) {
-        setStudentStats([
-          { name: 'Grade 1', students: Math.floor(totalStudents * 0.15) },
-          { name: 'Grade 2', students: Math.floor(totalStudents * 0.18) },
-          { name: 'Grade 3', students: Math.floor(totalStudents * 0.20) },
-          { name: 'Grade 4', students: Math.floor(totalStudents * 0.17) },
-          { name: 'Grade 5', students: Math.floor(totalStudents * 0.15) },
-          { name: 'Grade 6', students: Math.floor(totalStudents * 0.15) }
-        ]);
-      }
+      const classStats = (allClasses || [])
+        .filter(cls => (cls.student_count || cls.StudentCount || 0) > 0)
+        .map(cls => ({
+          name: cls.name || cls.Name || 'Unknown',
+          students: cls.student_count || cls.StudentCount || 0
+        }))
+        .sort((a, b) => b.students - a.students);
+      setStudentStats(classStats);
 
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Critical error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -317,16 +379,16 @@ const Dashboard = () => {
           title="Total Students"
           value={formatNumber(metrics.totalStudents)}
           icon={Users}
-          change="12% from last month"
-          changeType="increase"
+          change={metrics.studentChanges?.value}
+          changeType={metrics.studentChanges?.type}
           color="blue"
         />
         <MetricCard
           title="Total Revenue"
           value={formatCurrency(metrics.totalRevenue)}
           icon={DollarSign}
-          change="8% from last month"
-          changeType="increase"
+          change={metrics.revenueChanges?.value}
+          changeType={metrics.revenueChanges?.type}
           color="green"
         />
         <MetricCard
@@ -345,16 +407,16 @@ const Dashboard = () => {
           title="Monthly Revenue"
           value={formatCurrency(metrics.monthlyRevenue)}
           icon={TrendingUp}
-          change="15% from last month"
-          changeType="increase"
+          change={metrics.revenueChanges?.value}
+          changeType={metrics.revenueChanges?.type}
           color="green"
         />
         <MetricCard
           title="Outstanding Balances"
           value={formatCurrency(metrics.outstandingBalances)}
           icon={CreditCard}
-          change="5% decrease"
-          changeType="decrease"
+          change={metrics.balanceChanges?.value}
+          changeType={metrics.balanceChanges?.type}
           color="red"
         />
         <MetricCard
@@ -365,10 +427,10 @@ const Dashboard = () => {
         />
         <MetricCard
           title="Payment Collections"
-          value={formatCurrency(metrics.monthlyRevenue)}
+          value={formatCurrency(metrics.totalCollectedFees)}
           icon={TrendingUp}
-          change="10% increase"
-          changeType="increase"
+          change={metrics.revenueChanges?.value}
+          changeType={metrics.revenueChanges?.type}
           color="green"
         />
       </div>
@@ -383,29 +445,29 @@ const Dashboard = () => {
               <AreaChart data={revenueTrends}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="period_label" 
+                <XAxis
+                  dataKey="period_label"
                   tick={{ fontSize: 11 }}
                   stroke="#6b7280"
                 />
-                <YAxis 
+                <YAxis
                   tick={{ fontSize: 11 }}
                   tickFormatter={(value) => `$${value}`}
                   stroke="#6b7280"
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value) => formatCurrency(value)}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="total_revenue" 
-                  stroke="#10b981" 
+                <Area
+                  type="monotone"
+                  dataKey="total_revenue"
+                  stroke="#10b981"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorRevenue)"
@@ -426,17 +488,17 @@ const Dashboard = () => {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={paymentStats}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="month"
                   tick={{ fontSize: 11 }}
                   stroke="#6b7280"
                 />
-                <YAxis 
+                <YAxis
                   tick={{ fontSize: 11 }}
                   tickFormatter={(value) => `$${value}`}
                   stroke="#6b7280"
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value) => formatCurrency(value)}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }}
                 />
@@ -510,17 +572,17 @@ const Dashboard = () => {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={revenueVsExpenses}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="month"
                   tick={{ fontSize: 11 }}
                   stroke="#6b7280"
                 />
-                <YAxis 
+                <YAxis
                   tick={{ fontSize: 11 }}
                   tickFormatter={(value) => `$${value}`}
                   stroke="#6b7280"
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value) => formatCurrency(value)}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }}
                 />
@@ -573,24 +635,24 @@ const Dashboard = () => {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={expenseTrends}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="period_label" 
+                <XAxis
+                  dataKey="period_label"
                   tick={{ fontSize: 11 }}
                   stroke="#6b7280"
                 />
-                <YAxis 
+                <YAxis
                   tick={{ fontSize: 11 }}
                   tickFormatter={(value) => `$${value}`}
                   stroke="#6b7280"
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value) => formatCurrency(value)}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '6px' }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="total_expense" 
-                  stroke="#ef4444" 
+                <Line
+                  type="monotone"
+                  dataKey="total_expense"
+                  stroke="#ef4444"
                   strokeWidth={2}
                   dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
                 />

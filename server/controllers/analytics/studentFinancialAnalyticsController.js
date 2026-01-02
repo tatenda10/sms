@@ -5,10 +5,10 @@ class StudentFinancialAnalyticsController {
   async getOutstandingBalancesByClass(req, res) {
     try {
       const { year, term, include_zero_balances = false } = req.query;
-      
+
       let whereClause = 'WHERE sb.current_balance != 0';
       let params = [];
-      
+
       if (!include_zero_balances) {
         whereClause = 'WHERE sb.current_balance < 0'; // Only negative balances (outstanding)
       }
@@ -65,12 +65,12 @@ class StudentFinancialAnalyticsController {
   async getPaymentCompletionRates(req, res) {
     try {
       const { year, term, start_date, end_date } = req.query;
-      
+
       let studentTransactionFilter = '';
       let paymentFilter = '';
       let studentParams = [];
       let paymentParams = [];
-      
+
       if (start_date && end_date) {
         studentTransactionFilter = 'AND st.transaction_date BETWEEN ? AND ?';
         paymentFilter = 'AND fp.payment_date BETWEEN ? AND ?';
@@ -136,15 +136,15 @@ class StudentFinancialAnalyticsController {
       `);
 
       const totalCharged = parseFloat(totalCharges[0].total_charged);
-      const totalPaid = parseFloat(totalPayments[0].total_paid_tuition) + 
-                       parseFloat(totalPayments[0].total_paid_boarding) + 
-                       parseFloat(totalPayments[0].total_paid_other);
-      
+      const totalPaid = parseFloat(totalPayments[0].total_paid_tuition) +
+        parseFloat(totalPayments[0].total_paid_boarding) +
+        parseFloat(totalPayments[0].total_paid_other);
+
       const overallCompletionRate = totalCharged > 0 ? ((totalPaid / totalCharged) * 100).toFixed(2) : 0;
 
       const completionByClassFormatted = completionByClass.map(cls => ({
         ...cls,
-        completion_rate: cls.total_students > 0 ? 
+        completion_rate: cls.total_students > 0 ?
           ((cls.students_paid_up / cls.total_students) * 100).toFixed(2) : 0,
         outstanding_students: parseInt(cls.students_with_balance)
       }));
@@ -157,9 +157,9 @@ class StudentFinancialAnalyticsController {
           total_paid: totalPaid,
           outstanding_amount: totalCharged - totalPaid,
           completion_by_class: completionByClassFormatted,
-          period: start_date && end_date ? `${start_date} to ${end_date}` : 
-                 year && term ? `${year} Term ${term}` : 
-                 year ? `${year}` : 'Current Year'
+          period: start_date && end_date ? `${start_date} to ${end_date}` :
+            year && term ? `${year} Term ${term}` :
+              year ? `${year}` : 'Current Year'
         }
       });
 
@@ -177,10 +177,10 @@ class StudentFinancialAnalyticsController {
   async getFeeCollectionEfficiencyMetrics(req, res) {
     try {
       const { year, term, start_date, end_date } = req.query;
-      
+
       let dateFilter = '';
       let params = [];
-      
+
       if (start_date && end_date) {
         dateFilter = 'AND payment_date BETWEEN ? AND ?';
         params = [start_date, end_date];
@@ -254,11 +254,11 @@ class StudentFinancialAnalyticsController {
           failed: parseInt(metrics.failed_payments)
         },
         efficiency_metrics: {
-          collection_rate: totalActiveStudents > 0 ? 
+          collection_rate: totalActiveStudents > 0 ?
             ((metrics.students_paid / totalActiveStudents) * 100).toFixed(2) : 0,
-          success_rate: metrics.total_payments > 0 ? 
+          success_rate: metrics.total_payments > 0 ?
             ((metrics.completed_payments / metrics.total_payments) * 100).toFixed(2) : 0,
-          average_payment_per_student: metrics.students_paid > 0 ? 
+          average_payment_per_student: metrics.students_paid > 0 ?
             (metrics.total_collected / metrics.students_paid).toFixed(2) : 0
         }
       };
@@ -268,9 +268,9 @@ class StudentFinancialAnalyticsController {
         data: {
           ...efficiencyData,
           total_active_students: totalActiveStudents,
-          period: start_date && end_date ? `${start_date} to ${end_date}` : 
-                 year && term ? `${year} Term ${term}` : 
-                 year ? `${year}` : 'Current Year'
+          period: start_date && end_date ? `${start_date} to ${end_date}` :
+            year && term ? `${year} Term ${term}` :
+              year ? `${year}` : 'Current Year'
         }
       });
 
@@ -290,14 +290,13 @@ class StudentFinancialAnalyticsController {
       const [healthSummary] = await pool.execute(`
         SELECT 
           COUNT(DISTINCT sb.student_reg_number) as total_students,
-          COUNT(CASE WHEN sb.current_balance = 0 THEN 1 END) as students_paid_up,
+          COUNT(CASE WHEN sb.current_balance >= 0 THEN 1 END) as students_paid_up,
           COUNT(CASE WHEN sb.current_balance < 0 AND sb.current_balance >= -100 THEN 1 END) as students_small_balance,
           COUNT(CASE WHEN sb.current_balance < -100 AND sb.current_balance >= -500 THEN 1 END) as students_medium_balance,
           COUNT(CASE WHEN sb.current_balance < -500 THEN 1 END) as students_large_balance,
-          COALESCE(SUM(ABS(sb.current_balance)), 0) as total_outstanding,
-          COALESCE(AVG(ABS(sb.current_balance)), 0) as average_outstanding
+          COALESCE(SUM(CASE WHEN sb.current_balance < 0 THEN ABS(sb.current_balance) ELSE 0 END), 0) as total_outstanding,
+          COALESCE(AVG(CASE WHEN sb.current_balance < 0 THEN ABS(sb.current_balance) ELSE NULL END), 0) as average_outstanding
         FROM student_balances sb
-        WHERE sb.current_balance < 0
       `);
 
       const [recentPayments] = await pool.execute(`

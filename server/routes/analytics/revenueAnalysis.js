@@ -5,7 +5,7 @@ const { authenticateToken, requireRole } = require('../../middleware/auth');
 
 // Apply authentication and admin role requirement to all routes
 router.use(authenticateToken);
-router.use(requireRole(['admin']));
+router.use(requireRole(['admin', 'ACCOUNTING_MANAGEMENT', 'STUDENT_BILLING', 'STUDENT_REGISTRATIONS']));
 
 // Get revenue trends over time
 router.get('/trends', revenueAnalysisController.getRevenueTrends);
