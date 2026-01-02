@@ -822,7 +822,7 @@ const Students = () => {
               <option value="">All Classes</option>
               {classes.map((cls) => (
                 <option key={cls.id} value={cls.id}>
-                  {cls.stream_name} - {cls.name}
+                  {cls.name}
                 </option>
               ))}
             </select>

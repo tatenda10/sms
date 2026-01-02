@@ -46,7 +46,7 @@ const Sidebar = ({ open, setOpen }) => {
     { name: 'Sports', href: '/dashboard/sports', icon: faTrophy },
 
     // 4. Financial Management (Billing & Payments)
-    { name: 'Student Billing', href: '/dashboard/fees-payment', icon: faCreditCard },
+    { name: 'Student Billing', href: '/dashboard/billing', icon: faCreditCard },
 
     // 5. Accounting & Operations
     { name: 'Accounting', href: '/dashboard/accounting/chart-of-accounts', icon: faMoneyBillWave },

@@ -72,8 +72,8 @@ const AddStudent = () => {
   };
 
   const generateRegNumber = () => {
-    // Generate format: R + 5 digits + 1 letter (e.g., R12345A)
-    const digits = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+    // Generate format: R + 4 digits + 1 letter (e.g., R0000A)
+    const digits = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const letter = letters[Math.floor(Math.random() * letters.length)];
     return `R${digits}${letter}`;

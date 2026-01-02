@@ -91,6 +91,7 @@ import Announcements from './pages/Announcements';
 import AddAnnouncement from './pages/AddAnnouncement';
 import EditAnnouncement from './pages/EditAnnouncement';
 import AdditionalFees from './pages/billing/AdditionalFees';
+import StudentBilling from './pages/billing/StudentBilling';
 import Waivers from './pages/waivers/Waivers';
 import Timetables from './pages/timetables/Timetables';
 import TemplateView from './pages/timetables/TemplateView';
@@ -117,7 +118,7 @@ function App() {
 // Protected Route Component - must be inside AuthProvider scope
 function AppRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
-  
+
   // Show loading while checking authentication
   if (isLoading) {
     return (
@@ -126,7 +127,7 @@ function AppRoutes() {
       </div>
     );
   }
-  
+
   return (
     <Routes>
       <Route path="/" element={
@@ -188,35 +189,35 @@ function AppRoutes() {
         <Route path="fees/unified-payment" element={<UnifiedFeePayment />} />
         <Route path="financial-records" element={<StudentFinancialRecord />} />
         <Route path="waivers" element={<Waivers />} />
-        
+
         {/* Fixed Assets Routes */}
         <Route path="assets" element={<FixedAssets />} />
         <Route path="assets/add" element={<AddAsset />} />
         <Route path="assets/configurations" element={<AssetTypesConfig />} />
         <Route path="assets/:id" element={<AssetDetails />} />
-        
+
         {/* Reports Routes */}
         <Route path="reports/income-statement" element={<IncomeStatement />} />
         <Route path="reports/balance-sheet" element={<BalanceSheet />} />
         <Route path="reports/cash-flow" element={<CashFlow />} />
-        
+
         {/* Analytics Routes */}
         <Route path="analytics/expense-analysis" element={<ExpenseAnalysis />} />
         <Route path="analytics/revenue-analysis" element={<RevenueAnalysis />} />
         <Route path="analytics/student-financial-analytics" element={<StudentFinancialAnalytics />} />
         <Route path="analytics/student-results-analytics" element={<StudentResultsAnalytics />} />
-        
+
         {/* Procurement Routes */}
         <Route path="procurement" element={<Procurement />} />
         <Route path="procurement/purchase-requests" element={<PurchaseRequests />} />
         <Route path="procurement/suppliers" element={<ProcurementSuppliers />} />
         <Route path="procurement/purchase-orders" element={<PurchaseOrders />} />
-        
+
         {/* Payroll Routes */}
         <Route path="payroll" element={<Payroll />} />
         <Route path="payroll/create" element={<CreatePayslip />} />
         <Route path="payroll/payslips" element={<Payslips />} />
-        
+
         {/* Transport Routes */}
         <Route path="transport" element={<Navigate to="/dashboard/transport/routes" replace />} />
         <Route path="transport/routes" element={<ManageRoutes />} />
@@ -225,27 +226,28 @@ function AppRoutes() {
         <Route path="transport/fees" element={<WeeklyFees />} />
         <Route path="transport/schedule" element={<WeeklySchedule />} />
         <Route path="transport/payments" element={<TransportPayments />} />
-        
+
         {/* Inventory Routes */}
         <Route path="inventory" element={<Inventory />} />
         <Route path="inventory/add-item" element={<AddItem />} />
         <Route path="inventory/issue-uniform" element={<IssueUniform />} />
         <Route path="inventory/configurations" element={<InventoryConfigurations />} />
-        
+
         {/* Announcements Routes */}
         <Route path="announcements" element={<Announcements />} />
         <Route path="announcements/add" element={<AddAnnouncement />} />
         <Route path="announcements/edit/:id" element={<EditAnnouncement />} />
-        
+
         {/* Additional Fees Routes */}
+        <Route path="billing" element={<StudentBilling />} />
         <Route path="billing/additional-fees" element={<AdditionalFees />} />
-        
+
         {/* Timetable Routes */}
         <Route path="timetables" element={<Timetables />} />
         <Route path="timetables/template/:id" element={<TemplateView />} />
         <Route path="timetables/template/:id/edit" element={<TemplateEdit />} />
         <Route path="timetables/test" element={<TestTimetable />} />
-        
+
         {/* Sports Routes */}
         <Route path="sports" element={<Sports />} />
       </Route>
