@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useStudentAuth } from '../contexts/StudentAuthContext';
-import { Eye, EyeOff, Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faEyeSlash, faKey, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { useSettings } from '../components/Layout';
 
 const Settings = () => {
   const { changePassword } = useStudentAuth();
+  const { setShowSettings } = useSettings();
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -15,21 +18,31 @@ const Settings = () => {
     confirm: false
   });
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
+    setSuccess(false);
 
-    if (formData.newPassword !== formData.confirmPassword) {
-      setError('New passwords do not match');
+    if (!formData.currentPassword) {
+      setError('Current password is required');
+      return;
+    }
+
+    if (!formData.newPassword) {
+      setError('New password is required');
       return;
     }
 
     if (formData.newPassword.length < 6) {
       setError('New password must be at least 6 characters long');
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      setError('New passwords do not match');
       return;
     }
 
@@ -48,12 +61,15 @@ const Settings = () => {
       );
       
       if (result.success) {
-        setSuccess('Password changed successfully!');
+        setSuccess(true);
         setFormData({
           currentPassword: '',
           newPassword: '',
           confirmPassword: ''
         });
+
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => setSuccess(false), 5000);
       }
     } catch (err) {
       setError(err.message || 'Failed to change password. Please try again.');
@@ -63,192 +79,267 @@ const Settings = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (error) setError('');
+    if (success) setSuccess(false);
   };
 
   const togglePasswordVisibility = (field) => {
-    setShowPasswords({
-      ...showPasswords,
-      [field]: !showPasswords[field]
-    });
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
+  const handleClose = () => {
+    setShowSettings(false);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Change Password</h1>
-        <p className="text-gray-600">Update your account password for security</p>
-      </div>
+    <div className="modal-overlay" onClick={handleClose}>
+      <div 
+        className="modal-dialog" 
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '600px' }}
+      >
+        <div className="modal-header">
+          <h3 className="modal-title">Change Password</h3>
+          <button className="modal-close-btn" onClick={handleClose}>
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
+        </div>
 
-      <div className="max-w-md">
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* Current Password */}
-              <div>
-                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
-                  Current Password
-                </label>
-                <div className="mt-1 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="currentPassword"
-                    name="currentPassword"
-                    type={showPasswords.current ? 'text' : 'password'}
-                    required
-                    value={formData.currentPassword}
-                    onChange={handleChange}
-                    className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                    placeholder="Enter current password"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <button
-                      type="button"
-                      className="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500"
-                      onClick={() => togglePasswordVisibility('current')}
-                    >
-                      {showPasswords.current ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+        <div className="modal-body">
+          {/* Success Message */}
+          {success && (
+            <div style={{ 
+              padding: '10px', 
+              background: '#d1fae5', 
+              border: '1px solid #86efac',
+              color: '#065f46', 
+              fontSize: '0.75rem', 
+              marginBottom: '16px', 
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <FontAwesomeIcon icon={faCheck} style={{ fontSize: '0.875rem' }} />
+              <span>Password changed successfully!</span>
+            </div>
+          )}
 
-              {/* New Password */}
-              <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                  New Password
-                </label>
-                <div className="mt-1 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="newPassword"
-                    name="newPassword"
-                    type={showPasswords.new ? 'text' : 'password'}
-                    required
-                    value={formData.newPassword}
-                    onChange={handleChange}
-                    className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                    placeholder="Enter new password"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <button
-                      type="button"
-                      className="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500"
-                      onClick={() => togglePasswordVisibility('new')}
-                    >
-                      {showPasswords.new ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Password must be at least 6 characters long
-                </p>
-              </div>
+          {/* Error Message */}
+          {error && (
+            <div style={{ 
+              padding: '10px', 
+              background: '#fee2e2', 
+              color: '#dc2626', 
+              fontSize: '0.75rem', 
+              marginBottom: '16px', 
+              borderRadius: '4px' 
+            }}>
+              {error}
+            </div>
+          )}
 
-              {/* Confirm New Password */}
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Confirm New Password
-                </label>
-                <div className="mt-1 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showPasswords.confirm ? 'text' : 'password'}
-                    required
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                    placeholder="Confirm new password"
-                  />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <button
-                      type="button"
-                      className="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500"
-                      onClick={() => togglePasswordVisibility('confirm')}
-                    >
-                      {showPasswords.confirm ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800">
-                        {error}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Success Message */}
-              {success && (
-                <div className="rounded-md bg-green-50 p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <CheckCircle className="h-5 w-5 text-green-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-green-800">
-                        {success}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <div>
+          <form onSubmit={handleSubmit} className="modal-form">
+            {/* Current Password */}
+            <div className="form-group">
+              <label className="form-label">
+                Current Password <span className="required">*</span>
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPasswords.current ? 'text' : 'password'}
+                  name="currentPassword"
+                  className="form-control"
+                  required
+                  value={formData.currentPassword}
+                  onChange={handleChange}
+                  placeholder="Enter your current password"
+                  style={{ paddingRight: '32px' }}
+                />
                 <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() => togglePasswordVisibility('current')}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                  }}
                 >
-                  {isLoading ? (
-                    <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Changing password...
-                    </div>
-                  ) : (
-                    'Change Password'
-                  )}
+                  <FontAwesomeIcon 
+                    icon={showPasswords.current ? faEyeSlash : faEye} 
+                    style={{ fontSize: '0.875rem' }}
+                  />
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+
+            {/* New Password */}
+            <div className="form-group">
+              <label className="form-label">
+                New Password <span className="required">*</span>
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPasswords.new ? 'text' : 'password'}
+                  name="newPassword"
+                  className="form-control"
+                  required
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  placeholder="Enter your new password"
+                  style={{ paddingRight: '32px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('new')}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                  }}
+                >
+                  <FontAwesomeIcon 
+                    icon={showPasswords.new ? faEyeSlash : faEye} 
+                    style={{ fontSize: '0.875rem' }}
+                  />
+                </button>
+              </div>
+              <p style={{ 
+                fontSize: '0.7rem', 
+                color: 'var(--text-secondary)', 
+                margin: '4px 0 0 0' 
+              }}>
+                Password must be at least 6 characters long
+              </p>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="form-group">
+              <label className="form-label">
+                Confirm New Password <span className="required">*</span>
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPasswords.confirm ? 'text' : 'password'}
+                  name="confirmPassword"
+                  className="form-control"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm your new password"
+                  style={{ paddingRight: '32px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility('confirm')}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                  }}
+                >
+                  <FontAwesomeIcon 
+                    icon={showPasswords.confirm ? faEyeSlash : faEye} 
+                    style={{ fontSize: '0.875rem' }}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
+              <button
+                type="button"
+                className="modal-btn modal-btn-cancel"
+                onClick={handleClose}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="modal-btn modal-btn-confirm"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ 
+                      width: '12px', 
+                      height: '12px', 
+                      border: '2px solid white', 
+                      borderTop: '2px solid transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 0.8s linear infinite'
+                    }}></div>
+                    <span>Changing Password...</span>
+                  </div>
+                ) : (
+                  'Change Password'
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

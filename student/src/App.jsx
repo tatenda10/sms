@@ -11,7 +11,6 @@ import Results from './pages/Results';
 import TestMarks from './pages/TestMarks';
 import Financial from './pages/Financial';
 import Announcements from './pages/Announcements';
-import Settings from './pages/Settings';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -75,6 +74,7 @@ function App() {
               } 
             />
 
+            {/* Protected Routes with Layout */}
             <Route 
               path="/profile" 
               element={
@@ -135,17 +135,6 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/settings" 
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Settings />
-                  </Layout>
-                </ProtectedRoute>
-              } 
-            />
-
             {/* Default redirects */}
             <Route path="/" element={<Navigate to="/profile" replace />} />
             <Route path="*" element={<NotFound />} />

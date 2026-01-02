@@ -1,132 +1,190 @@
 import React from 'react';
 import { useStudentAuth } from '../contexts/StudentAuthContext';
-import { User, Mail, Phone, Calendar, MapPin, GraduationCap } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUser, faUserGraduate } from '@fortawesome/free-solid-svg-icons';
 
 const Profile = () => {
   const { student } = useStudentAuth();
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
-        <p className="text-gray-600">View and manage your personal information</p>
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative' 
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">Profile</h2>
+          <p className="report-subtitle">View and manage your personal information</p>
+        </div>
       </div>
 
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="flex items-center space-x-6">
+      {/* Content */}
+      <div style={{ 
+        flex: 1, 
+        overflowY: 'auto', 
+        padding: '20px 30px',
+        background: 'white',
+        margin: '0 0 20px 0',
+        borderRadius: '8px'
+      }}>
+        {/* Basic Info Card */}
+        <div style={{ marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             {/* Avatar */}
-            <div className="flex-shrink-0">
-              <div className="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center">
-                <User className="h-10 w-10 text-green-600" />
-              </div>
+            <div style={{ 
+              width: '80px', 
+              height: '80px', 
+              borderRadius: '50%', 
+              background: 'var(--sidebar-bg)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <FontAwesomeIcon icon={faUser} style={{ fontSize: '2rem', color: 'white' }} />
             </div>
             
             {/* Basic Info */}
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-gray-900">
+            <div>
+              <h3 style={{ 
+                fontSize: '1rem', 
+                fontWeight: '700', 
+                color: 'var(--text-primary)', 
+                margin: '0 0 4px 0' 
+              }}>
                 {student?.Name} {student?.Surname}
-              </h2>
-              <p className="text-gray-600">Registration Number: {student?.RegNumber}</p>
-              <p className="text-gray-500">Student</p>
+              </h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 4px 0' }}>
+                Registration Number: {student?.RegNumber}
+              </p>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0 }}>
+                Student
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Personal Information */}
-          <div className="mt-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm font-medium text-gray-500 flex items-center">
-                  <User className="h-4 w-4 mr-2" />
-                  Full Name
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {student?.Name} {student?.Surname}
-                </dd>
+        {/* Personal Information Section */}
+        <div style={{ marginBottom: '32px' }}>
+          <h4 style={{ 
+            margin: 0, 
+            fontSize: '0.95rem', 
+            fontWeight: '700', 
+            color: 'var(--text-primary)', 
+            marginBottom: '16px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px' 
+          }}>
+            <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#2563eb' }} />
+            Personal Information
+          </h4>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 30px' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Full Name
               </div>
-              
-              <div>
-                <dt className="text-sm font-medium text-gray-500 flex items-center">
-                  <GraduationCap className="h-4 w-4 mr-2" />
-                  Registration Number
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {student?.RegNumber}
-                </dd>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
+                {student?.Name} {student?.Surname}
               </div>
-              
-              <div>
-                <dt className="text-sm font-medium text-gray-500 flex items-center">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Date of Birth
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {student?.DateOfBirth ? new Date(student.DateOfBirth).toLocaleDateString() : 'Not provided'}
-                </dd>
+            </div>
+            
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Registration Number
               </div>
-              
-              <div>
-                <dt className="text-sm font-medium text-gray-500 flex items-center">
-                  <User className="h-4 w-4 mr-2" />
-                  Gender
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {student?.Gender || 'Not specified'}
-                </dd>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
+                {student?.RegNumber || 'N/A'}
               </div>
-              
-              <div>
-                <dt className="text-sm font-medium text-gray-500 flex items-center">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {student?.Email || 'Not provided'}
-                </dd>
+            </div>
+            
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Date of Birth
               </div>
-              
-              <div>
-                <dt className="text-sm font-medium text-gray-500 flex items-center">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Phone
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {student?.PhoneNumber || 'Not provided'}
-                </dd>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
+                {student?.DateOfBirth ? new Date(student.DateOfBirth).toLocaleDateString() : 'Not provided'}
               </div>
-              
-              <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500 flex items-center">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Address
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {student?.Address || 'Not provided'}
-                </dd>
+            </div>
+            
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Gender
               </div>
-            </dl>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
+                {student?.Gender || 'Not specified'}
+              </div>
+            </div>
+            
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Email
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
+                {student?.Email || 'Not provided'}
+              </div>
+            </div>
+            
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Phone Number
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
+                {student?.PhoneNumber || 'Not provided'}
+              </div>
+            </div>
+            
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Address
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
+                {student?.Address || 'Not provided'}
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* Academic Information */}
-          <div className="mt-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Academic Information</h3>
-            <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Class</dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {student?.gradelevel_class_name || 'Not assigned'}
-                </dd>
+        {/* Academic Information Section */}
+        <div>
+          <h4 style={{ 
+            margin: 0, 
+            fontSize: '0.95rem', 
+            fontWeight: '700', 
+            color: 'var(--text-primary)', 
+            marginBottom: '16px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px' 
+          }}>
+            <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#10b981' }} />
+            Academic Information
+          </h4>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 30px' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Class
               </div>
-              
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Stream</dt>
-                <dd className="mt-1 text-sm text-gray-900">
-                  {student?.stream_name || 'Not assigned'}
-                </dd>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
+                {student?.gradelevel_class_name || 'Not assigned'}
               </div>
-            </dl>
+            </div>
+            
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                Stream
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '400' }}>
+                {student?.stream_name || 'Not assigned'}
+              </div>
+            </div>
           </div>
         </div>
       </div>

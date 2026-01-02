@@ -1,30 +1,36 @@
-import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState, createContext, useContext } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import Settings from '../pages/Settings';
+
+// Create context for Settings modal
+const SettingsContext = createContext();
+
+export const useSettings = () => {
+  const context = useContext(SettingsContext);
+  if (!context) {
+    throw new Error('useSettings must be used within Layout');
+  }
+  return context;
+};
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
+  const [showSettings, setShowSettings] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar - always show */}
-      <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-      
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top navbar - always show */}
-        <Header onMenuClick={() => setSidebarOpen(true)} />
-        
-        {/* Page content */}
-        <main className="py-6">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <SettingsContext.Provider value={{ showSettings, setShowSettings }}>
+      <div className="dashboard-container">
+        <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+        <main className="main-content">
+          <Header onMenuClick={() => setSidebarOpen(true)} />
+          <div className="main-content-scrollable">
             {children}
           </div>
         </main>
+        {showSettings && <Settings />}
       </div>
-    </div>
+    </SettingsContext.Provider>
   );
 };
 

@@ -1,25 +1,15 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStudentAuth } from '../contexts/StudentAuthContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faSearch, 
+  faEye,
+  faFileAlt,
+  faCalendarAlt,
+  faBookOpen,
+  faExclamationTriangle
+} from '@fortawesome/free-solid-svg-icons';
 import BASE_URL from '../contexts/Api';
-import {
-  Plus,
-  Search,
-  Filter,
-  Download,
-  Edit,
-  Trash2,
-  Eye,
-  Calendar,
-  BookOpen,
-  Users,
-  BarChart3,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  X,
-  FileText,
-  Award
-} from 'lucide-react';
 
 const TestMarks = () => {
   const { student, token } = useStudentAuth();
@@ -29,6 +19,7 @@ const TestMarks = () => {
   // Main state
   const [selectedClass, setSelectedClass] = useState('');
   const [tests, setTests] = useState([]);
+  const [allTests, setAllTests] = useState([]); // Store all tests for pagination
   const [testMarks, setTestMarks] = useState([]);
   const [subjectClasses, setSubjectClasses] = useState([]);
   
@@ -46,7 +37,7 @@ const TestMarks = () => {
   // Search and pagination
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [limit] = useState(25);
 
   useEffect(() => {
     if (student?.RegNumber) {
@@ -59,6 +50,27 @@ const TestMarks = () => {
       fetchTests();
     }
   }, [selectedClass, filters]);
+
+  // Pagination logic - slice tests based on current page
+  useEffect(() => {
+    // Filter tests based on search term
+    const filteredTests = allTests.filter(test => {
+      const matchesSearch = !searchTerm || 
+        test.test_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        test.test_type?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      return matchesSearch;
+    });
+
+    if (filteredTests.length > 0) {
+      const startIndex = (currentPage - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedTests = filteredTests.slice(startIndex, endIndex);
+      setTests(paginatedTests);
+    } else {
+      setTests([]);
+    }
+  }, [currentPage, allTests, limit, searchTerm]);
 
   const fetchSubjectClasses = async () => {
     try {
@@ -116,15 +128,18 @@ const TestMarks = () => {
         const data = await response.json();
         console.log('📊 Tests data:', data);
         console.log('📊 Tests count:', data.data?.length || 0);
-        setTests(data.data || []);
+        setAllTests(data.data || []);
+        setCurrentPage(1); // Reset to first page on new fetch
       } else {
         const errorData = await response.json();
         console.error('❌ Error fetching tests:', errorData);
         setError(errorData.message || 'Failed to fetch tests');
+        setAllTests([]);
       }
     } catch (error) {
       console.error('Error fetching tests:', error);
       setError('Failed to fetch tests');
+      setAllTests([]);
     } finally {
       setIsLoading(false);
     }
@@ -167,10 +182,16 @@ const TestMarks = () => {
       ...prev,
       [name]: value
     }));
+    setCurrentPage(1); // Reset to first page on filter change
   };
 
-  // Filter tests based on search term
-  const filteredTests = tests.filter(test => {
+  const handleSearch = (e) => {
+    e?.preventDefault();
+    setCurrentPage(1); // Reset to first page on search
+  };
+
+  // Filter tests based on search term for calculation
+  const filteredTests = allTests.filter(test => {
     const matchesSearch = !searchTerm || 
       test.test_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       test.test_type?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -178,37 +199,50 @@ const TestMarks = () => {
     return matchesSearch;
   });
 
-  // Pagination
-  const totalPages = Math.ceil(filteredTests.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedTests = filteredTests.slice(startIndex, startIndex + itemsPerPage);
+  // Calculate pagination values
+  const totalTests = filteredTests.length;
+  const totalPages = Math.ceil(totalTests / limit);
+  const displayStart = totalTests > 0 ? (currentPage - 1) * limit + 1 : 0;
+  const displayEnd = Math.min(currentPage * limit, totalTests);
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Test Marks</h1>
-        <p className="text-gray-600">View your test scores and performance</p>
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative' 
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">Test Marks</h2>
+          <p className="report-subtitle">View your test scores and performance</p>
+        </div>
       </div>
 
-      {/* Error Message */}
+      {/* Error Display */}
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 mr-2" />
-            {error}
-          </div>
+        <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', flexShrink: 0 }}>
+          {error}
         </div>
       )}
 
-      {/* Subject Class Selection */}
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Select Subject Class</h2>
-          <div className="flex gap-4">
+      {/* Filters Section */}
+      <div className="report-filters" style={{ flexShrink: 0 }}>
+        <div className="report-filters-left">
+          {/* Subject Class Filter */}
+          <div className="filter-group">
+            <label className="filter-label" style={{ marginRight: '8px' }}>Subject Class:</label>
             <select
               value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={(e) => {
+                setSelectedClass(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="filter-input"
+              style={{ minWidth: '250px', width: '250px' }}
             >
               <option value="">Select a Subject Class</option>
               {subjectClasses.map(cls => (
@@ -218,58 +252,52 @@ const TestMarks = () => {
               ))}
             </select>
           </div>
-        </div>
-      </div>
 
-      {/* Tests Section */}
-      {selectedClass && (
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              {/* Search */}
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Search tests..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Filters */}
-              <div className="flex flex-wrap gap-4">
+          {/* Academic Year Filter */}
+          {selectedClass && (
+            <>
+              <div className="filter-group">
+                <label className="filter-label" style={{ marginRight: '8px' }}>Academic Year:</label>
                 <select
                   name="academic_year"
                   value={filters.academic_year}
                   onChange={handleFilterChange}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="filter-input"
+                  style={{ minWidth: '140px', width: '140px' }}
                 >
                   <option value="">All Years</option>
                   <option value="2024">2024</option>
+                  <option value="2025">2025</option>
                   <option value="2023">2023</option>
                 </select>
+              </div>
 
+              {/* Term Filter */}
+              <div className="filter-group">
+                <label className="filter-label" style={{ marginRight: '8px' }}>Term:</label>
                 <select
                   name="term"
                   value={filters.term}
                   onChange={handleFilterChange}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="filter-input"
+                  style={{ minWidth: '140px', width: '140px' }}
                 >
                   <option value="">All Terms</option>
                   <option value="1">Term 1</option>
                   <option value="2">Term 2</option>
                   <option value="3">Term 3</option>
                 </select>
+              </div>
 
+              {/* Test Type Filter */}
+              <div className="filter-group">
+                <label className="filter-label" style={{ marginRight: '8px' }}>Test Type:</label>
                 <select
                   name="test_type"
                   value={filters.test_type}
                   onChange={handleFilterChange}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="filter-input"
+                  style={{ minWidth: '140px', width: '140px' }}
                 >
                   <option value="">All Types</option>
                   <option value="quiz">Quiz</option>
@@ -279,200 +307,374 @@ const TestMarks = () => {
                   <option value="project">Project</option>
                 </select>
               </div>
-            </div>
-          </div>
 
-          {/* Tests Table */}
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                <span className="ml-2 text-gray-600">Loading tests...</span>
-              </div>
-            ) : paginatedTests.length > 0 ? (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Test Details
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date & Year
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Your Marks
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {paginatedTests.map((test) => (
-                    <tr key={test.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <FileText className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{test.test_name}</div>
-                            <div className="text-sm text-gray-500">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                test.test_type === 'quiz' ? 'bg-blue-100 text-blue-800' :
-                                test.test_type === 'assignment' ? 'bg-green-100 text-green-800' :
-                                test.test_type === 'test' ? 'bg-yellow-100 text-yellow-800' :
-                                test.test_type === 'exam' ? 'bg-red-100 text-red-800' :
-                                'bg-purple-100 text-purple-800'
-                              }`}>
-                                {test.test_type}
-                              </span>
+              {/* Search */}
+              <form onSubmit={handleSearch} className="filter-group">
+                <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <FontAwesomeIcon icon={faSearch} className="search-icon" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search tests..."
+                    className="filter-input search-input"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setCurrentPage(1);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        padding: '4px 6px',
+                        background: 'transparent',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                        color: 'var(--text-secondary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '20px',
+                        height: '20px'
+                      }}
+                      title="Clear search"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Table Container */}
+      <div className="report-content-container ecl-table-container" style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        flex: 1, 
+        overflow: 'auto', 
+        minHeight: 0,
+        padding: 0,
+        height: '100%'
+      }}>
+        {isLoading && !selectedClass ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+            Loading tests...
+          </div>
+        ) : (
+          <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+            <thead style={{ 
+              position: 'sticky', 
+              top: 0, 
+              zIndex: 10, 
+              background: 'var(--sidebar-bg)' 
+            }}>
+              <tr>
+                <th style={{ padding: '6px 10px' }}>TEST DETAILS</th>
+                <th style={{ padding: '6px 10px' }}>DATE & YEAR</th>
+                <th style={{ padding: '6px 10px' }}>YOUR MARKS</th>
+                <th style={{ padding: '6px 10px' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan="4" style={{ padding: '20px 10px', textAlign: 'center', color: '#64748b' }}>
+                    Loading tests...
+                  </td>
+                </tr>
+              ) : selectedClass && tests.length === 0 && !error ? (
+                <tr>
+                  <td colSpan="4" style={{ padding: '40px 10px', textAlign: 'center', color: '#64748b' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                      <FontAwesomeIcon icon={faBookOpen} style={{ fontSize: '2rem', opacity: 0.5 }} />
+                      <div style={{ fontSize: '0.85rem', fontWeight: '600' }}>No Tests Found</div>
+                      <div style={{ fontSize: '0.75rem' }}>
+                        No tests have been created for this subject class yet.
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : selectedClass && tests.length > 0 ? (
+                <>
+                  {tests.map((test, index) => {
+                    const globalIndex = (currentPage - 1) * limit + index;
+                    return (
+                      <tr 
+                        key={test.id} 
+                        style={{ 
+                          height: '32px', 
+                          backgroundColor: globalIndex % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                        }}
+                      >
+                        <td style={{ padding: '4px 10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <FontAwesomeIcon icon={faFileAlt} style={{ fontSize: '0.875rem', color: 'var(--sidebar-bg)' }} />
+                            <div>
+                              <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{test.test_name}</div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.65rem',
+                                  fontWeight: '600',
+                                  textTransform: 'uppercase',
+                                  background: test.test_type === 'quiz' ? '#dbeafe' : 
+                                            test.test_type === 'assignment' ? '#d1fae5' :
+                                            test.test_type === 'test' ? '#fef3c7' :
+                                            test.test_type === 'exam' ? '#fee2e2' :
+                                            '#e9d5ff',
+                                  color: test.test_type === 'quiz' ? '#1e40af' : 
+                                        test.test_type === 'assignment' ? '#065f46' :
+                                        test.test_type === 'test' ? '#92400e' :
+                                        test.test_type === 'exam' ? '#991b1b' :
+                                        '#6b21a8'
+                                }}>
+                                  {test.test_type}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{new Date(test.test_date).toLocaleDateString()}</div>
-                        <div className="text-sm text-gray-500">{test.academic_year} - Term {test.term}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {test.has_marks ? (
-                          <div>
-                            <div className="font-medium">{test.marks_obtained} / {test.total_marks}</div>
-                            {test.comments && (
-                              <div className="text-xs text-gray-400 mt-1">{test.comments}</div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 italic">Not marked yet</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                        </td>
+                        <td style={{ padding: '4px 10px' }}>
+                          <div style={{ fontSize: '0.75rem' }}>{new Date(test.test_date).toLocaleDateString()}</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{test.academic_year} - Term {test.term}</div>
+                        </td>
+                        <td style={{ padding: '4px 10px' }}>
+                          {test.has_marks ? (
+                            <div>
+                              <div style={{ fontSize: '0.75rem', fontWeight: '500' }}>{test.marks_obtained} / {test.total_marks}</div>
+                              {test.comments && (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{test.comments}</div>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Not marked yet</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '4px 10px' }}>
                           {test.has_marks && (
                             <button
                               onClick={() => handleViewMarks(test)}
-                              className="text-blue-600 hover:text-blue-800"
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#2563eb',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '0.75rem'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.color = '#1d4ed8';
+                                e.target.style.background = 'rgba(37, 99, 235, 0.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.color = '#2563eb';
+                                e.target.style.background = 'transparent';
+                              }}
                               title="View Details"
                             >
-                              <Eye className="h-4 w-4" />
+                              <FontAwesomeIcon icon={faEye} style={{ fontSize: '0.875rem' }} />
                             </button>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No tests found</h3>
-                <p className="text-gray-500">No tests have been created for this subject class yet.</p>
-              </div>
-            )}
-          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {/* Empty placeholder rows to always show 25 rows per page */}
+                  {Array.from({ length: Math.max(0, limit - tests.length) }).map((_, index) => {
+                    const globalIndex = (currentPage - 1) * limit + tests.length + index;
+                    return (
+                      <tr 
+                        key={`empty-${index}`}
+                        style={{ 
+                          height: '32px', 
+                          backgroundColor: globalIndex % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                        }}
+                      >
+                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                      </tr>
+                    );
+                  })}
+                </>
+              ) : (
+                // Display 25 empty rows by default
+                Array.from({ length: 25 }).map((_, index) => (
+                  <tr 
+                    key={`empty-${index}`}
+                    style={{ 
+                      height: '32px', 
+                      backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                    }}
+                  >
+                    <td style={{ padding: '4px 10px' }}></td>
+                    <td style={{ padding: '4px 10px' }}></td>
+                    <td style={{ padding: '4px 10px' }}></td>
+                    <td style={{ padding: '4px 10px' }}></td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="px-6 py-3 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredTests.length)} of {filteredTests.length} results
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <span className="px-3 py-1 text-sm">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
+      {/* Pagination Footer - Separate Container */}
+      <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+        <div className="table-footer-left">
+          {selectedClass && totalTests > 0 ? (
+            `Showing ${displayStart} to ${displayEnd} of ${totalTests} results.`
+          ) : (
+            `Showing 0 to 0 of 0 results.`
+          )}
+        </div>
+        <div className="table-footer-right">
+          {selectedClass && totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
+          {selectedClass && totalPages <= 1 && totalTests > 0 && (
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+              All data displayed
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* View Marks Modal */}
       {showViewMarksModal && selectedTest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '24px',
+            borderRadius: '8px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+            width: '100%',
+            maxWidth: '56rem',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-primary)' }}>
                 Test Details: {selectedTest.test_name}
               </h3>
               <button
                 onClick={() => setShowViewMarksModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontSize: '1.5rem',
+                  lineHeight: '1'
+                }}
               >
-                <X className="h-6 w-6" />
+                ×
               </button>
             </div>
 
             {/* Test Information */}
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="grid grid-cols-2 gap-4">
+            <div style={{ marginBottom: '24px', padding: '16px', background: '#f9fafb', borderRadius: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Test Type:</span>
-                  <p className="text-sm text-gray-900 capitalize">{selectedTest.test_type}</p>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    TEST TYPE
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', textTransform: 'capitalize' }}>{selectedTest.test_type}</div>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Date:</span>
-                  <p className="text-sm text-gray-900">{new Date(selectedTest.test_date).toLocaleDateString()}</p>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    DATE
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{new Date(selectedTest.test_date).toLocaleDateString()}</div>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Academic Year:</span>
-                  <p className="text-sm text-gray-900">{selectedTest.academic_year} - Term {selectedTest.term}</p>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    ACADEMIC YEAR
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{selectedTest.academic_year} - Term {selectedTest.term}</div>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-500">Total Marks:</span>
-                  <p className="text-sm text-gray-900">{selectedTest.total_marks}</p>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    TOTAL MARKS
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{selectedTest.total_marks}</div>
                 </div>
               </div>
               {selectedTest.description && (
-                <div className="mt-4">
-                  <span className="text-sm font-medium text-gray-500">Description:</span>
-                  <p className="text-sm text-gray-900 mt-1">{selectedTest.description}</p>
+                <div style={{ marginTop: '16px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    DESCRIPTION
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{selectedTest.description}</div>
                 </div>
               )}
             </div>
 
             {/* Your Marks */}
-            <div className="mb-4">
-              <h4 className="text-md font-medium text-gray-900 mb-2">Your Performance</h4>
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>Your Performance</h4>
               {selectedTest.has_marks ? (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center justify-between">
+                <div style={{ padding: '16px', background: '#d1fae5', border: '1px solid #86efac', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <p className="text-lg font-semibold text-green-800">
+                      <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#065f46' }}>
                         {selectedTest.marks_obtained} / {selectedTest.total_marks}
-                      </p>
+                      </div>
                     </div>
                   </div>
                   {selectedTest.comments && (
-                    <div className="mt-3">
-                      <p className="text-sm font-medium text-green-700">Teacher Comments:</p>
-                      <p className="text-sm text-green-600 mt-1">{selectedTest.comments}</p>
+                    <div style={{ marginTop: '12px' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#047857', marginBottom: '4px' }}>Teacher Comments:</div>
+                      <div style={{ fontSize: '0.75rem', color: '#065f46' }}>{selectedTest.comments}</div>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-yellow-800">Your marks for this test have not been entered yet.</p>
+                <div style={{ padding: '16px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.85rem', color: '#92400e' }}>Your marks for this test have not been entered yet.</div>
                 </div>
               )}
             </div>
-
           </div>
         </div>
       )}
