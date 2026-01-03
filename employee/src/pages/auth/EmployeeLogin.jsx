@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, Lock, User, Building2, AlertCircle } from 'lucide-react';
 import { useEmployeeAuth } from '../../contexts/EmployeeAuthContext';
 import { useNavigate } from 'react-router-dom';
+import logoImage from '../../assets/logo.png';
 
 const EmployeeLogin = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +12,7 @@ const EmployeeLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { login } = useEmployeeAuth();
   const navigate = useNavigate();
 
@@ -23,7 +24,7 @@ const EmployeeLogin = () => {
     try {
       console.log('🚀 Attempting employee login...');
       const result = await login(formData.employeeNumber, formData.password);
-      
+
       if (result.requiresPasswordSetup) {
         console.log('🆕 Password setup required');
         // Redirect to password setup page
@@ -53,13 +54,13 @@ const EmployeeLogin = () => {
       {/* Left side - Login Form */}
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex justify-center">
-            <Building2 className="h-12 w-12 text-blue-600" />
+          <div className="login-logo-container">
+            <img src={logoImage} alt="Logo" className="login-logo" />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-xl font-bold text-gray-900" style={{ fontFamily: 'Nunito, sans-serif', fontSize: '1.2rem' }}>
             Employee Portal
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600" style={{ fontFamily: 'Nunito, sans-serif' }}>
             Sign in to your employee account
           </p>
         </div>
@@ -69,7 +70,7 @@ const EmployeeLogin = () => {
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Employee Number */}
               <div>
-                <label htmlFor="employeeNumber" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="employeeNumber" className="block text-sm font-medium text-gray-700" style={{ fontFamily: 'Nunito, sans-serif', fontSize: '0.875rem', fontWeight: '500' }}>
                   Employee Number
                 </label>
                 <div className="mt-1 relative">
@@ -84,6 +85,7 @@ const EmployeeLogin = () => {
                     value={formData.employeeNumber}
                     onChange={handleChange}
                     className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    style={{ fontFamily: 'Nunito, sans-serif', fontSize: '0.875rem' }}
                     placeholder="Enter your employee number"
                   />
                 </div>
@@ -91,7 +93,7 @@ const EmployeeLogin = () => {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700" style={{ fontFamily: 'Nunito, sans-serif', fontSize: '0.875rem', fontWeight: '500' }}>
                   Password
                 </label>
                 <div className="mt-1 relative">
@@ -106,6 +108,7 @@ const EmployeeLogin = () => {
                     value={formData.password}
                     onChange={handleChange}
                     className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    style={{ fontFamily: 'Nunito, sans-serif', fontSize: '0.875rem' }}
                     placeholder="Enter your password"
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -146,6 +149,7 @@ const EmployeeLogin = () => {
                   type="submit"
                   disabled={isLoading}
                   className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ fontFamily: 'Nunito, sans-serif', fontSize: '0.875rem' }}
                 >
                   {isLoading ? (
                     <div className="flex items-center">
@@ -171,13 +175,18 @@ const EmployeeLogin = () => {
               </div>
 
               <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600" style={{ fontFamily: 'Nunito, sans-serif', fontSize: '0.875rem' }}>
                   If this is your first time logging in, you'll be prompted to set up your password.
                 </p>
-                <p className="mt-2 text-sm text-gray-600">
+                <p className="mt-2 text-sm text-gray-600" style={{ fontFamily: 'Nunito, sans-serif', fontSize: '0.875rem' }}>
                   Contact HR if you need assistance with your employee number.
                 </p>
               </div>
+            </div>
+            <div className="login-footer">
+              <p className="login-copyright">
+                © All rights reserved by <span className="xedra-text"><span className="xedra-x">X</span><span className="xedra-edra">edra</span></span> Systems 2025
+              </p>
             </div>
           </div>
         </div>

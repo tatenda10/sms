@@ -1,5 +1,3 @@
-
-
 @import url('https://fonts.googleapis.com/css2?family=Italianno&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500&family=Italianno&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400;500;600;700;800;900&display=swap');
@@ -20,7 +18,8 @@ body {
   /* For Firefox */
   -ms-overflow-style: none;
   /* For IE and Edge */
-  font-size: 0.75rem; /* xs size */
+  font-size: 0.75rem;
+  /* xs size */
 }
 
 /* Hide webkit scrollbar */
@@ -1040,4 +1039,50 @@ body::-webkit-scrollbar {
 .modal-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Xedra Branding & Footer */
+.login-footer {
+  width: 100%;
+  text-align: center;
+  margin-top: 24px;
+  padding: 20px 0;
+}
+
+.login-copyright {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+}
+
+.xedra-text {
+  font-weight: 600;
+}
+
+.xedra-x {
+  color: #ff6b35;
+}
+
+.xedra-edra {
+  color: #1e40af;
+}
+
+.login-logo-container {
+  width: 80px;
+  height: 80px;
+  background: white;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  margin: 0 auto 16px;
+  padding: 12px;
+}
+
+.login-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }

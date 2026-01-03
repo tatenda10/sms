@@ -1,6 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
-import { User, Mail, Phone, MapPin, Calendar, Building, CreditCard, Clock } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faUser,
+  faEnvelope,
+  faPhone,
+  faMapMarkerAlt,
+  faCalendarAlt,
+  faBuilding,
+  faCreditCard,
+  faClock,
+  faBriefcase,
+  faUserCircle,
+  faInfoCircle
+} from '@fortawesome/free-solid-svg-icons';
 
 const Profile = () => {
   const { employee, getProfile } = useEmployeeAuth();
@@ -13,7 +26,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       if (hasFetched.current) return;
-      
+
       try {
         setLoading(true);
         setError(null);
@@ -22,7 +35,7 @@ const Profile = () => {
         setProfileData(data);
       } catch (err) {
         setError(err.message);
-        hasFetched.current = false; // Reset on error so it can retry
+        hasFetched.current = false;
       } finally {
         setLoading(false);
       }
@@ -59,7 +72,7 @@ const Profile = () => {
   if (!profileData) {
     return (
       <div className="text-center py-12">
-        <User className="mx-auto h-12 w-12 text-gray-400" />
+        <FontAwesomeIcon icon={faUserCircle} className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">No profile data</h3>
         <p className="mt-1 text-sm text-gray-500">Unable to load employee profile information.</p>
       </div>
@@ -87,192 +100,196 @@ const Profile = () => {
   };
 
   const tabs = [
-    { id: 'personal', name: 'Personal', icon: User },
-    { id: 'employment', name: 'Employment', icon: Building },
-    { id: 'account', name: 'Account', icon: Clock },
-    { id: 'status', name: 'Status', icon: Calendar }
+    { id: 'personal', name: 'Personal', icon: faUser },
+    { id: 'employment', name: 'Employment', icon: faBriefcase },
+    { id: 'account', name: 'Account', icon: faClock },
+    { id: 'status', name: 'Status', icon: faInfoCircle }
   ];
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'personal':
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center">
-              <Mail className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faEnvelope} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Email</p>
-                <p className="text-sm text-gray-900">{profileData.email || 'N/A'}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Email Address</p>
+                <p className="text-sm text-gray-900 font-medium">{profileData.email || 'N/A'}</p>
               </div>
             </div>
             <div className="flex items-center">
-              <Phone className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faPhone} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Phone</p>
-                <p className="text-sm text-gray-900">{profileData.phone_number || 'N/A'}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Phone Number</p>
+                <p className="text-sm text-gray-900 font-medium">{profileData.phone_number || 'N/A'}</p>
               </div>
             </div>
             <div className="flex items-center">
-              <MapPin className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faMapMarkerAlt} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Address</p>
-                <p className="text-sm text-gray-900">{profileData.address || 'N/A'}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Home Address</p>
+                <p className="text-sm text-gray-900 font-medium">{profileData.address || 'N/A'}</p>
               </div>
             </div>
           </div>
         );
-      
+
       case 'employment':
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center">
-              <Building className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faBuilding} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Department</p>
-                <p className="text-sm text-gray-900">{profileData.department_name || 'N/A'}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Department</p>
+                <p className="text-sm text-gray-900 font-medium">{profileData.department_name || 'N/A'}</p>
               </div>
             </div>
             <div className="flex items-center">
-              <User className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faBriefcase} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Position</p>
-                <p className="text-sm text-gray-900">{profileData.job_title || 'N/A'}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Position / Job Title</p>
+                <p className="text-sm text-gray-900 font-medium">{profileData.job_title || 'N/A'}</p>
               </div>
             </div>
             <div className="flex items-center">
-              <Calendar className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Hire Date</p>
-                <p className="text-sm text-gray-900">{formatDate(profileData.hire_date)}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Hire Date</p>
+                <p className="text-sm text-gray-900 font-medium">{formatDate(profileData.hire_date)}</p>
               </div>
             </div>
             <div className="flex items-center">
-              <CreditCard className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faCreditCard} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Salary</p>
-                <p className="text-sm text-gray-900">{profileData.salary ? `$${profileData.salary.toLocaleString()}` : 'N/A'}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Salary Tier / Amount</p>
+                <p className="text-sm text-gray-900 font-medium">{profileData.salary ? `$${profileData.salary.toLocaleString()}` : 'N/A'}</p>
               </div>
             </div>
           </div>
         );
-      
+
       case 'account':
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center">
-              <User className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faUser} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Username</p>
-                <p className="text-sm text-gray-900">{profileData.username || 'N/A'}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">System Username</p>
+                <p className="text-sm text-gray-900 font-medium">{profileData.username || 'N/A'}</p>
               </div>
             </div>
             <div className="flex items-center">
-              <Clock className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faClock} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Last Login</p>
-                <p className="text-sm text-gray-900">{formatDateTime(profileData.last_login)}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Last Login Session</p>
+                <p className="text-sm text-gray-900 font-medium">{formatDateTime(profileData.last_login)}</p>
               </div>
             </div>
             <div className="flex items-center">
-              <Calendar className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Password Set</p>
-                <p className="text-sm text-gray-900">{profileData.password_set ? 'Yes' : 'No'}</p>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <Calendar className="h-4 w-4 text-gray-400 mr-3" />
-              <div>
-                <p className="text-xs text-gray-500">Password Created</p>
-                <p className="text-sm text-gray-900">{formatDateTime(profileData.password_created_at)}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Initial Password Status</p>
+                <p className="text-sm text-gray-900 font-medium">{profileData.password_set ? 'Password Locked' : 'Temporary Password active'}</p>
               </div>
             </div>
           </div>
         );
-      
+
       case 'status':
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center">
-              <div className="mr-3">
-                <p className="text-xs text-gray-500">Status</p>
-                <div className={`inline-flex items-center px-2 py-1 text-xs font-medium ${
-                  profileData.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {profileData.is_active ? 'Active' : 'Inactive'}
+              <div className="mr-4">
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1.5">Employment Status</p>
+                <div className={`inline-flex items-center px-2.5 py-0.5 rounded text-[0.7rem] font-bold ${profileData.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                  {profileData.is_active ? 'ACTIVE' : 'INACTIVE'}
                 </div>
               </div>
             </div>
             <div className="flex items-center">
-              <Calendar className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Created</p>
-                <p className="text-sm text-gray-900">{formatDateTime(profileData.created_at)}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Record Created At</p>
+                <p className="text-sm text-gray-900 font-medium">{formatDateTime(profileData.created_at)}</p>
               </div>
             </div>
             <div className="flex items-center">
-              <Calendar className="h-4 w-4 text-gray-400 mr-3" />
+              <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-gray-400 mr-4" />
               <div>
-                <p className="text-xs text-gray-500">Updated</p>
-                <p className="text-sm text-gray-900">{formatDateTime(profileData.updated_at)}</p>
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Last Record Update</p>
+                <p className="text-sm text-gray-900 font-medium">{formatDateTime(profileData.updated_at)}</p>
               </div>
             </div>
           </div>
         );
-      
+
       default:
         return null;
     }
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center">
-          <div className="h-12 w-12 bg-gray-300 flex items-center justify-center mr-4">
-            <User className="h-6 w-6 text-gray-600" />
+    <div className="reports-container" style={{
+      height: '100%',
+      maxHeight: '100%',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative'
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content flex items-center gap-4">
+          <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <FontAwesomeIcon icon={faUser} className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
           </div>
-          <div>
-            <h1 className="text-lg font-medium text-gray-900">
-              {profileData.full_name || 'N/A'}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {profileData.job_title || 'N/A'} • {profileData.department_name || 'N/A'}
-            </p>
-            <p className="text-xs text-gray-400">
-              Employee ID: {profileData.employee_id || 'N/A'}
-            </p>
+          <div className="min-w-0">
+            <h2 className="report-title truncate">{profileData.full_name || 'My Profile'}</h2>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+              <p className="report-subtitle mb-0 flex items-center">
+                <span className="font-bold text-gray-700">{profileData.job_title || 'N/A'}</span>
+                <span className="mx-1.5 text-gray-300">|</span>
+                <span>{profileData.department_name || 'N/A'}</span>
+              </p>
+              <span className="text-[0.65rem] font-bold px-2 py-0.5 bg-gray-100 text-gray-500 rounded">
+                ID: {profileData.employee_id || 'N/A'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
+      {/* Navigation Tabs (Acting as Filters) */}
+      <div className="report-filters" style={{ flexShrink: 0, paddingBottom: '0' }}>
+        <div className="report-filters-left" style={{ overflowX: 'auto', paddingBottom: '10px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <style>{`
+            .report-filters-left::-webkit-scrollbar { display: none; }
+          `}</style>
+          <div className="flex space-x-1">
+            {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`
+                  flex items-center px-4 py-2 text-xs font-bold rounded-md whitespace-nowrap transition-all duration-200
+                  ${activeTab === tab.id
+                    ? 'bg-blue-100 text-blue-700 scale-105'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}
+                `}
               >
-                <Icon className="h-4 w-4 mr-2" />
+                <FontAwesomeIcon icon={tab.icon} className={`mr-2 h-3.5 w-3.5 ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`} />
                 {tab.name}
               </button>
-            );
-          })}
-        </nav>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="mt-6">
-        <div className="bg-white border border-gray-200 p-6">
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto" style={{ paddingTop: '10px' }}>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full overflow-auto">
           {renderTabContent()}
         </div>
       </div>

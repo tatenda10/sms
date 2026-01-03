@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Bell, Clock, User, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faBell,
+  faClock,
+  faUser,
+  faCheckCircle,
+  faExclamationCircle,
+  faInfoCircle,
+  faCheckDouble
+} from '@fortawesome/free-solid-svg-icons';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -54,41 +63,28 @@ const Notifications = () => {
   const getTypeIcon = (type) => {
     switch (type) {
       case 'payslip':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <FontAwesomeIcon icon={faCheckCircle} className="text-green-500" />;
       case 'announcement':
-        return <Bell className="h-5 w-5 text-blue-500" />;
+        return <FontAwesomeIcon icon={faBell} className="text-blue-500" />;
       case 'profile':
-        return <User className="h-5 w-5 text-yellow-500" />;
+        return <FontAwesomeIcon icon={faUser} className="text-yellow-500" />;
       case 'system':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
+        return <FontAwesomeIcon icon={faExclamationCircle} className="text-red-500" />;
       default:
-        return <Info className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high':
-        return 'border-l-red-500 bg-red-50';
-      case 'medium':
-        return 'border-l-yellow-500 bg-yellow-50';
-      case 'low':
-        return 'border-l-green-500 bg-green-50';
-      default:
-        return 'border-l-gray-500 bg-gray-50';
+        return <FontAwesomeIcon icon={faInfoCircle} className="text-gray-500" />;
     }
   };
 
   const markAsRead = (id) => {
-    setNotifications(notifications.map(notification => 
-      notification.id === id 
+    setNotifications(notifications.map(notification =>
+      notification.id === id
         ? { ...notification, isRead: true }
         : notification
     ));
   };
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map(notification => 
+    setNotifications(notifications.map(notification =>
       ({ ...notification, isRead: true })
     ));
   };
@@ -103,136 +99,123 @@ const Notifications = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-            <p className="mt-2 text-gray-600">
-              Stay updated with important information and updates
-            </p>
-          </div>
+    <div className="reports-container">
+      {/* Report Header */}
+      <div className="report-header">
+        <div className="report-header-content">
+          <h2 className="report-title">Notifications</h2>
+          <p className="report-subtitle">Stay updated with important information and updates.</p>
+        </div>
+        <div className="report-header-right">
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="btn-checklist"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
             >
+              <FontAwesomeIcon icon={faCheckDouble} />
               Mark All as Read
             </button>
           )}
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            {[
-              { key: 'all', label: 'All', count: notifications.length },
-              { key: 'unread', label: 'Unread', count: unreadCount },
-              { key: 'read', label: 'Read', count: notifications.length - unreadCount }
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key)}
-                className={`${
-                  filter === tab.key
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
-              >
-                {tab.label}
-                {tab.count > 0 && (
-                  <span className={`ml-2 py-0.5 px-2 rounded-full text-xs ${
-                    filter === tab.key ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </nav>
+      {/* Report Filters (Tabs) */}
+      <div className="report-filters">
+        <div className="report-filters-left">
+          {[
+            { key: 'all', label: 'All', count: notifications.length },
+            { key: 'unread', label: 'Unread', count: unreadCount },
+            { key: 'read', label: 'Read', count: notifications.length - unreadCount }
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`top-nav-menu-item ${filter === tab.key ? 'active' : ''}`}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span className="ml-2 px-2 py-0.5 rounded-full text-[0.65rem] bg-gray-100 text-gray-600">
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Notifications List */}
-      <div className="space-y-4">
-        {filteredNotifications.length === 0 ? (
-          <div className="text-center py-12">
-            <Bell className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No notifications</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {filter === 'unread' 
-                ? "You're all caught up! No unread notifications."
-                : "No notifications found for this filter."
-              }
-            </p>
-          </div>
-        ) : (
-          filteredNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`border-l-4 ${getPriorityColor(notification.priority)} bg-white shadow rounded-lg p-6 ${
-                !notification.isRead ? 'ring-2 ring-blue-100' : ''
-              }`}
-            >
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  {getTypeIcon(notification.type)}
-                </div>
-                <div className="ml-4 flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className={`text-lg font-medium ${
-                      !notification.isRead ? 'text-gray-900' : 'text-gray-700'
-                    }`}>
-                      {notification.title}
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        notification.priority === 'high' 
-                          ? 'bg-red-100 text-red-800'
+      {/* Report Content Container */}
+      <div className="report-content-container">
+        <div className="space-y-4">
+          {filteredNotifications.length === 0 ? (
+            <div className="text-center py-12">
+              <FontAwesomeIcon icon={faBell} className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+              <h3 className="text-sm font-medium text-gray-900">No notifications</h3>
+              <p className="text-sm text-gray-500">
+                {filter === 'unread'
+                  ? "You're all caught up! No unread notifications."
+                  : "No notifications found for this filter."
+                }
+              </p>
+            </div>
+          ) : (
+            filteredNotifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`p-4 border rounded-lg transition-all ${!notification.isRead
+                    ? 'bg-blue-50/30 border-blue-100'
+                    : 'bg-white border-gray-100'
+                  } hover:shadow-sm`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="mt-1">
+                    {getTypeIcon(notification.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h4 className={`text-sm font-semibold truncate ${!notification.isRead ? 'text-gray-900' : 'text-gray-600'
+                        }`}>
+                        {notification.title}
+                      </h4>
+                      <span className={`text-[0.65rem] px-2 py-0.5 rounded-full font-medium ${notification.priority === 'high'
+                          ? 'bg-red-100 text-red-700'
                           : notification.priority === 'medium'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-green-100 text-green-700'
+                        }`}>
                         {notification.priority}
                       </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+                      {notification.message}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-[0.7rem] text-gray-400">
+                        <FontAwesomeIcon icon={faClock} className="mr-1" />
+                        {new Date(notification.date).toLocaleString()}
+                      </div>
                       {!notification.isRead && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          New
-                        </span>
+                        <button
+                          onClick={() => markAsRead(notification.id)}
+                          className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
+                        >
+                          Mark as read
+                        </button>
                       )}
                     </div>
                   </div>
-                  <p className="mt-2 text-sm text-gray-600">
-                    {notification.message}
-                  </p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {new Date(notification.date).toLocaleString()}
-                    </div>
-                    {!notification.isRead && (
-                      <button
-                        onClick={() => markAsRead(notification.id)}
-                        className="text-sm text-blue-600 hover:text-blue-500 font-medium"
-                      >
-                        Mark as read
-                      </button>
-                    )}
-                  </div>
                 </div>
               </div>
-            </div>
-          ))
-        )}
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

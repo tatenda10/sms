@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, Lock, User, GraduationCap, AlertCircle } from 'lucide-react';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import { useNavigate } from 'react-router-dom';
+import logoImage from '../../assets/brooklyne.png';
 
 const StudentLogin = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +12,7 @@ const StudentLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { login } = useStudentAuth();
   const navigate = useNavigate();
 
@@ -23,7 +24,7 @@ const StudentLogin = () => {
     try {
       console.log('🚀 Attempting student login...');
       const result = await login(formData.regNumber, formData.password);
-      
+
       if (result.isFirstLogin) {
         console.log('🆕 First login - password setup required');
         // Store token for password setup
@@ -55,8 +56,8 @@ const StudentLogin = () => {
       {/* Left side - Login Form */}
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="flex justify-center">
-            <GraduationCap className="h-12 w-12 text-green-600" />
+          <div className="login-logo-container">
+            <img src={logoImage} alt="Logo" className="login-logo" />
           </div>
           <h2 className="mt-6 text-center text-xl font-bold text-gray-900" style={{ fontFamily: 'Nunito, sans-serif', fontSize: '1.2rem' }}>
             Student Portal
@@ -183,6 +184,11 @@ const StudentLogin = () => {
                   Contact the school office if you need assistance with your registration number.
                 </p>
               </div>
+            </div>
+            <div className="login-footer">
+              <p className="login-copyright">
+                © All rights reserved by <span className="xedra-text"><span className="xedra-x">X</span><span className="xedra-edra">edra</span></span> Systems 2025
+              </p>
             </div>
           </div>
         </div>

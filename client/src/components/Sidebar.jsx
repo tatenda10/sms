@@ -36,6 +36,7 @@ const Sidebar = ({ open, setOpen }) => {
 
     // 2. Student Management (Core Workflow)
     { name: 'Students', href: '/dashboard/students', icon: faUserGraduate },
+    { name: 'Employees', href: '/dashboard/employees', icon: faUsers },
     { name: 'Classes', href: '/dashboard/classes', icon: faSchool },
     { name: 'Timetables', href: '/dashboard/timetables', icon: faCalendarAlt },
     { name: 'Results', href: '/dashboard/results', icon: faChartBar },
