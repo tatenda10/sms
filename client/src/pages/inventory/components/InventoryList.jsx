@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch,
@@ -12,7 +12,7 @@ import BASE_URL from '../../../contexts/Api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const InventoryList = () => {
+const InventoryList = forwardRef((props, ref) => {
     const { token } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -60,6 +60,13 @@ const InventoryList = () => {
     useEffect(() => {
         fetchItems();
     }, [currentPage, activeSearchTerm, categoryFilter, statusFilter]);
+
+    // Expose refresh function to parent component
+    useImperativeHandle(ref, () => ({
+        refreshItems: () => {
+            fetchItems();
+        }
+    }));
 
     const fetchCategories = async () => {
         try {
@@ -913,6 +920,6 @@ const InventoryList = () => {
             )}
         </div>
     );
-};
+});
 
 export default InventoryList;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faTshirt, faCogs } from '@fortawesome/free-solid-svg-icons';
 import { useInventory } from '../../contexts/InventoryContext';
@@ -14,6 +14,7 @@ const Inventory = () => {
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showIssueUniformModal, setShowIssueUniformModal] = useState(false);
   const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+  const inventoryListRef = useRef(null);
 
   const handleOpenAddItem = () => {
     setShowAddItemModal(true);
@@ -39,12 +40,26 @@ const Inventory = () => {
     setShowCategoriesModal(false);
   };
 
+  const handleItemAdded = () => {
+    // Refresh the inventory list when an item is added
+    if (inventoryListRef.current && inventoryListRef.current.refreshItems) {
+      inventoryListRef.current.refreshItems();
+    }
+  };
+
+  const handleUniformIssued = () => {
+    // Refresh the inventory list when a uniform is issued
+    if (inventoryListRef.current && inventoryListRef.current.refreshItems) {
+      inventoryListRef.current.refreshItems();
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <InventoryList />;
+        return <InventoryList ref={inventoryListRef} />;
       default:
-        return <InventoryList />;
+        return <InventoryList ref={inventoryListRef} />;
     }
   };
 
@@ -119,7 +134,7 @@ const Inventory = () => {
               </button>
             </div>
             <div className="modal-body">
-              <AddItem onClose={handleCloseAddItemModal} />
+              <AddItem onClose={handleCloseAddItemModal} onItemAdded={handleItemAdded} />
             </div>
           </div>
         </div>
@@ -143,7 +158,7 @@ const Inventory = () => {
               </button>
             </div>
             <div className="modal-body">
-              <IssueUniform onClose={handleCloseIssueUniformModal} />
+              <IssueUniform onClose={handleCloseIssueUniformModal} onUniformIssued={handleUniformIssued} />
             </div>
           </div>
         </div>

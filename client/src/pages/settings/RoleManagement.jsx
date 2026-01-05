@@ -8,7 +8,9 @@ import {
   faUserShield,
   faUsers,
   faCheckCircle,
-  faTimesCircle
+  faTimesCircle,
+  faTimes,
+  faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import BASE_URL from '../../contexts/Api';
@@ -20,10 +22,15 @@ const RoleManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRole, setSelectedRole] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRoles, setTotalRoles] = useState(0);
+  const [limit] = useState(25);
 
   // Fetch roles from API
   const fetchRoles = async () => {
@@ -54,9 +61,18 @@ const RoleManagement = () => {
     }
   };
 
+  // Live search effect with debouncing
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      setActiveSearchTerm(searchTerm);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
   useEffect(() => {
     fetchRoles();
-  }, []);
+  }, [currentPage, activeSearchTerm]);
 
   const handleAddRole = () => {
     setSelectedRole(null);
@@ -102,54 +118,100 @@ const RoleManagement = () => {
   };
 
   const filteredRoles = roles.filter(role =>
-    role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    role.description.toLowerCase().includes(searchTerm.toLowerCase())
+    role.name.toLowerCase().includes(activeSearchTerm.toLowerCase()) ||
+    (role.description && role.description.toLowerCase().includes(activeSearchTerm.toLowerCase()))
   );
 
-  if (loading) {
+  const paginatedRoles = filteredRoles.slice((currentPage - 1) * limit, currentPage * limit);
+
+  useEffect(() => {
+    if (roles.length > 0) {
+      setTotalRoles(filteredRoles.length);
+      setTotalPages(Math.ceil(filteredRoles.length / limit));
+    }
+  }, [roles, activeSearchTerm, limit, filteredRoles.length]);
+
+  const displayStart = paginatedRoles.length > 0 ? (currentPage - 1) * limit + 1 : 0;
+  const displayEnd = Math.min(currentPage * limit, totalRoles);
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setActiveSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  if (loading && roles.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading roles...</div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Loading roles...</div>
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Header with Add Role Button */}
-      <div className="sm:flex sm:items-center mb-6">
-        <div className="sm:flex-auto">
-          <h2 className="text-sm font-semibold text-gray-900">System Roles</h2>
-          <p className="mt-1 text-xs text-gray-700">
-            Manage user roles
-          </p>
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative' 
+    }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">Role Management</h2>
+          <p className="report-subtitle">Manage system roles and permissions.</p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={handleAddRole}
-            className="inline-flex items-center justify-center border border-transparent bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            className="btn-checklist"
           >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
+            <FontAwesomeIcon icon={faPlus} />
             Add Role
           </button>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FontAwesomeIcon icon={faSearch} className="h-4 w-4 text-gray-400" />
-              </div>
+      {/* Filters Section */}
+      <div className="report-filters" style={{ flexShrink: 0, borderTop: 'none' }}>
+        <div className="report-filters-left">
+          {/* Search Bar */}
+          <div className="filter-group">
+            <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <FontAwesomeIcon icon={faSearch} className="search-icon" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by role name or description..."
-                className="block w-full pl-10 pr-3 py-1.5 border border-gray-300 leading-5 bg-white placeholder-gray-400 focus:outline-none focus:placeholder-gray-300 focus:ring-1 focus:ring-gray-500 focus:border-gray-500 text-xs"
+                className="filter-input search-input"
+                style={{ width: '300px' }}
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    padding: '4px 6px',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    color: 'var(--text-secondary)'
+                  }}
+                  title="Clear search"
+                >
+                  ×
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -157,91 +219,145 @@ const RoleManagement = () => {
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 p-4">
-          <div className="text-sm text-red-600">{error}</div>
+        <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem' }}>
+          {error}
         </div>
       )}
 
-      {/* Roles Table */}
-      <div className="mt-8 flex flex-col">
-        <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-            <div className="overflow-hidden border border-gray-200">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-100/30">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
-                      Role Name
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
-                      Description
-                    </th>
-
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
-                      Users
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredRoles.map((role) => (
-                    <tr key={role.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <FontAwesomeIcon icon={faUserShield} className="h-3 w-3 text-gray-400 mr-2" />
-                          <div className="text-xs text-gray-900 font-medium">
-                            {role.name}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="text-xs text-gray-900">
-                          {role.description}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        <div className="flex items-center text-xs text-gray-900">
-                          <FontAwesomeIcon icon={faUsers} className="h-3 w-3 text-gray-400 mr-1" />
-                          {role.userCount}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        <div className="text-xs text-gray-900 flex items-center">
-                          <FontAwesomeIcon 
-                            icon={role.isActive ? faCheckCircle : faTimesCircle} 
-                            className={`h-3 w-3 mr-1 ${role.isActive ? 'text-green-500' : 'text-red-500'}`} 
-                          />
-                          {role.isActive ? 'Active' : 'Inactive'}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-xs font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEditRole(role)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            <FontAwesomeIcon icon={faEdit} className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRole(role)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      {/* Table Container */}
+      <div className="report-content-container ecl-table-container" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        overflow: 'auto',
+        minHeight: 0,
+        padding: 0,
+        height: '100%'
+      }}>
+        {loading && roles.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+            Loading roles...
           </div>
+        ) : (
+          <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+            <thead style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              background: 'var(--sidebar-bg)'
+            }}>
+              <tr>
+                <th style={{ padding: '6px 10px' }}>ROLE NAME</th>
+                <th style={{ padding: '6px 10px' }}>DESCRIPTION</th>
+                <th style={{ padding: '6px 10px' }}>USERS</th>
+                <th style={{ padding: '6px 10px' }}>STATUS</th>
+                <th style={{ padding: '6px 10px' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedRoles.map((role, index) => (
+                <tr
+                  key={role.id}
+                  style={{
+                    height: '32px',
+                    backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                  }}
+                >
+                  <td style={{ padding: '4px 10px', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FontAwesomeIcon icon={faUserShield} style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }} />
+                      {role.name}
+                    </div>
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {role.description || 'N/A'}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FontAwesomeIcon icon={faUsers} style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }} />
+                      {role.userCount || 0}
+                    </div>
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FontAwesomeIcon
+                        icon={role.isActive ? faCheckCircle : faTimesCircle}
+                        style={{
+                          fontSize: '0.7rem',
+                          color: role.isActive ? '#10b981' : '#ef4444'
+                        }}
+                      />
+                      {role.isActive ? 'Active' : 'Inactive'}
+                    </div>
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <button
+                        onClick={() => handleEditRole(role)}
+                        style={{ color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="Edit Role"
+                      >
+                        <FontAwesomeIcon icon={faEdit} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRole(role)}
+                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="Delete Role"
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {/* Empty placeholder rows to always show 25 rows */}
+              {Array.from({ length: Math.max(0, limit - paginatedRoles.length) }).map((_, index) => (
+                <tr
+                  key={`empty-${index}`}
+                  style={{
+                    height: '32px',
+                    backgroundColor: (paginatedRoles.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                  }}
+                >
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Pagination Footer */}
+      <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+        <div className="table-footer-left">
+          Showing {displayStart} to {displayEnd} of {totalRoles || 0} results.
+        </div>
+        <div className="table-footer-right">
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -304,7 +420,6 @@ const RoleManagement = () => {
       )}
 
       {/* Delete Confirmation Modal */}
-      {console.log('🗑️ Modal render check:', { showDeleteModal, selectedRole: selectedRole?.name })}
       {showDeleteModal && selectedRole && (
         <DeleteConfirmationModal
           isOpen={showDeleteModal}
@@ -328,6 +443,8 @@ const RoleModal = ({ isOpen, onClose, role, onSave }) => {
     description: '',
     isActive: true
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (role) {
@@ -343,6 +460,7 @@ const RoleModal = ({ isOpen, onClose, role, onSave }) => {
         isActive: true
       });
     }
+    setError(null);
   }, [role]);
 
   const handleChange = (e) => {
@@ -353,91 +471,156 @@ const RoleModal = ({ isOpen, onClose, role, onSave }) => {
     }));
   };
 
-
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
+    setLoading(true);
+    setError(null);
+    try {
+      await onSave(formData);
+    } catch (err) {
+      console.error('Error saving role:', err);
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else {
+        setError('Failed to save role');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-[500px] bg-white">
-        <div className="mt-3">
-          <h3 className="text-sm leading-6 font-medium text-gray-900 mb-4">
-            {role ? 'Edit Role' : 'Add New Role'}
-          </h3>
+    <div className="modal-overlay" onClick={onClose}>
+      <div 
+        className="modal-dialog" 
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '600px' }}
+      >
+        <div className="modal-header">
+          <h3 className="modal-title">{role ? 'Edit Role' : 'Add New Role'}</h3>
+          <button className="modal-close-btn" onClick={onClose}>
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
+        </div>
+
+        <div className="modal-body">
+          {/* Error Display */}
+          {error && (
+            <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+              {error}
+            </div>
+          )}
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="modal-form">
             {/* Role Name */}
-            <div>
-              <label htmlFor="name" className="block text-xs font-medium text-gray-600">
-                Role Name <span className="text-red-500">*</span>
+            <div className="form-group">
+              <label className="form-label">
+                Role Name <span className="required">*</span>
               </label>
               <input
                 type="text"
                 name="name"
-                id="name"
+                className="form-control"
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 px-3 py-1.5 text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-xs"
                 placeholder="Enter role name"
               />
             </div>
 
             {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-xs font-medium text-gray-600">
-                Description <span className="text-red-500">*</span>
+            <div className="form-group">
+              <label className="form-label">
+                Description <span className="required">*</span>
               </label>
               <textarea
                 name="description"
-                id="description"
+                className="form-control"
                 required
                 rows={3}
                 value={formData.description}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 px-3 py-1.5 text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-xs"
                 placeholder="Enter role description"
               />
             </div>
 
-
-
             {/* Status */}
-            <div>
-              <label className="flex items-center">
+            <div className="form-group">
+              <label className="form-label">Role Status</label>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 12px',
+                background: formData.isActive ? '#f0fdf4' : '#fef2f2',
+                border: `1px solid ${formData.isActive ? '#bbf7d0' : '#fecaca'}`,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                marginTop: '8px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = formData.isActive ? '#86efac' : '#fca5a5';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = formData.isActive ? '#bbf7d0' : '#fecaca';
+              }}
+              >
                 <input
                   type="checkbox"
                   name="isActive"
                   checked={formData.isActive}
                   onChange={handleChange}
-                  className="h-3 w-3 text-gray-600 focus:ring-gray-500 border-gray-300"
+                  style={{
+                    cursor: 'pointer',
+                    width: '18px',
+                    height: '18px',
+                    accentColor: formData.isActive ? '#10b981' : '#ef4444',
+                    margin: 0,
+                    flexShrink: 0
+                  }}
                 />
-                <span className="ml-2 text-xs text-gray-700">Active Role</span>
+                <div style={{ flex: 1 }}>
+                  <span style={{
+                    fontSize: '0.875rem',
+                    color: 'var(--text-primary)',
+                    fontWeight: 500
+                  }}>
+                    {formData.isActive ? 'Active Role' : 'Inactive Role'}
+                  </span>
+                  <div style={{
+                    fontSize: '0.7rem',
+                    color: 'var(--text-secondary)',
+                    marginTop: '2px'
+                  }}>
+                    {formData.isActive 
+                      ? 'Role is active and can be assigned to users' 
+                      : 'Role is disabled and cannot be assigned'}
+                  </div>
+                </div>
               </label>
             </div>
-
-            {/* Actions */}
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-3 py-1.5 border border-gray-300 text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-3 py-1.5 border border-transparent text-xs font-medium text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                {role ? 'Update' : 'Create'} Role
-              </button>
-            </div>
           </form>
+        </div>
+
+        <div className="modal-footer">
+          <button
+            type="button"
+            className="modal-btn modal-btn-cancel"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="modal-btn modal-btn-confirm"
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : (role ? 'Update' : 'Create') + ' Role'}
+          </button>
         </div>
       </div>
     </div>
@@ -447,119 +630,109 @@ const RoleModal = ({ isOpen, onClose, role, onSave }) => {
 // Delete Confirmation Modal Component
 const DeleteConfirmationModal = ({ isOpen, onClose, role, onConfirm }) => {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleConfirm = async () => {
     setLoading(true);
+    setError(null);
     try {
       await onConfirm();
     } catch (error) {
       console.error('Error during deletion:', error);
+      if (error.response?.data?.error) {
+        setError(error.response.data.error);
+      } else {
+        setError('Failed to delete role');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOverlayClick = (e) => {
-    // Only close if clicking the overlay, not the modal content
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   if (!isOpen) return null;
-
-  console.log('🗑️ Delete modal rendering for role:', role?.name);
 
   // Check if role has users assigned
   const hasUsers = role.userCount > 0;
 
   return (
-    <div 
-      className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
-      onClick={handleOverlayClick}
-    >
-      <div className="relative top-20 mx-auto p-5 border w-[400px] bg-white shadow-lg">
-        <div className="mt-3">
-          {/* Header */}
-          <div className="flex items-center mb-4">
-            <div className="flex-shrink-0">
-              <FontAwesomeIcon 
-                icon={faTrash} 
-                className="h-6 w-6 text-red-600" 
-              />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm leading-6 font-medium text-gray-900">
-                Delete Role
-              </h3>
-            </div>
-          </div>
+    <div className="modal-overlay" onClick={onClose}>
+      <div 
+        className="modal-dialog" 
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '500px' }}
+      >
+        <div className="modal-header">
+          <h3 className="modal-title">Delete Role</h3>
+          <button className="modal-close-btn" onClick={onClose}>
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
+        </div>
 
-          {/* Content */}
-          <div className="mb-4">
-            {hasUsers ? (
-              <div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Cannot delete this role because it is currently assigned to users.
-                </p>
-                <div className="bg-red-50 border border-red-200 p-3">
-                  <div className="flex items-center">
-                    <FontAwesomeIcon icon={faUsers} className="h-4 w-4 text-red-500 mr-2" />
-                    <span className="text-sm text-red-700">
-                      <strong>{role.name}</strong> is assigned to <strong>{role.userCount}</strong> user{role.userCount !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-3">
-                  Please reassign or remove this role from all users before deleting it.
-                </p>
+        <div className="modal-body">
+          {/* Error Display */}
+          {error && (
+            <div style={{ padding: '12px', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '4px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', color: '#dc2626' }}>
+                <FontAwesomeIcon icon={faExclamationTriangle} />
+                {error}
               </div>
-            ) : (
-              <div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Are you sure you want to delete this role? This action cannot be undone.
+            </div>
+          )}
+
+          {hasUsers ? (
+            <div>
+              <div style={{ marginBottom: '16px', padding: '12px', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', color: '#dc2626', marginBottom: '8px' }}>
+                  <FontAwesomeIcon icon={faExclamationTriangle} />
+                  <strong>Cannot delete this role</strong>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: '#991b1b', marginBottom: '8px' }}>
+                  This role is currently assigned to users.
                 </p>
-                <div className="bg-gray-50 border border-gray-200 p-3">
-                  <div className="text-sm">
-                    <div className="font-medium text-gray-900">{role.name}</div>
-                    <div className="text-gray-600">{role.description}</div>
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', color: '#991b1b' }}>
+                  <FontAwesomeIcon icon={faUsers} />
+                  <span>
+                    <strong>{role.name}</strong> is assigned to <strong>{role.userCount}</strong> user{role.userCount !== 1 ? 's' : ''}
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                Please reassign or remove this role from all users before deleting it.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                Are you sure you want to delete this role? This action cannot be undone.
+              </p>
+              <div style={{ padding: '12px', background: '#f9fafb', border: '1px solid var(--border-color)', borderRadius: '4px' }}>
+                <div style={{ fontSize: '0.75rem' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>{role.name}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>{role.description || 'No description'}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-          {/* Actions */}
-          <div className="flex justify-end space-x-3">
+        <div className="modal-footer">
+          <button
+            type="button"
+            className="modal-btn modal-btn-cancel"
+            onClick={onClose}
+          >
+            {hasUsers ? 'Close' : 'Cancel'}
+          </button>
+          {!hasUsers && (
             <button
               type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="modal-btn modal-btn-delete"
+              onClick={handleConfirm}
+              disabled={loading}
             >
-              {hasUsers ? 'Close' : 'Cancel'}
+              {loading ? 'Deleting...' : 'Delete Role'}
             </button>
-            {!hasUsers && (
-              <button
-                type="button"
-                onClick={handleConfirm}
-                disabled={loading}
-                className={`px-3 py-1.5 border border-transparent text-xs font-medium text-white ${
-                  loading
-                    ? 'bg-red-400 cursor-not-allowed'
-                    : 'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500'
-                }`}
-              >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
-                    Deleting...
-                  </div>
-                ) : (
-                  'Delete Role'
-                )}
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

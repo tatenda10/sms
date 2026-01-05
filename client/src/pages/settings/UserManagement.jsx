@@ -183,14 +183,33 @@ const UserManagement = () => {
   }
 
   return (
-    <div style={{ 
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
       display: 'flex', 
       flexDirection: 'column', 
-      height: '100%',
-      overflow: 'hidden'
+      position: 'relative' 
     }}>
+      {/* Report Header */}
+      <div className="report-header" style={{ flexShrink: 0 }}>
+        <div className="report-header-content">
+          <h2 className="report-title">User Management</h2>
+          <p className="report-subtitle">Manage system users, roles, and permissions.</p>
+        </div>
+        <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={handleAddUser}
+            className="btn-checklist"
+          >
+            <FontAwesomeIcon icon={faPlus} />
+            Add User
+          </button>
+        </div>
+      </div>
+
       {/* Filters Section */}
-      <div className="report-filters" style={{ flexShrink: 0 }}>
+      <div className="report-filters" style={{ flexShrink: 0, borderTop: 'none' }}>
         <div className="report-filters-left">
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="filter-group">
@@ -229,14 +248,6 @@ const UserManagement = () => {
               )}
             </div>
           </form>
-          
-          <button
-            onClick={handleAddUser}
-            className="btn-checklist"
-          >
-            <FontAwesomeIcon icon={faPlus} />
-            Add User
-          </button>
         </div>
       </div>
 
@@ -248,11 +259,11 @@ const UserManagement = () => {
       )}
 
       {/* Table Container */}
-      <div className="report-content-container ecl-table-container" style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        flex: 1, 
-        overflow: 'auto', 
+      <div className="report-content-container ecl-table-container" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        overflow: 'auto',
         minHeight: 0,
         padding: 0,
         height: '100%'
@@ -647,32 +658,137 @@ const UserModal = ({ isOpen, onClose, user, onSave }) => {
               <label className="form-label">
                 Roles <span className="required">*</span>
               </label>
-              <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '12px', background: 'white' }}>
-                {availableRoles.map((role) => (
-                  <label key={role.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.roles.includes(role.id)}
-                      onChange={() => handleRoleChange(role.id)}
-                      style={{ marginRight: '8px', cursor: 'pointer' }}
-                    />
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)' }}>{role.name}</span>
-                  </label>
-                ))}
+              <div style={{
+                maxHeight: '200px',
+                overflowY: 'auto',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                padding: '12px',
+                background: '#f9fafb',
+                marginTop: '8px'
+              }}>
+                {availableRoles.length === 0 ? (
+                  <div style={{ 
+                    textAlign: 'center', 
+                    padding: '20px', 
+                    color: 'var(--text-secondary)', 
+                    fontSize: '0.75rem' 
+                  }}>
+                    No roles available
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: '8px'
+                  }}>
+                    {availableRoles.map((role) => (
+                      <label
+                        key={role.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          padding: '8px 10px',
+                          borderRadius: '4px',
+                          transition: 'background-color 0.2s',
+                          userSelect: 'none',
+                          backgroundColor: formData.roles.includes(role.id) ? '#eff6ff' : 'transparent',
+                          border: formData.roles.includes(role.id) ? '1px solid #bfdbfe' : '1px solid transparent'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!formData.roles.includes(role.id)) {
+                            e.currentTarget.style.backgroundColor = '#f3f4f6';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!formData.roles.includes(role.id)) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.roles.includes(role.id)}
+                          onChange={() => handleRoleChange(role.id)}
+                          style={{
+                            cursor: 'pointer',
+                            width: '16px',
+                            height: '16px',
+                            accentColor: '#2563eb',
+                            margin: 0,
+                            flexShrink: 0
+                          }}
+                        />
+                        <span style={{
+                          fontSize: '0.875rem',
+                          color: 'var(--text-primary)',
+                          fontWeight: formData.roles.includes(role.id) ? 500 : 400
+                        }}>
+                          {role.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Status */}
             <div className="form-group">
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+              <label className="form-label">User Status</label>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 12px',
+                background: formData.isActive ? '#f0fdf4' : '#fef2f2',
+                border: `1px solid ${formData.isActive ? '#bbf7d0' : '#fecaca'}`,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                marginTop: '8px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = formData.isActive ? '#86efac' : '#fca5a5';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = formData.isActive ? '#bbf7d0' : '#fecaca';
+              }}
+              >
                 <input
                   type="checkbox"
                   name="isActive"
                   checked={formData.isActive}
                   onChange={handleChange}
-                  style={{ marginRight: '8px', cursor: 'pointer' }}
+                  style={{
+                    cursor: 'pointer',
+                    width: '18px',
+                    height: '18px',
+                    accentColor: formData.isActive ? '#10b981' : '#ef4444',
+                    margin: 0,
+                    flexShrink: 0
+                  }}
                 />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)' }}>Active User</span>
+                <div style={{ flex: 1 }}>
+                  <span style={{
+                    fontSize: '0.875rem',
+                    color: 'var(--text-primary)',
+                    fontWeight: 500
+                  }}>
+                    {formData.isActive ? 'Active User' : 'Inactive User'}
+                  </span>
+                  <div style={{
+                    fontSize: '0.7rem',
+                    color: 'var(--text-secondary)',
+                    marginTop: '2px'
+                  }}>
+                    {formData.isActive 
+                      ? 'User can log in and access the system' 
+                      : 'User account is disabled'}
+                  </div>
+                </div>
               </label>
             </div>
           </form>

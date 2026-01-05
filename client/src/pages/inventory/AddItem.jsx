@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import BASE_URL from '../../contexts/Api';
 
-const AddItem = ({ onClose }) => {
+const AddItem = ({ onClose, onItemAdded }) => {
   const navigate = useNavigate();
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -129,6 +129,11 @@ const AddItem = ({ onClose }) => {
 
       console.log('✅ Item created successfully:', response.data);
       setSuccess('Item added successfully!');
+
+      // Refresh inventory list if callback provided
+      if (onItemAdded) {
+        onItemAdded();
+      }
 
       // Reset form and close modal after 2 seconds
       setTimeout(() => {

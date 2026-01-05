@@ -3,16 +3,14 @@ import { useAuth } from '../../../contexts/AuthContext';
 import BASE_URL from '../../../contexts/Api';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faCheck, faExclamationTriangle, faUsers, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
-const AddGradelevelClass = () => {
+const AddGradelevelClass = ({ onClose }) => {
   const { token } = useAuth();
   const [streams, setStreams] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorDetails, setErrorDetails] = useState({});
+  const [success, setSuccess] = useState(null);
 
   // Employee search state
   const [teacherQuery, setTeacherQuery] = useState('');
@@ -123,14 +121,21 @@ const AddGradelevelClass = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
-        setShowSuccessModal(true);
+        setSuccess('Grade level class created successfully!');
         setFormData({ stream_id: '', name: '', homeroom_teacher_employee_number: '', capacity: '' });
         setTeacherQuery('');
+        
+        // Close modal after 2 seconds
+        setTimeout(() => {
+          setSuccess(null);
+          if (onClose) {
+            onClose();
+          }
+        }, 2000);
       }
     } catch (err) {
       if (err.response?.data?.message) {
-        setErrorDetails({ message: err.response.data.message });
-        setShowErrorModal(true);
+        setError(err.response.data.message);
       } else {
         setError('Failed to create class');
       }
@@ -139,172 +144,158 @@ const AddGradelevelClass = () => {
     }
   };
 
-  const closeSuccessModal = () => setShowSuccessModal(false);
-  const closeErrorModal = () => {
-    setShowErrorModal(false);
-    setErrorDetails({});
-  };
-
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <h1 className="text-lg font-bold text-gray-900 flex items-center">
-          <FontAwesomeIcon icon={faUsers} className="mr-2 h-5 w-5 text-gray-400" />
-          Add Gradelevel Class
-        </h1>
-        <p className="mt-1 text-xs text-gray-500">
-          Create a new gradelevel class (homeroom) within a stream.
-        </p>
-      </div>
+    <div>
       {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 p-3">
-          <div className="text-xs text-red-600">{error}</div>
+        <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+          {error}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white border border-gray-200 p-6 rounded-lg">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600">
-                Stream <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="stream_id"
-                value={formData.stream_id}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                required
-              >
-                <option value="">Select Stream</option>
-                {streams.map((stream) => (
-                  <option key={stream.id} value={stream.id}>
-                    {stream.name} ({stream.stage})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600">
-                Class Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 1A, 2B, Form 1"
-                required
-              />
-            </div>
-            <div className="relative">
-              <label className="block text-xs font-medium text-gray-600">
-                Homeroom Teacher <span className="text-gray-400">(search by name or ID)</span>
-              </label>
-              <input
-                type="text"
-                name="homeroom_teacher_search"
-                value={teacherQuery}
-                onChange={handleTeacherInputChange}
-                className="mt-1 block w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Type to search..."
-                autoComplete="off"
-                onFocus={() => setTeacherDropdownOpen(true)}
-              />
-              {/* Dropdown */}
-              {teacherDropdownOpen && teacherQuery && (
-                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded shadow max-h-48 overflow-y-auto">
-                  {teacherLoading ? (
-                    <div className="p-2 text-xs text-gray-500 flex items-center"><FontAwesomeIcon icon={faSpinner} spin className="mr-2" />Searching...</div>
-                  ) : teacherError ? (
-                    <div className="p-2 text-xs text-red-600">{teacherError}</div>
-                  ) : teacherResults.length === 0 ? (
-                    <div className="p-2 text-xs text-gray-500">No employees found.</div>
-                  ) : (
-                    teacherResults.map((emp) => (
-                      <div
-                        key={emp.employee_id}
-                        className="p-2 text-xs cursor-pointer hover:bg-blue-50"
-                        onClick={() => handleTeacherSelect(emp)}
-                      >
-                        <span className="font-medium text-gray-900">{emp.full_name}</span> <span className="text-gray-500">({emp.employee_id})</span>
-                        {emp.job_title && <span className="ml-2 text-gray-400">{emp.job_title}</span>}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600">
-                Capacity
-              </label>
-              <input
-                type="number"
-                name="capacity"
-                value={formData.capacity}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 40"
-                min="1"
-              />
-            </div>
+
+      {success && (
+        <div style={{ padding: '10px', background: '#d1fae5', color: '#065f46', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+          {success}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="modal-form">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+          <div className="form-group">
+            <label className="form-label">
+              Stream <span style={{ color: '#dc2626' }}>*</span>
+            </label>
+            <select
+              name="stream_id"
+              value={formData.stream_id}
+              onChange={handleInputChange}
+              className="form-control"
+              required
+            >
+              <option value="">Select Stream</option>
+              {streams.map((stream) => (
+                <option key={stream.id} value={stream.id}>
+                  {stream.name} ({stream.stage})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">
+              Class Name <span style={{ color: '#dc2626' }}>*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className="form-control"
+              placeholder="e.g., 1A, 2B, Form 1"
+              required
+            />
+          </div>
+          <div className="form-group" style={{ position: 'relative' }}>
+            <label className="form-label">
+              Homeroom Teacher <span style={{ color: '#9ca3af', fontSize: '0.7rem' }}>(search by name or ID)</span>
+            </label>
+            <input
+              type="text"
+              name="homeroom_teacher_search"
+              value={teacherQuery}
+              onChange={handleTeacherInputChange}
+              className="form-control"
+              placeholder="Type to search..."
+              autoComplete="off"
+              onFocus={() => setTeacherDropdownOpen(true)}
+            />
+            {/* Dropdown */}
+            {teacherDropdownOpen && teacherQuery && (
+              <div style={{
+                position: 'absolute',
+                zIndex: 1000,
+                marginTop: '4px',
+                width: '100%',
+                background: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '4px',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                maxHeight: '192px',
+                overflowY: 'auto'
+              }}>
+                {teacherLoading ? (
+                  <div style={{ padding: '8px', fontSize: '0.75rem', color: '#6b7280', display: 'flex', alignItems: 'center' }}>
+                    <FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: '8px' }} />
+                    Searching...
+                  </div>
+                ) : teacherError ? (
+                  <div style={{ padding: '8px', fontSize: '0.75rem', color: '#dc2626' }}>{teacherError}</div>
+                ) : teacherResults.length === 0 ? (
+                  <div style={{ padding: '8px', fontSize: '0.75rem', color: '#6b7280' }}>No employees found.</div>
+                ) : (
+                  teacherResults.map((emp) => (
+                    <div
+                      key={emp.employee_id}
+                      style={{
+                        padding: '8px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s'
+                      }}
+                      onClick={() => handleTeacherSelect(emp)}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#eff6ff'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+                    >
+                      <span style={{ fontWeight: 500, color: '#111827' }}>{emp.full_name}</span>
+                      <span style={{ color: '#6b7280', marginLeft: '4px' }}>({emp.employee_id})</span>
+                      {emp.job_title && <span style={{ marginLeft: '8px', color: '#9ca3af' }}>{emp.job_title}</span>}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+          <div className="form-group">
+            <label className="form-label">Capacity</label>
+            <input
+              type="number"
+              name="capacity"
+              value={formData.capacity}
+              onChange={handleInputChange}
+              className="form-control"
+              placeholder="e.g., 40"
+              min="1"
+            />
           </div>
         </div>
-        <div className="flex justify-start">
+
+        {/* Form Actions */}
+        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="modal-btn modal-btn-cancel"
+          >
+            Cancel
+          </button>
           <button
             type="submit"
             disabled={loading}
-            className={`px-6 py-2 text-xs font-medium text-white ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-700 hover:bg-gray-800'}`}
+            className="modal-btn modal-btn-confirm"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            {loading ? 'Creating...' : 'Create Class'}
+            {loading ? (
+              <>
+                <div className="loading-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></div>
+                Creating...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faPlus} style={{ fontSize: '0.7rem' }} />
+                Create Class
+              </>
+            )}
           </button>
         </div>
       </form>
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 bg-white">
-            <div className="mt-3 text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 bg-green-100 mb-4">
-                <FontAwesomeIcon icon={faCheck} className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Class Created Successfully</h3>
-              <p className="text-xs text-gray-500 mb-4">
-                The gradelevel class has been added to the system successfully.
-              </p>
-              <button
-                onClick={closeSuccessModal}
-                className="px-4 py-2 bg-gray-700 text-white text-xs hover:bg-gray-800"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Error Modal */}
-      {showErrorModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 bg-white">
-            <div className="mt-3 text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 bg-red-100 mb-4">
-                <FontAwesomeIcon icon={faExclamationTriangle} className="h-6 w-6 text-red-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Error Creating Class</h3>
-              <p className="text-xs text-gray-500 mb-4">
-                {errorDetails.message}
-              </p>
-              <button
-                onClick={closeErrorModal}
-                className="px-4 py-2 bg-red-600 text-white text-xs hover:bg-red-700"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

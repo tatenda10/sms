@@ -8,9 +8,9 @@ import {
   faEye,
   faFileAlt,
   faDownload,
-  faPrint,
-  faRefresh,
-  faClose
+  faClose,
+  faSortAmountDown,
+  faSortAmountUp
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import BASE_URL from '../../contexts/Api';
@@ -24,6 +24,7 @@ const StudentBalances = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState('lowest'); // 'lowest', 'highest'
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -33,10 +34,30 @@ const StudentBalances = () => {
     hasPreviousPage: false
   });
 
+  // Live search effect with debouncing
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      setActiveSearchTerm(searchTerm);
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
   useEffect(() => {
     fetchStudentBalances();
     fetchSummary();
-  }, [pagination.currentPage, activeSearchTerm]);
+  }, [pagination.currentPage, activeSearchTerm, sortOrder]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Refresh with current pagination and search term
+      fetchStudentBalances();
+      fetchSummary();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []); // Only set up interval once on mount
 
   const fetchStudentBalances = async () => {
     try {
@@ -54,7 +75,20 @@ const StudentBalances = () => {
       });
 
       if (response.data.success) {
-        setStudents(response.data.data);
+        let sortedStudents = [...response.data.data];
+        
+        // Sort by outstanding balance
+        sortedStudents.sort((a, b) => {
+          const balanceA = parseFloat(a.current_balance || 0);
+          const balanceB = parseFloat(b.current_balance || 0);
+          if (sortOrder === 'lowest') {
+            return balanceA - balanceB; // Lowest to highest
+          } else {
+            return balanceB - balanceA; // Highest to lowest
+          }
+        });
+        
+        setStudents(sortedStudents);
         setPagination(response.data.pagination);
       }
     } catch (error) {
@@ -91,6 +125,11 @@ const StudentBalances = () => {
     setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
+  const handleSortToggle = () => {
+    setSortOrder(prev => prev === 'lowest' ? 'highest' : 'lowest');
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
+  };
+
   const handlePageChange = (page) => {
     setPagination(prev => ({ ...prev, currentPage: page }));
   };
@@ -105,11 +144,6 @@ const StudentBalances = () => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-GB');
-  };
-
-  const handleRefresh = () => {
-    fetchStudentBalances();
-    fetchSummary();
   };
 
   const handleExport = () => {
@@ -135,60 +169,6 @@ const StudentBalances = () => {
     document.body.removeChild(a);
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Outstanding Student Balances</title>
-          <style>
-            body { font-family: 'Nunito', sans-serif; margin: 20px; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .summary { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border: 1px solid #ddd; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
-            th { background-color: #f2f2f2; text-transform: uppercase; }
-            .amount { text-align: right; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>OUTSTANDING STUDENT BALANCES</h1>
-            <p>Generated on ${new Date().toLocaleDateString()}</p>
-          </div>
-          <div class="summary">
-            <h3>Summary</h3>
-            <p><strong>Total Students with Debt:</strong> ${summary?.total_students_with_debt || 0}</p>
-            <p><strong>Total Outstanding:</strong> ${formatCurrency(summary?.total_outstanding_debt || 0)}</p>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Registration No</th>
-                <th>Name</th>
-                <th>Surname</th>
-                <th class="amount">Outstanding Balance</th>
-                <th>Last Transaction</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${students.map(student => `
-                <tr>
-                  <td>${student.RegNumber}</td>
-                  <td>${student.Name}</td>
-                  <td>${student.Surname}</td>
-                  <td class="amount">${formatCurrency(student.current_balance)}</td>
-                  <td>${student.last_transaction_date ? formatDate(student.last_transaction_date) : 'N/A'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  };
 
   // Calculate display ranges for pagination
   const displayStart = students.length > 0 ? (pagination.currentPage - 1) * pagination.limit + 1 : 0;
@@ -211,14 +191,6 @@ const StudentBalances = () => {
         </div>
         <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
-            onClick={handleRefresh}
-            className="btn-checklist"
-            style={{ backgroundColor: '#475569' }}
-          >
-            <FontAwesomeIcon icon={faRefresh} />
-            Refresh
-          </button>
-          <button
             onClick={handleExport}
             className="btn-checklist"
             style={{ backgroundColor: '#059669' }}
@@ -226,47 +198,14 @@ const StudentBalances = () => {
             <FontAwesomeIcon icon={faDownload} />
             Export
           </button>
-          <button
-            onClick={handlePrint}
-            className="btn-checklist"
-          >
-            <FontAwesomeIcon icon={faPrint} />
-            Print
-          </button>
         </div>
-      </div>
-
-      {/* Summary Section */}
-      <div className="report-filters" style={{ flexShrink: 0, padding: '10px 30px', background: '#f8fafc', borderBottom: '1px solid var(--border-color)', gap: '24px' }}>
-        {summary && (
-          <React.Fragment>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: '#dc2626', fontSize: '0.85rem' }} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Students with Debt</p>
-                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{summary.total_students_with_debt}</p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FontAwesomeIcon icon={faDollarSign} style={{ color: '#dc2626', fontSize: '0.85rem' }} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Total Outstanding</p>
-                <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#1e293b' }}>{formatCurrency(summary.total_outstanding_debt)}</p>
-              </div>
-            </div>
-          </React.Fragment>
-        )}
       </div>
 
       {/* Filters Section */}
       <div className="report-filters" style={{ flexShrink: 0, borderTop: 'none' }}>
         <div className="report-filters-left">
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="filter-group">
+          <div className="filter-group">
             <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <FontAwesomeIcon icon={faSearch} className="search-icon" />
               <input
@@ -296,7 +235,60 @@ const StudentBalances = () => {
                 </button>
               )}
             </div>
-          </form>
+          </div>
+
+          {/* Sort By Button */}
+          <div className="filter-group">
+            <button
+              onClick={handleSortToggle}
+              className="btn-checklist"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: '#2563eb',
+                color: 'white'
+              }}
+              title={sortOrder === 'lowest' ? 'Click to sort: Highest to Lowest' : 'Click to sort: Lowest to Highest'}
+            >
+              {sortOrder === 'lowest' ? (
+                <>
+                  <FontAwesomeIcon icon={faSortAmountDown} />
+                  Lowest to Highest
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faSortAmountUp} />
+                  Highest to Lowest
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        <div className="report-filters-right" style={{ display: 'flex', alignItems: 'center', gap: '24px', marginLeft: 'auto' }}>
+          {/* Total Number of Students */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#2563eb', fontSize: '0.875rem' }} />
+            <div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: 1.2 }}>Total Students</div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                {pagination.totalStudents || 0}
+              </div>
+            </div>
+          </div>
+          {/* Total Amount */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FontAwesomeIcon icon={faDollarSign} style={{ color: '#dc2626', fontSize: '0.875rem' }} />
+            <div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: 1.2 }}>Total Amount</div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#dc2626', lineHeight: 1.2 }}>
+                {summary?.total_outstanding_balance 
+                  ? formatCurrency(summary.total_outstanding_balance)
+                  : formatCurrency(students.reduce((sum, student) => sum + Math.abs(parseFloat(student.current_balance || 0)), 0))
+                }
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

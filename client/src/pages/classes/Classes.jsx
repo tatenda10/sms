@@ -19,6 +19,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import BASE_URL from '../../contexts/Api';
 import axios from 'axios';
+import AddGradelevelClass from './gradelevel/AddGradelevelClass';
 
 const Classes = () => {
   const { token } = useAuth();
@@ -34,6 +35,7 @@ const Classes = () => {
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddGradelevelClassModal, setShowAddGradelevelClassModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState(null);
   const [formData, setFormData] = useState({
@@ -309,19 +311,7 @@ const Classes = () => {
       
       const className = formData.name;
       showToast(`Class ${className} has been successfully added!`, 'success');
-      
-      // If on add-class tab, switch to classes tab and reset form
-      if (activeTab === 'add-class') {
-        setActiveTab('classes');
-        setFormData({
-          name: '',
-          stream_id: '',
-          capacity: '',
-          homeroom_teacher_employee_number: ''
-        });
-      } else {
-        handleCloseModal();
-      }
+      handleCloseModal();
     } catch (err) {
       console.error('Error adding class:', err);
       let errorMessage = 'An unexpected error occurred';
@@ -882,7 +872,6 @@ const Classes = () => {
   // Tabs configuration
   const tabs = [
     { id: 'classes', name: 'Classes', icon: faSchool },
-    { id: 'add-class', name: 'Add Gradelevel Class', icon: faPlus },
     { id: 'term-year', name: 'Class Term Year', icon: faCalendarAlt },
     { id: 'configurations', name: 'Class Configurations', icon: faCog },
     { id: 'close-term', name: 'Close to Term', icon: faLock }
@@ -914,11 +903,11 @@ const Classes = () => {
         <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {activeTab === 'classes' && (
           <button
-            onClick={handleOpenModal}
+              onClick={() => setShowAddGradelevelClassModal(true)}
             className="btn-checklist"
           >
             <FontAwesomeIcon icon={faPlus} />
-            Add Class
+              Add Grade Level Class
           </button>
           )}
         </div>
@@ -1134,129 +1123,19 @@ const Classes = () => {
       </div>
         )}
 
-        {/* Add Gradelevel Class Tab */}
-        {activeTab === 'add-class' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FontAwesomeIcon icon={faPlus} style={{ color: '#2563eb' }} />
-                Add New Gradelevel Class
-              </h3>
-              
-              {formError && (
-                <div style={{ 
-                  padding: '10px', 
-                  background: '#fee2e2', 
-                  color: '#dc2626', 
-                  fontSize: '0.75rem', 
-                  marginBottom: '16px', 
-                  borderRadius: '4px' 
-                }}>
-                  {formError}
-                </div>
-              )}
-
-              <form onSubmit={handleSave} className="modal-form" style={{ maxWidth: '600px' }}>
-                <div className="form-group">
-                  <label className="form-label">
-                    Class Name <span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    className="form-control"
-                    placeholder="Enter class name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">
-                    Stream <span className="required">*</span>
-                  </label>
-                  <select
-                    name="stream_id"
-                    className="form-control"
-                    value={formData.stream_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select stream</option>
-                    {streams.map((stream) => (
-                      <option key={stream.id} value={stream.id}>
-                        {stream.name} - {stream.stage}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Capacity</label>
-                  <input
-                    type="number"
-                    name="capacity"
-                    className="form-control"
-                    placeholder="Enter capacity (optional)"
-                    value={formData.capacity}
-                    onChange={handleInputChange}
-                    min="1"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Homeroom Teacher</label>
-                  <select
-                    name="homeroom_teacher_employee_number"
-                    className="form-control"
-                    value={formData.homeroom_teacher_employee_number}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select teacher (optional)</option>
-                    {teachers.map((teacher) => (
-                      <option key={teacher.id} value={teacher.employee_id}>
-                        {teacher.full_name || `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim()}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                  <button 
-                    type="submit"
-                    className="modal-btn modal-btn-confirm" 
-                    disabled={!isFormValid() || isLoading}
-                    style={{ padding: '8px 16px' }}
-                  >
-                    {isLoading ? 'Saving...' : 'Save Class'}
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setFormData({
-                        name: '',
-                        stream_id: '',
-                        capacity: '',
-                        homeroom_teacher_employee_number: ''
-                      });
-                      setFormError(null);
-                    }}
-                    className="modal-btn modal-btn-cancel"
-                    style={{ padding: '8px 16px' }}
-                  >
-                    Clear
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
 
         {/* Class Term Year Tab */}
         {activeTab === 'term-year' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="ecl-table-container" style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            flex: 1, 
+            overflow: 'auto', 
+            minHeight: 0,
+            padding: 0,
+            height: '100%'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 0 16px 0', flexShrink: 0 }}>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                 Class Term Year Management
               </h3>
@@ -1279,68 +1158,58 @@ const Classes = () => {
                 No class term year records found. Use "Bulk Populate" to create records.
               </div>
             ) : (
-              <div className="ecl-table-container" style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                flex: 1, 
-                overflow: 'auto', 
-                minHeight: 0,
-                padding: 0,
-                height: '100%'
-              }}>
-                <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
-                  <thead style={{ 
-                    position: 'sticky', 
-                    top: 0, 
-                    zIndex: 10, 
-                    background: 'var(--sidebar-bg)' 
-                  }}>
-                    <tr>
-                      <th style={{ padding: '6px 10px' }}>CLASS NAME</th>
-                      <th style={{ padding: '6px 10px' }}>STREAM</th>
-                      <th style={{ padding: '6px 10px' }}>TERM</th>
-                      <th style={{ padding: '6px 10px' }}>ACADEMIC YEAR</th>
-                      <th style={{ padding: '6px 10px' }}>START DATE</th>
-                      <th style={{ padding: '6px 10px' }}>END DATE</th>
+              <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+                <thead style={{ 
+                  position: 'sticky', 
+                  top: 0, 
+                  zIndex: 10, 
+                  background: 'var(--sidebar-bg)' 
+                }}>
+                  <tr>
+                    <th style={{ padding: '6px 10px' }}>CLASS NAME</th>
+                    <th style={{ padding: '6px 10px' }}>STREAM</th>
+                    <th style={{ padding: '6px 10px' }}>TERM</th>
+                    <th style={{ padding: '6px 10px' }}>ACADEMIC YEAR</th>
+                    <th style={{ padding: '6px 10px' }}>START DATE</th>
+                    <th style={{ padding: '6px 10px' }}>END DATE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {classTermYears.map((record, index) => (
+                    <tr 
+                      key={record.id} 
+                      style={{ 
+                        height: '32px', 
+                        backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                      }}
+                    >
+                      <td style={{ padding: '4px 10px' }}>{record.class_name || 'N/A'}</td>
+                      <td style={{ padding: '4px 10px' }}>{record.stream_name || 'N/A'}</td>
+                      <td style={{ padding: '4px 10px' }}>Term {record.term}</td>
+                      <td style={{ padding: '4px 10px' }}>{record.academic_year}</td>
+                      <td style={{ padding: '4px 10px' }}>{record.start_date ? new Date(record.start_date).toLocaleDateString() : 'N/A'}</td>
+                      <td style={{ padding: '4px 10px' }}>{record.end_date ? new Date(record.end_date).toLocaleDateString() : 'N/A'}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {classTermYears.map((record, index) => (
-                      <tr 
-                        key={record.id} 
-                        style={{ 
-                          height: '32px', 
-                          backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6' 
-                        }}
-                      >
-                        <td style={{ padding: '4px 10px' }}>{record.class_name || 'N/A'}</td>
-                        <td style={{ padding: '4px 10px' }}>{record.stream_name || 'N/A'}</td>
-                        <td style={{ padding: '4px 10px' }}>Term {record.term}</td>
-                        <td style={{ padding: '4px 10px' }}>{record.academic_year}</td>
-                        <td style={{ padding: '4px 10px' }}>{record.start_date ? new Date(record.start_date).toLocaleDateString() : 'N/A'}</td>
-                        <td style={{ padding: '4px 10px' }}>{record.end_date ? new Date(record.end_date).toLocaleDateString() : 'N/A'}</td>
-                      </tr>
-                    ))}
-                    {/* Empty placeholder rows to always show 25 rows */}
-                    {Array.from({ length: Math.max(0, 25 - classTermYears.length) }).map((_, index) => (
-                      <tr 
-                        key={`empty-${index}`}
-                        style={{ 
-                          height: '32px', 
-                          backgroundColor: (classTermYears.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6' 
-                        }}
-                      >
-                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
-                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
-                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
-                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
-                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
-                        <td style={{ padding: '4px 10px' }}>&nbsp;</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                  {/* Empty placeholder rows to always show 25 rows */}
+                  {Array.from({ length: Math.max(0, 25 - classTermYears.length) }).map((_, index) => (
+                    <tr 
+                      key={`empty-${index}`}
+                      style={{ 
+                        height: '32px', 
+                        backgroundColor: (classTermYears.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6' 
+                      }}
+                    >
+                      <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                      <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                      <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                      <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                      <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                      <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         )}
@@ -2608,6 +2477,33 @@ const Classes = () => {
               >
                 Bulk Populate
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Gradelevel Class Modal */}
+      {showAddGradelevelClassModal && (
+        <div className="modal-overlay" onClick={() => setShowAddGradelevelClassModal(false)}>
+          <div 
+            className="modal-dialog" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title">Add Grade Level Class</h3>
+              <button className="modal-close-btn" onClick={() => setShowAddGradelevelClassModal(false)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <AddGradelevelClass onClose={() => {
+                setShowAddGradelevelClassModal(false);
+                fetchGradelevelClasses(); // Refresh the classes list
+              }} />
             </div>
           </div>
         </div>

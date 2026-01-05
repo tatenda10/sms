@@ -1,359 +1,326 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faSearch, 
-  faFilter,
-  faEye,
-  faCalendarAlt,
-  faDollarSign,
-  faTag,
-  faUser,
-  faChevronLeft,
-  faChevronRight
+  faEye
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import BASE_URL from '../../contexts/Api';
 import axios from 'axios';
-import ErrorModal from '../../components/ErrorModal';
 
-const WaiverManagement = () => {
+const WaiverManagement = forwardRef((props, ref) => {
   const { token } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [waivers, setWaivers] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    totalPages: 0
+    currentPage: 1,
+    totalPages: 1,
+    totalWaivers: 0,
+    limit: 25,
+    hasNextPage: false,
+    hasPreviousPage: false
   });
 
-  // Filters
-  const [filters, setFilters] = useState({
-    search: '',
-    category_id: '',
-    start_date: '',
-    end_date: '',
-    term: '',
-    academic_year: ''
-  });
-
-  // Error modal state
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  // Live search effect with debouncing
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      setActiveSearchTerm(searchTerm);
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   useEffect(() => {
-    fetchCategories();
     fetchWaivers();
+  }, [pagination.currentPage, activeSearchTerm]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchWaivers();
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    fetchWaivers();
-  }, [pagination.page, filters]);
-
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get(`${BASE_URL}/waivers/categories`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setCategories(response.data.data || []);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+  // Expose refresh method to parent
+  useImperativeHandle(ref, () => ({
+    refresh: () => {
+      fetchWaivers();
     }
-  };
+  }));
 
   const fetchWaivers = async () => {
-    setLoading(true);
     try {
+      setTableLoading(true);
+      setError('');
+
       const params = new URLSearchParams({
-        page: pagination.page,
-        limit: pagination.limit,
-        ...filters
+        page: pagination.currentPage,
+        limit: pagination.limit
       });
+
+      if (activeSearchTerm) {
+        params.append('search', activeSearchTerm.trim());
+      }
 
       const response = await axios.get(`${BASE_URL}/waivers/all?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setWaivers(response.data.data.waivers || []);
-      setPagination(prev => ({
-        ...prev,
-        ...response.data.data.pagination
-      }));
+      if (response.data.success) {
+        setWaivers(response.data.data.waivers || []);
+        const paginationData = response.data.data.pagination || {};
+        setPagination(prev => ({
+          ...prev,
+          totalPages: paginationData.totalPages || 1,
+          totalWaivers: paginationData.total || 0,
+          hasNextPage: paginationData.page < paginationData.totalPages,
+          hasPreviousPage: paginationData.page > 1
+        }));
+      }
     } catch (error) {
       console.error('Error fetching waivers:', error);
-      setErrorMessage('Failed to fetch waivers');
-      setShowErrorModal(true);
+      setError('Failed to fetch waivers');
+      setWaivers([]);
     } finally {
       setLoading(false);
+      setTableLoading(false);
     }
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setActiveSearchTerm('');
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
-  const handlePageChange = (newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+  const handlePageChange = (page) => {
+    setPagination(prev => ({ ...prev, currentPage: page }));
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-GB');
   };
 
-  const formatAmount = (amount) => {
-    return `$${parseFloat(amount).toFixed(2)}`;
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(Math.abs(amount || 0));
   };
 
   const getCategoryName = (description) => {
-    // Extract category from description (e.g., "Fee Waiver - Staff Child: reason")
-    const match = description.match(/Fee Waiver - ([^:]+):/);
+    const match = description?.match(/Fee Waiver - ([^:]+):/);
     return match ? match[1] : 'Unknown';
   };
 
-  const getTermAndYear = (waiver) => {
-    // Use direct fields if available, otherwise fallback to parsing description
-    return {
-      term: waiver.term || 'N/A',
-      year: waiver.academic_year || 'N/A'
-    };
-  };
+  const displayStart = waivers.length > 0 ? (pagination.currentPage - 1) * pagination.limit + 1 : 0;
+  const displayEnd = Math.min(pagination.currentPage * pagination.limit, pagination.totalWaivers);
+
+  if (loading && waivers.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading waivers...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-3">
-
-        {/* Filters */}
-        <div className="bg-white border border-gray-200 p-3 mb-3">
-          <h3 className="text-xs font-medium text-gray-900 mb-2">Filters</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
-              <div className="relative">
-                <FontAwesomeIcon icon={faSearch} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
-                <input
-                  type="text"
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                  placeholder="Student name or reg number..."
-                  className="w-full pl-6 pr-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
-              <div className="relative">
-                <FontAwesomeIcon icon={faTag} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
-                <select
-                  value={filters.category_id}
-                  onChange={(e) => handleFilterChange('category_id', e.target.value)}
-                  className="w-full pl-6 pr-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+    <>
+      {/* Filters Section */}
+      <div className="report-filters" style={{ flexShrink: 0 }}>
+        <div className="report-filters-left">
+          {/* Search Bar */}
+          <div className="filter-group">
+            <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <FontAwesomeIcon icon={faSearch} className="search-icon" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by student name or registration number..."
+                className="filter-input search-input"
+                style={{ width: '300px' }}
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    padding: '4px 6px',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    color: 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '20px',
+                    height: '20px'
+                  }}
+                  title="Clear search"
                 >
-                  <option value="">All Categories</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.category_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
-              <div className="relative">
-                <FontAwesomeIcon icon={faCalendarAlt} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
-                <input
-                  type="date"
-                  value={filters.start_date}
-                  onChange={(e) => handleFilterChange('start_date', e.target.value)}
-                  className="w-full pl-6 pr-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">End Date</label>
-              <div className="relative">
-                <FontAwesomeIcon icon={faCalendarAlt} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
-                <input
-                  type="date"
-                  value={filters.end_date}
-                  onChange={(e) => handleFilterChange('end_date', e.target.value)}
-                  className="w-full pl-6 pr-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Term</label>
-              <div className="relative">
-                <FontAwesomeIcon icon={faCalendarAlt} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
-                <select
-                  value={filters.term || ''}
-                  onChange={(e) => handleFilterChange('term', e.target.value)}
-                  className="w-full pl-6 pr-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                >
-                  <option value="">All Terms</option>
-                  <option value="Term 1">Term 1</option>
-                  <option value="Term 2">Term 2</option>
-                  <option value="Term 3">Term 3</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Academic Year</label>
-              <div className="relative">
-                <FontAwesomeIcon icon={faCalendarAlt} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs" />
-                <input
-                  type="text"
-                  value={filters.academic_year || ''}
-                  onChange={(e) => handleFilterChange('academic_year', e.target.value)}
-                  placeholder="e.g., 2025"
-                  className="w-full pl-6 pr-2 py-1.5 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                />
-              </div>
+                  ×
+                </button>
+              )}
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Waivers List */}
-        <div className="bg-white border border-gray-200 p-3">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-xs font-medium text-gray-900">
-              Waivers ({pagination.total})
-            </h3>
-            <div className="text-xs text-gray-500">
-              Page {pagination.page} of {pagination.totalPages}
-            </div>
+      {/* Error Display */}
+      {error && (
+        <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Table Container */}
+      <div className="report-content-container ecl-table-container" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        overflow: 'auto',
+        minHeight: 0,
+        padding: 0,
+        height: '100%'
+      }}>
+        {tableLoading && waivers.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+            Loading waivers...
           </div>
-
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="text-gray-500">Loading waivers...</div>
-            </div>
-          ) : waivers.length === 0 ? (
-            <div className="text-center py-8">
-              <FontAwesomeIcon icon={faFilter} className="text-4xl text-gray-300 mb-4" />
-              <div className="text-gray-500">No waivers found</div>
-              <div className="text-xs text-gray-400 mt-2">Try adjusting your filters</div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {waivers.map((waiver) => (
-                <div
+        ) : (
+          <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+            <thead style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              background: 'var(--sidebar-bg)'
+            }}>
+              <tr>
+                <th style={{ padding: '6px 10px' }}>STUDENT NAME</th>
+                <th style={{ padding: '6px 10px' }}>REG NUMBER</th>
+                <th style={{ padding: '6px 10px', textAlign: 'right' }}>WAIVER AMOUNT</th>
+                <th style={{ padding: '6px 10px' }}>CATEGORY</th>
+                <th style={{ padding: '6px 10px' }}>TERM</th>
+                <th style={{ padding: '6px 10px' }}>ACADEMIC YEAR</th>
+                <th style={{ padding: '6px 10px' }}>DATE</th>
+                <th style={{ padding: '6px 10px' }}>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {waivers.map((waiver, index) => (
+                <tr
                   key={waiver.id}
-                  className="border border-gray-200 p-3 rounded-lg hover:border-gray-300 transition-colors"
+                  style={{
+                    height: '32px',
+                    backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                  }}
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h4 className="font-medium text-gray-900 text-sm">
-                          {waiver.Name} {waiver.Surname}
-                        </h4>
-                        <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                          {formatAmount(waiver.waiver_amount)}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-                        <div>
-                          <span className="text-gray-600">Registration:</span>
-                          <span className="ml-1 font-medium">{waiver.student_reg_number}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Category:</span>
-                          <span className="ml-1 font-medium">{getCategoryName(waiver.description)}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Date:</span>
-                          <span className="ml-1 font-medium">{formatDate(waiver.transaction_date)}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Term:</span>
-                          <span className="ml-1 font-medium">{getTermAndYear(waiver).term}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Year:</span>
-                          <span className="ml-1 font-medium">{getTermAndYear(waiver).year}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Processed by:</span>
-                          <span className="ml-1 font-medium">{waiver.created_by || 'System'}</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-2">
-                        <span className="text-gray-600 text-xs">Reason:</span>
-                        <p className="text-xs text-gray-800 mt-1">{waiver.description}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2">
+                  <td style={{ padding: '4px 10px', fontWeight: 600 }}>
+                    {waiver.Name} {waiver.Surname}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {waiver.student_reg_number}
+                  </td>
+                  <td style={{ padding: '4px 10px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>
+                    {formatCurrency(waiver.waiver_amount)}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {getCategoryName(waiver.description)}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {waiver.term || 'N/A'}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {waiver.academic_year || 'N/A'}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    {formatDate(waiver.transaction_date)}
+                  </td>
+                  <td style={{ padding: '4px 10px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                       <button
-                        className="text-gray-600 hover:text-gray-900 p-1"
-                        title="View details"
+                        onClick={() => console.log('View waiver:', waiver.id)}
+                        style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="View"
                       >
-                        <FontAwesomeIcon icon={faEye} className="text-xs" />
+                        <FontAwesomeIcon icon={faEye} />
                       </button>
                     </div>
-                  </div>
-                </div>
+                  </td>
+                </tr>
               ))}
+              {/* Empty placeholder rows to always show 25 rows */}
+              {Array.from({ length: Math.max(0, pagination.limit - waivers.length) }).map((_, index) => (
+                <tr
+                  key={`empty-${index}`}
+                  style={{
+                    height: '32px',
+                    backgroundColor: (waivers.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                  }}
+                >
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                  <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Pagination Footer */}
+      <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+        <div className="table-footer-left">
+          Showing {displayStart} to {displayEnd} of {pagination.totalWaivers || 0} results.
+        </div>
+        <div className="table-footer-right">
+          {!activeSearchTerm && pagination.totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(Math.max(1, pagination.currentPage - 1))}
+                disabled={pagination.currentPage === 1}
+              >
+                Previous
+              </button>
+              <span className="pagination-info" style={{ fontSize: '0.7rem' }}>
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.currentPage + 1))}
+                disabled={pagination.currentPage === pagination.totalPages}
+              >
+                Next
+              </button>
             </div>
           )}
-
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-2 mt-6">
-              <button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
-                className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FontAwesomeIcon icon={faChevronLeft} className="text-xs" />
-              </button>
-              
-              <div className="flex space-x-1">
-                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`px-2 py-1 text-xs border rounded ${
-                        pagination.page === page
-                          ? 'bg-gray-900 text-white border-gray-900'
-                          : 'border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.totalPages}
-                className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <FontAwesomeIcon icon={faChevronRight} className="text-xs" />
-              </button>
+          {!activeSearchTerm && pagination.totalPages <= 1 && (
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+              All data displayed
             </div>
           )}
         </div>
-
-        {/* Error Modal */}
-        <ErrorModal
-          isOpen={showErrorModal}
-          onClose={() => setShowErrorModal(false)}
-          message={errorMessage}
-        />
-    </div>
+      </div>
+    </>
   );
-};
+});
+
+WaiverManagement.displayName = 'WaiverManagement';
 
 export default WaiverManagement;

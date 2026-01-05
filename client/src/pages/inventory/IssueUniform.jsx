@@ -14,7 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import BASE_URL from '../../contexts/Api';
 
-const IssueUniform = ({ onClose }) => {
+const IssueUniform = ({ onClose, onUniformIssued }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { token } = useAuth();
@@ -145,21 +145,43 @@ const IssueUniform = ({ onClose }) => {
   const handleItemSearch = (e) => {
     const searchValue = e.target.value;
     setItemSearchTerm(searchValue);
-    setShowItemResults(searchValue.length > 0);
-  };
-
-  const searchItems = () => {
-    setShowItemResults(itemSearchTerm.length > 0);
   };
 
   const handleStudentSearch = (e) => {
     const searchValue = e.target.value;
     setStudentSearchTerm(searchValue);
-    setShowStudentResults(searchValue.length > 0);
   };
 
-  const searchStudents = async () => {
-    if (!studentSearchTerm.trim()) {
+  // Auto-search items with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (itemSearchTerm.trim().length >= 1) {
+        setShowItemResults(true);
+      } else {
+        setShowItemResults(false);
+      }
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(timeoutId);
+  }, [itemSearchTerm]);
+
+  // Auto-search students with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (studentSearchTerm.trim().length >= 2) {
+        performStudentSearch(studentSearchTerm);
+      } else {
+        setStudents([]);
+        setShowStudentResults(false);
+      }
+    }, 500); // 500ms debounce delay
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentSearchTerm]);
+
+  const performStudentSearch = async (searchTerm) => {
+    if (!searchTerm.trim()) {
       setStudents([]);
       setShowStudentResults(false);
       return;
@@ -167,11 +189,11 @@ const IssueUniform = ({ onClose }) => {
 
     setLoadingStudents(true);
     try {
-      console.log('🔍 Searching students with term:', studentSearchTerm);
+      console.log('🔍 Searching students with term:', searchTerm);
 
       // First try to get exact match by registration number
       try {
-        const exactResponse = await axios.get(`${BASE_URL}/students/${studentSearchTerm.trim()}`, {
+        const exactResponse = await axios.get(`${BASE_URL}/students/${searchTerm.trim()}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -187,7 +209,7 @@ const IssueUniform = ({ onClose }) => {
       }
 
       // If no exact match, try the search API
-      const response = await axios.get(`${BASE_URL}/students/search?query=${studentSearchTerm}`, {
+      const response = await axios.get(`${BASE_URL}/students/search?query=${searchTerm}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('📊 Students search response:', response.data);
@@ -283,6 +305,11 @@ const IssueUniform = ({ onClose }) => {
 
       console.log('✅ Issue created successfully:', response.data);
       setSuccess('Uniform issued successfully!');
+
+      // Refresh inventory list if callback provided
+      if (onUniformIssued) {
+        onUniformIssued();
+      }
 
       // Reset form and close modal after 2 seconds
       setTimeout(() => {
@@ -385,17 +412,24 @@ const IssueUniform = ({ onClose }) => {
       )}
 
       <form onSubmit={handleSubmit} className="modal-form">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Item Selection */}
-        <div className="search-container">
-          <label className="block text-xs font-medium text-gray-700 mb-2">
-            Search Uniform *
+        <div className="form-group search-container">
+          <label className="form-label">
+            Search Uniform <span style={{ color: '#dc2626' }}>*</span>
           </label>
-          <div className="flex gap-2 mb-3">
-            <div className="relative flex-1">
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{ position: 'relative' }}>
               <FontAwesomeIcon
                 icon={faSearch}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                style={{ 
+                  position: 'absolute', 
+                  left: '12px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  color: '#9ca3af',
+                  fontSize: '0.75rem'
+                }}
               />
               <input
                 type="text"
@@ -403,22 +437,23 @@ const IssueUniform = ({ onClose }) => {
                 value={itemSearchTerm}
                 onChange={handleItemSearch}
                 disabled={loadingItems}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 disabled:bg-gray-100"
+                className="form-control"
+                style={{ paddingLeft: '36px' }}
               />
             </div>
-            <button
-              type="button"
-              onClick={searchItems}
-              disabled={loadingItems || !itemSearchTerm.trim()}
-              className="px-4 py-2 bg-gray-900 text-white text-xs hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed rounded"
-            >
-              Search
-            </button>
           </div>
 
           {/* Item Search Results */}
           {showItemResults && (
-            <div className="mb-3 max-h-48 overflow-y-auto border border-gray-200 bg-white rounded shadow-sm">
+            <div style={{
+              marginBottom: '8px',
+              maxHeight: '200px',
+              overflowY: 'auto',
+              border: '1px solid #e5e7eb',
+              background: '#fff',
+              borderRadius: '4px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
               {filteredItems.length > 0 ? (
                 filteredItems.map((item) => (
                   <div
@@ -428,20 +463,33 @@ const IssueUniform = ({ onClose }) => {
                       setShowItemResults(false);
                       setItemSearchTerm('');
                     }}
-                    className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    style={{
+                      padding: '12px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #f3f4f6',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-blue-100 p-2 rounded">
-                        <FontAwesomeIcon icon={faTshirt} className="text-blue-600 text-xs" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ background: '#dbeafe', padding: '8px', borderRadius: '4px' }}>
+                        <FontAwesomeIcon icon={faTshirt} style={{ color: '#2563eb', fontSize: '0.75rem' }} />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-gray-900">{item.name || 'N/A'}</p>
-                        <p className="text-xs text-gray-500">Ref: {item.reference || 'N/A'}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-xs text-gray-600">Stock: {item.current_stock || 0}</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#111827', margin: 0 }}>
+                          {item.name || 'N/A'}
+                        </p>
+                        <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '2px 0' }}>
+                          Ref: {item.reference || 'N/A'}
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>
+                            Stock: {item.current_stock || 0}
+                          </span>
                           {getStatusBadge(getStockStatus(item.current_stock || 0))}
                         </div>
-                        <p className="text-xs font-medium text-green-600 mt-1">
+                        <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#059669', marginTop: '4px', margin: '4px 0 0 0' }}>
                           {formatCurrency(item.unit_price || 0)}
                         </p>
                       </div>
@@ -449,7 +497,7 @@ const IssueUniform = ({ onClose }) => {
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-center text-gray-500 text-xs">
+                <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280', fontSize: '0.75rem' }}>
                   No items found matching "{itemSearchTerm}"
                 </div>
               )}
@@ -457,19 +505,31 @@ const IssueUniform = ({ onClose }) => {
           )}
 
           {selectedItem && (
-            <div className="bg-blue-50 border border-blue-200 p-3 mb-3 rounded">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-100 p-2 rounded">
-                  <FontAwesomeIcon icon={faTshirt} className="text-blue-600 text-xs" />
+            <div style={{
+              background: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              padding: '12px',
+              borderRadius: '4px',
+              marginBottom: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ background: '#dbeafe', padding: '8px', borderRadius: '4px' }}>
+                  <FontAwesomeIcon icon={faTshirt} style={{ color: '#2563eb', fontSize: '0.75rem' }} />
                 </div>
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-gray-900">{selectedItem.name || 'N/A'}</p>
-                  <p className="text-xs text-gray-500">Ref: {selectedItem.reference || 'N/A'}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-xs text-gray-600">Stock: {selectedItem.current_stock || 0}</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#111827', margin: 0 }}>
+                    {selectedItem.name || 'N/A'}
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '2px 0' }}>
+                    Ref: {selectedItem.reference || 'N/A'}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>
+                      Stock: {selectedItem.current_stock || 0}
+                    </span>
                     {getStatusBadge(getStockStatus(selectedItem.current_stock || 0))}
                   </div>
-                  <p className="text-xs font-medium text-green-600 mt-1">
+                  <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#059669', marginTop: '4px', margin: '4px 0 0 0' }}>
                     {formatCurrency(selectedItem.unit_price || 0)}
                   </p>
                 </div>
@@ -479,38 +539,46 @@ const IssueUniform = ({ onClose }) => {
         </div>
 
         {/* Student Selection */}
-        <div className="search-container">
-          <label className="block text-xs font-medium text-gray-700 mb-2">
-            Search Student *
+        <div className="form-group search-container">
+          <label className="form-label">
+            Search Student <span style={{ color: '#dc2626' }}>*</span>
           </label>
-          <div className="flex gap-2 mb-3">
-            <div className="relative flex-1">
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{ position: 'relative' }}>
               <FontAwesomeIcon
                 icon={faUserGraduate}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                style={{ 
+                  position: 'absolute', 
+                  left: '12px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  color: '#9ca3af',
+                  fontSize: '0.75rem'
+                }}
               />
               <input
                 type="text"
-                placeholder={loadingStudents ? "Loading students..." : "Search by name or registration number..."}
+                placeholder={loadingStudents ? "Loading students..." : "Search by name or registration number (type at least 2 characters)..."}
                 value={studentSearchTerm}
                 onChange={handleStudentSearch}
                 disabled={loadingStudents}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 disabled:bg-gray-100"
+                className="form-control"
+                style={{ paddingLeft: '36px' }}
               />
             </div>
-            <button
-              type="button"
-              onClick={searchStudents}
-              disabled={loadingStudents || !studentSearchTerm.trim()}
-              className="px-4 py-2 bg-gray-900 text-white text-xs hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed rounded"
-            >
-              Search
-            </button>
           </div>
 
           {/* Student Search Results */}
           {showStudentResults && (
-            <div className="mb-3 max-h-48 overflow-y-auto border border-gray-200 bg-white rounded shadow-sm">
+            <div style={{
+              marginBottom: '8px',
+              maxHeight: '200px',
+              overflowY: 'auto',
+              border: '1px solid #e5e7eb',
+              background: '#fff',
+              borderRadius: '4px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+            }}>
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student) => (
                   <div
@@ -520,18 +588,27 @@ const IssueUniform = ({ onClose }) => {
                       setShowStudentResults(false);
                       setStudentSearchTerm('');
                     }}
-                    className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                    style={{
+                      padding: '12px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #f3f4f6',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-green-100 p-2 rounded">
-                        <FontAwesomeIcon icon={faUserGraduate} className="text-green-600 text-xs" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ background: '#d1fae5', padding: '8px', borderRadius: '4px' }}>
+                        <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#059669', fontSize: '0.75rem' }} />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-gray-900">
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#111827', margin: 0 }}>
                           {student.Name || ''} {student.Surname || ''}
                         </p>
-                        <p className="text-xs text-gray-500">ID: {student.RegNumber || 'N/A'}</p>
-                        <p className="text-xs text-gray-600">
+                        <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '2px 0' }}>
+                          ID: {student.RegNumber || 'N/A'}
+                        </p>
+                        <p style={{ fontSize: '0.75rem', color: '#4b5563', margin: '2px 0 0 0' }}>
                           {student.Class || 'No class'} • {student.Gender || 'N/A'}
                         </p>
                       </div>
@@ -539,7 +616,7 @@ const IssueUniform = ({ onClose }) => {
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-center text-gray-500 text-xs">
+                <div style={{ padding: '12px', textAlign: 'center', color: '#6b7280', fontSize: '0.75rem' }}>
                   No students found matching "{studentSearchTerm}"
                 </div>
               )}
@@ -547,17 +624,25 @@ const IssueUniform = ({ onClose }) => {
           )}
 
           {selectedStudent && (
-            <div className="bg-green-50 border border-green-200 p-3 mb-3 rounded">
-              <div className="flex items-center space-x-3">
-                <div className="bg-green-100 p-2 rounded">
-                  <FontAwesomeIcon icon={faUserGraduate} className="text-green-600 text-xs" />
+            <div style={{
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              padding: '12px',
+              borderRadius: '4px',
+              marginBottom: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ background: '#d1fae5', padding: '8px', borderRadius: '4px' }}>
+                  <FontAwesomeIcon icon={faUserGraduate} style={{ color: '#059669', fontSize: '0.75rem' }} />
                 </div>
-                <div className="flex-1">
-                  <p className="text-xs font-medium text-gray-900">
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#111827', margin: 0 }}>
                     {selectedStudent.Name || ''} {selectedStudent.Surname || ''}
                   </p>
-                  <p className="text-xs text-gray-500">ID: {selectedStudent.RegNumber || 'N/A'}</p>
-                  <p className="text-xs text-gray-600">
+                  <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '2px 0' }}>
+                    ID: {selectedStudent.RegNumber || 'N/A'}
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: '#4b5563', margin: '2px 0 0 0' }}>
                     {selectedStudent.Class || 'No class'} • {selectedStudent.Gender || 'N/A'}
                   </p>
                 </div>
@@ -567,10 +652,10 @@ const IssueUniform = ({ onClose }) => {
         </div>
 
         {/* Issue Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-2">
-              Quantity *
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+          <div className="form-group">
+            <label className="form-label">
+              Quantity <span style={{ color: '#dc2626' }}>*</span>
             </label>
             <input
               type="number"
@@ -580,37 +665,37 @@ const IssueUniform = ({ onClose }) => {
               required
               min="1"
               max={selectedItem?.current_stock || 1}
-              className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+              className="form-control"
             />
             {selectedItem && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px', margin: '4px 0 0 0' }}>
                 Available: {selectedItem.current_stock}
               </p>
             )}
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-2">
-              Issue Date
-            </label>
+          <div className="form-group">
+            <label className="form-label">Issue Date</label>
             <input
               type="date"
               name="issueDate"
               value={issueForm.issueDate}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+              className="form-control"
             />
           </div>
         </div>
 
         {/* Payment Information */}
-        <div className="border-t pt-6">
-          <h4 className="text-xs font-medium text-gray-900 mb-4">Payment Details</h4>
+        <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827', marginBottom: '16px' }}>
+            Payment Details
+          </h4>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">
-                Amount *
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+            <div className="form-group">
+              <label className="form-label">
+                Amount <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <input
                 type="number"
@@ -620,21 +705,21 @@ const IssueUniform = ({ onClose }) => {
                 required
                 step="0.01"
                 min="0"
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 placeholder="0.00"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">
-                Currency *
+            <div className="form-group">
+              <label className="form-label">
+                Currency <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 name="currency_id"
                 value={issueForm.currency_id}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
               >
                 <option value="">Select Currency</option>
                 {currencies.map((currency) => (
@@ -645,15 +730,13 @@ const IssueUniform = ({ onClose }) => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">
-                Payment Method
-              </label>
+            <div className="form-group">
+              <label className="form-label">Payment Method</label>
               <select
                 name="paymentMethod"
                 value={issueForm.paymentMethod}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
               >
                 {paymentMethods.map(method => (
                   <option key={method.value} value={method.value}>{method.label}</option>
@@ -661,15 +744,13 @@ const IssueUniform = ({ onClose }) => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">
-                Payment Status
-              </label>
+            <div className="form-group">
+              <label className="form-label">Payment Status</label>
               <select
                 name="paymentStatus"
                 value={issueForm.paymentStatus}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
               >
                 <option value="pending">Pending</option>
                 <option value="paid">Paid</option>
@@ -677,16 +758,14 @@ const IssueUniform = ({ onClose }) => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">
-                Reference Number
-              </label>
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <label className="form-label">Reference Number</label>
               <input
                 type="text"
                 name="reference"
                 value={issueForm.reference}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 placeholder="Enter reference number (optional)"
               />
             </div>
@@ -694,40 +773,46 @@ const IssueUniform = ({ onClose }) => {
         </div>
 
         {/* Notes */}
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-2">
-            Notes
-          </label>
+        <div className="form-group">
+          <label className="form-label">Notes</label>
           <textarea
             name="notes"
             value={issueForm.notes}
             onChange={handleInputChange}
             rows="3"
-            className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+            className="form-control"
             placeholder="Additional notes about the issue..."
+            style={{ resize: 'vertical' }}
           />
         </div>
 
         {/* Summary */}
         {selectedItem && selectedStudent && (
-          <div className="bg-gray-50 p-4 border border-gray-200 rounded">
-            <h4 className="text-xs font-medium text-gray-900 mb-3">Issue Summary</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div style={{
+            background: '#f9fafb',
+            padding: '16px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '4px'
+          }}>
+            <h4 style={{ fontSize: '0.875rem', fontWeight: 500, color: '#111827', marginBottom: '12px' }}>
+              Issue Summary
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', fontSize: '0.75rem' }}>
               <div>
-                <span className="text-gray-600">Student:</span>
-                <span className="ml-2 font-medium text-gray-900">
+                <span style={{ color: '#4b5563' }}>Student:</span>
+                <span style={{ marginLeft: '8px', fontWeight: 500, color: '#111827', display: 'block', marginTop: '2px' }}>
                   {selectedStudent.Name || ''} {selectedStudent.Surname || ''} ({selectedStudent.RegNumber || 'N/A'})
                 </span>
               </div>
               <div>
-                <span className="text-gray-600">Uniform:</span>
-                <span className="ml-2 font-medium text-gray-900">
+                <span style={{ color: '#4b5563' }}>Uniform:</span>
+                <span style={{ marginLeft: '8px', fontWeight: 500, color: '#111827', display: 'block', marginTop: '2px' }}>
                   {selectedItem.name || 'N/A'}
                 </span>
               </div>
               <div>
-                <span className="text-gray-600">Total Amount:</span>
-                <span className="ml-2 font-medium text-gray-900">
+                <span style={{ color: '#4b5563' }}>Total Amount:</span>
+                <span style={{ marginLeft: '8px', fontWeight: 500, color: '#111827', display: 'block', marginTop: '2px' }}>
                   {formatCurrency((parseFloat(issueForm.quantity) || 0) * (parseFloat(issueForm.amount) || 0))}
                 </span>
               </div>
@@ -737,7 +822,7 @@ const IssueUniform = ({ onClose }) => {
         </div>
 
         {/* Form Actions */}
-        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
           <button
             type="button"
             onClick={onClose}

@@ -18,12 +18,22 @@ import {
   faPlus,
   faTshirt,
   faCogs,
-  faColumns
+  faColumns,
+  faBed,
+  faBalanceScale,
+  faHistory,
+  faFileInvoiceDollar,
+  faHandHoldingUsd,
+  faFileContract,
+  faUserShield,
+  faKey
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useSports } from '../contexts/SportsContext';
 import { useAccounting } from '../contexts/AccountingContext';
 import { useInventory } from '../contexts/InventoryContext';
+import { useBilling } from '../contexts/BillingContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/brooklyne.png';
 
@@ -46,6 +56,14 @@ const Header = ({ onMenuClick }) => {
   const inventoryContext = useInventory();
   const { activeTab: activeInventoryTab, setActiveTab: onInventoryTabChange } = inventoryContext;
 
+  // Get billing context (will return default if not in provider)
+  const billingContext = useBilling();
+  const { activeTab: activeBillingTab, setActiveTab: onBillingTabChange } = billingContext;
+
+  // Get settings context (will return default if not in provider)
+  const settingsContext = useSettings();
+  const { activeTab: activeSettingsTab, setActiveTab: onSettingsTabChange } = settingsContext;
+
   // Check if we're on the sports page
   const isSportsPage = location.pathname.startsWith('/dashboard/sports');
 
@@ -58,6 +76,12 @@ const Header = ({ onMenuClick }) => {
 
   // Check if we're on an inventory page
   const isInventoryPage = location.pathname.startsWith('/dashboard/inventory');
+
+  // Check if we're on a billing page
+  const isBillingPage = location.pathname.startsWith('/dashboard/billing');
+
+  // Check if we're on a settings page
+  const isSettingsPage = location.pathname.startsWith('/dashboard/settings');
 
   // Set active accounting tab based on current route
   useEffect(() => {
@@ -83,6 +107,14 @@ const Header = ({ onMenuClick }) => {
       // Can be extended to set based on route if needed
     }
   }, [location.pathname, isInventoryPage, onInventoryTabChange]);
+
+  // Set active billing tab based on current route
+  useEffect(() => {
+    if (isBillingPage && onBillingTabChange) {
+      // Keep the current tab from context
+      // Can be extended to set based on route if needed
+    }
+  }, [location.pathname, isBillingPage, onBillingTabChange]);
 
   // Determine active accounting tab from route (for display)
   const getActiveAccountingTab = () => {
@@ -292,9 +324,129 @@ const Header = ({ onMenuClick }) => {
             {/* Empty when on inventory page */}
           </div>
         )}
-        {!isSportsPage && !isAccountingPage && !isInventoryPage && (
+        {isBillingPage && (
+          <div className="top-nav-center" style={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0'
+          }}>
+            {[
+              { id: 'record-payment', label: 'Record Payment', icon: faMoneyBillWave },
+              { id: 'outstanding-balance', label: 'Outstanding Balance', icon: faBalanceScale },
+              { id: 'opening-balance', label: 'Student Opening Balance', icon: faHistory },
+              { id: 'waivers', label: 'Waivers', icon: faHandHoldingUsd },
+              { id: 'invoice-structures', label: 'Invoice Structures', icon: faFileContract }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (onBillingTabChange) {
+                    onBillingTabChange(tab.id);
+                  }
+                }}
+                className={`top-nav-menu-item ${activeBillingTab === tab.id ? 'active' : ''}`}
+                style={{
+                  padding: '12px 20px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: activeBillingTab === tab.id ? '#2563eb' : 'var(--text-secondary)',
+                  borderBottom: activeBillingTab === tab.id ? '2px solid #2563eb' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  borderTop: 'none',
+                  borderLeft: 'none',
+                  borderRight: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeBillingTab !== tab.id) {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeBillingTab !== tab.id) {
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={tab.icon} style={{ fontSize: '0.75rem' }} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {isSettingsPage && (
+          <div className="top-nav-center" style={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0'
+          }}>
+            {[
+              { id: 'users', label: 'User Management', icon: faUsers },
+              { id: 'roles', label: 'Role Management', icon: faUserShield },
+              { id: 'password', label: 'Change Password', icon: faKey }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (onSettingsTabChange) {
+                    onSettingsTabChange(tab.id);
+                  }
+                }}
+                className={`top-nav-menu-item ${activeSettingsTab === tab.id ? 'active' : ''}`}
+                style={{
+                  padding: '12px 20px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: activeSettingsTab === tab.id ? '#2563eb' : 'var(--text-secondary)',
+                  borderBottom: activeSettingsTab === tab.id ? '2px solid #2563eb' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  borderTop: 'none',
+                  borderLeft: 'none',
+                  borderRight: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                onMouseEnter={(e) => {
+                  if (activeSettingsTab !== tab.id) {
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.02)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (activeSettingsTab !== tab.id) {
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                <FontAwesomeIcon icon={tab.icon} style={{ fontSize: '0.75rem' }} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {!isSportsPage && !isAccountingPage && !isInventoryPage && !isBillingPage && !isSettingsPage && (
           <div className="top-nav-center">
-            {/* Empty when not on sports, accounting, or inventory page */}
+            {/* Empty when not on sports, accounting, inventory, billing, or settings page */}
           </div>
         )}
 

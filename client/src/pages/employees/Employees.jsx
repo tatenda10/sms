@@ -722,17 +722,65 @@ const Employees = () => {
                             style={{ background: employeeFormData.generateEmployeeId ? '#f3f4f6' : 'white' }}
                           />
                           {!showEditModal && (
-                            <div style={{ marginTop: '5px', display: 'flex', alignItems: 'center' }}>
+                            <label style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '8px 12px',
+                              background: employeeFormData.generateEmployeeId ? '#eff6ff' : '#f9fafb',
+                              border: `1px solid ${employeeFormData.generateEmployeeId ? '#bfdbfe' : '#e5e7eb'}`,
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              marginTop: '8px'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!employeeFormData.generateEmployeeId) {
+                                e.currentTarget.style.borderColor = '#d1d5db';
+                                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!employeeFormData.generateEmployeeId) {
+                                e.currentTarget.style.borderColor = '#e5e7eb';
+                                e.currentTarget.style.backgroundColor = '#f9fafb';
+                              }
+                            }}
+                            >
                               <input
                                 type="checkbox"
                                 id="generateEmployeeId"
                                 name="generateEmployeeId"
                                 checked={employeeFormData.generateEmployeeId}
                                 onChange={handleFormInputChange}
-                                style={{ marginRight: '5px' }}
+                                style={{
+                                  cursor: 'pointer',
+                                  width: '16px',
+                                  height: '16px',
+                                  accentColor: '#2563eb',
+                                  margin: 0,
+                                  flexShrink: 0
+                                }}
                               />
-                              <label htmlFor="generateEmployeeId" style={{ fontSize: '0.65rem', color: '#6b7280' }}>Auto-generate ID</label>
-                            </div>
+                              <div style={{ flex: 1 }}>
+                                <span style={{
+                                  fontSize: '0.875rem',
+                                  color: 'var(--text-primary)',
+                                  fontWeight: employeeFormData.generateEmployeeId ? 500 : 400
+                                }}>
+                                  Auto-generate Employee ID
+                                </span>
+                                <div style={{
+                                  fontSize: '0.7rem',
+                                  color: 'var(--text-secondary)',
+                                  marginTop: '2px'
+                                }}>
+                                  {employeeFormData.generateEmployeeId 
+                                    ? 'Employee ID will be automatically generated (V + 4 numbers + letter)' 
+                                    : 'Manually enter employee ID'}
+                                </div>
+                              </div>
+                            </label>
                           )}
                         </div>
 
@@ -922,16 +970,64 @@ const Employees = () => {
                                 />
                               </div>
                             </div>
-                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center' }}>
+                            <label style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '8px 12px',
+                              background: account.isPrimary ? '#f0fdf4' : '#f9fafb',
+                              border: `1px solid ${account.isPrimary ? '#bbf7d0' : '#e5e7eb'}`,
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              marginTop: '8px'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!account.isPrimary) {
+                                e.currentTarget.style.borderColor = '#d1d5db';
+                                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!account.isPrimary) {
+                                e.currentTarget.style.borderColor = '#e5e7eb';
+                                e.currentTarget.style.backgroundColor = '#f9fafb';
+                              }
+                            }}
+                            >
                               <input
                                 type="checkbox"
                                 id={`primary_${index}`}
                                 checked={account.isPrimary}
                                 onChange={(e) => handleBankAccountChange(index, 'isPrimary', e.target.checked)}
-                                style={{ marginRight: '5px' }}
+                                style={{
+                                  cursor: 'pointer',
+                                  width: '16px',
+                                  height: '16px',
+                                  accentColor: account.isPrimary ? '#10b981' : '#6b7280',
+                                  margin: 0,
+                                  flexShrink: 0
+                                }}
                               />
-                              <label htmlFor={`primary_${index}`} style={{ fontSize: '0.65rem', color: '#6b7280' }}>Set as primary account</label>
-                            </div>
+                              <div style={{ flex: 1 }}>
+                                <span style={{
+                                  fontSize: '0.875rem',
+                                  color: 'var(--text-primary)',
+                                  fontWeight: account.isPrimary ? 500 : 400
+                                }}>
+                                  {account.isPrimary ? 'Primary Account' : 'Set as Primary Account'}
+                                </span>
+                                <div style={{
+                                  fontSize: '0.7rem',
+                                  color: 'var(--text-secondary)',
+                                  marginTop: '2px'
+                                }}>
+                                  {account.isPrimary 
+                                    ? 'This is the primary account for payments' 
+                                    : 'Mark this account as the primary payment account'}
+                                </div>
+                              </div>
+                            </label>
                           </div>
                         ))}
                       </div>
