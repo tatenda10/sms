@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import BASE_URL from '../../contexts/Api';
 
-const Configurations = () => {
+const Configurations = ({ onClose }) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -221,62 +221,78 @@ const Configurations = () => {
   ];
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+    <div>
       {/* Header */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-sm font-medium text-gray-900">Inventory Categories</h3>
-            <p className="text-xs text-gray-600">Manage item categories and organization</p>
-          </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-gray-900 text-white px-4 py-2 text-xs hover:bg-gray-800 flex items-center rounded"
-          >
-            <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add Category
-          </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div>
+          <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
+            Inventory Categories
+          </h4>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Manage item categories and organization</p>
         </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="btn-checklist"
+        >
+          <FontAwesomeIcon icon={faPlus} />
+          Add Category
+        </button>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Success Message */}
+      {success && (
+        <div style={{ padding: '10px', background: '#d1fae5', color: '#065f46', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+          {success}
+        </div>
+      )}
+
       {/* Categories Display */}
-      <div className="bg-white border border-gray-200 rounded">
-        <div className="p-4">
+      <div style={{ border: '1px solid var(--border-color)', borderRadius: '4px' }}>
+        <div style={{ padding: '16px' }}>
           {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="text-sm text-gray-600 mt-2">Loading categories...</p>
+            <div style={{ textAlign: 'center', padding: '32px' }}>
+              <div className="loading-spinner" style={{ margin: '0 auto' }}></div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '12px' }}>Loading categories...</p>
             </div>
           ) : categories.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-gray-600">No categories found. Create your first category to get started.</p>
+            <div style={{ textAlign: 'center', padding: '32px' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>No categories found. Create your first category to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
               {categories.map((category) => (
-                <div key={category.id} className="bg-gray-50 border border-gray-200 p-4 rounded">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`p-2 rounded ${getColorClass(category.color)}`}>
-                      <FontAwesomeIcon icon={getIconComponent(category.icon)} className="text-sm" />
+                <div key={category.id} style={{ background: '#f9fafb', border: '1px solid var(--border-color)', padding: '16px', borderRadius: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div className={`p-2 rounded ${getColorClass(category.color)}`} style={{ borderRadius: '4px' }}>
+                      <FontAwesomeIcon icon={getIconComponent(category.icon)} style={{ fontSize: '0.875rem' }} />
                     </div>
-                    <div className="flex space-x-2">
+                    <div style={{ display: 'flex', gap: '8px' }}>
                       <button
                         onClick={() => handleEditCategory(category)}
-                        className="text-blue-600 hover:text-blue-900 text-xs"
+                        style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="Edit"
                       >
-                        <FontAwesomeIcon icon={faEdit} />
+                        <FontAwesomeIcon icon={faEdit} style={{ fontSize: '0.75rem' }} />
                       </button>
                       <button
                         onClick={() => handleDeleteCategory(category.id)}
-                        className="text-red-600 hover:text-red-900 text-xs"
+                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="Delete"
                       >
-                        <FontAwesomeIcon icon={faTrash} />
+                        <FontAwesomeIcon icon={faTrash} style={{ fontSize: '0.75rem' }} />
                       </button>
                     </div>
                   </div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-1">{category.name}</h4>
-                  <p className="text-xs text-gray-600 mb-2">{category.description}</p>
-                  <span className="text-xs text-gray-500">{category.item_count || 0} items</span>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '4px' }}>{category.name}</h4>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>{category.description}</p>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{category.item_count || 0} items</span>
                 </div>
               ))}
             </div>
@@ -286,73 +302,83 @@ const Configurations = () => {
 
       {/* Add/Edit Category Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-medium text-gray-900">
-                  {editingCategory ? 'Edit Category' : 'Add New Category'}
-                </h3>
-                <button
-                  onClick={resetForm}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <FontAwesomeIcon icon={faTimes} />
-                </button>
-              </div>
+        <div className="modal-overlay" onClick={resetForm} style={{ zIndex: 10000 }}>
+          <div 
+            className="modal-dialog" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '500px', width: '90%' }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title">
+                {editingCategory ? 'Edit Category' : 'Add New Category'}
+              </h3>
+              <button className="modal-close-btn" onClick={resetForm}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
 
-              <form className="space-y-4">
+              <form className="modal-form">
                 {/* Category Name */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Category Name *
+                <div className="form-group">
+                  <label className="form-label">
+                    Category Name <span style={{ color: '#dc2626' }}>*</span>
                   </label>
                   <input
                     type="text"
                     value={newCategory.name}
                     onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                    className="form-control"
                     placeholder="e.g., Uniforms"
                   />
                 </div>
 
                 {/* Icon Selection */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Icon
-                  </label>
-                  <div className="grid grid-cols-5 gap-2">
+                <div className="form-group">
+                  <label className="form-label">Icon</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
                     {iconOptions.map((option) => (
                       <button
                         key={option.value}
                         type="button"
                         onClick={() => setNewCategory(prev => ({ ...prev, icon: option.value }))}
-                        className={`p-2 border text-xs ${newCategory.icon === option.value
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                        style={{
+                          padding: '8px',
+                          border: `1px solid ${newCategory.icon === option.value ? '#2563eb' : 'var(--border-color)'}`,
+                          borderRadius: '4px',
+                          background: newCategory.icon === option.value ? '#eff6ff' : 'transparent',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem'
+                        }}
                       >
-                        <FontAwesomeIcon icon={option.icon} className="text-sm" />
+                        <FontAwesomeIcon icon={option.icon} style={{ fontSize: '0.875rem' }} />
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Color Selection */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Color
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
+                <div className="form-group">
+                  <label className="form-label">Color</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                     {colorOptions.map((option) => (
                       <button
                         key={option.value}
                         type="button"
                         onClick={() => setNewCategory(prev => ({ ...prev, color: option.value }))}
-                        className={`p-2 border text-xs ${option.class} ${newCategory.color === option.value
-                            ? 'ring-2 ring-blue-500'
-                            : 'hover:opacity-80'
-                          }`}
+                        className={`${option.class}`}
+                        style={{
+                          padding: '8px',
+                          border: `1px solid var(--border-color)`,
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          outline: newCategory.color === option.value ? '2px solid #2563eb' : 'none',
+                          outlineOffset: '2px'
+                        }}
                       >
                         {option.label}
                       </button>
@@ -361,57 +387,49 @@ const Configurations = () => {
                 </div>
 
                 {/* Description */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
+                <div className="form-group">
+                  <label className="form-label">Description</label>
                   <textarea
                     value={newCategory.description}
                     onChange={(e) => setNewCategory(prev => ({ ...prev, description: e.target.value }))}
                     rows="2"
-                    className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                    className="form-control"
                     placeholder="Brief description of the category..."
                   />
                 </div>
 
-                {/* Error Message */}
-                {error && (
-                  <div className="text-red-600 text-xs">{error}</div>
-                )}
-
                 {/* Form Actions */}
-                <div className="flex justify-end space-x-3 pt-4">
+                <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded"
+                    className="modal-btn modal-btn-cancel"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={editingCategory ? handleUpdateCategory : handleAddCategory}
-                    className="px-4 py-2 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 rounded"
+                    className="modal-btn modal-btn-primary"
+                    disabled={loading}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
-                    {editingCategory ? 'Update' : 'Add'} Category
+                    {loading ? (
+                      <>
+                        <div className="loading-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></div>
+                        {editingCategory ? 'Updating...' : 'Adding...'}
+                      </>
+                    ) : (
+                      <>
+                        <FontAwesomeIcon icon={editingCategory ? faEdit : faPlus} style={{ fontSize: '0.7rem' }} />
+                        {editingCategory ? 'Update' : 'Add'} Category
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Success/Error Messages */}
-      {success && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 shadow-lg z-50 text-xs rounded">
-          {success}
-        </div>
-      )}
-
-      {error && (
-        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 shadow-lg z-50 text-xs rounded">
-          {error}
         </div>
       )}
     </div>

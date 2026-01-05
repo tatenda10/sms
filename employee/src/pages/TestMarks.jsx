@@ -28,6 +28,9 @@ const TestMarks = () => {
     const [selectedTerm, setSelectedTerm] = useState('1');
     const [selectedType, setSelectedType] = useState('');
 
+    // Pagination
+    const limit = 25;
+
     // Modals
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showAddMarksModal, setShowAddMarksModal] = useState(false);
@@ -242,11 +245,23 @@ const TestMarks = () => {
                     <h2 className="report-title">Test Marks</h2>
                     <p className="report-subtitle">Manage student test scores and performance tracking.</p>
                 </div>
+                <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="btn-checklist"
+                        disabled={!selectedClass}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                        <FontAwesomeIcon icon={faPlus} />
+                        Add Test
+                    </button>
+                </div>
             </div>
 
             {/* Filters Section */}
             <div className="report-filters" style={{ flexShrink: 0 }}>
-                <div className="report-filters-left" style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="report-filters-left">
+                    {/* Search Bar */}
                     <form onSubmit={handleSearch} className="filter-group">
                         <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                             <FontAwesomeIcon icon={faSearch} className="search-icon" />
@@ -254,11 +269,13 @@ const TestMarks = () => {
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search tests..."
+                                placeholder="Search by name, ID or department..."
                                 className="filter-input search-input"
+                                style={{ width: '300px' }}
                             />
                             {searchTerm && (
                                 <button
+                                    type="button"
                                     onClick={() => {
                                         setSearchTerm('');
                                         setActiveSearchTerm('');
@@ -287,15 +304,16 @@ const TestMarks = () => {
                         </div>
                     </form>
 
+                    {/* Class Filter */}
                     <div className="filter-group">
-                        <label className="filter-label">Class:</label>
+                        <label className="filter-label" style={{ marginRight: '8px' }}>Class:</label>
                         <select
                             value={selectedClass}
                             onChange={(e) => setSelectedClass(e.target.value)}
                             className="filter-input"
-                            style={{ minWidth: '180px' }}
+                            style={{ minWidth: '150px' }}
                         >
-                            <option value="">Select Class</option>
+                            <option value="">All Classes</option>
                             {subjectClasses.map(cls => (
                                 <option key={cls.id} value={cls.id}>
                                     {cls.subject_name} ({cls.stream_name})
@@ -304,13 +322,14 @@ const TestMarks = () => {
                         </select>
                     </div>
 
+                    {/* Term Filter */}
                     <div className="filter-group">
-                        <label className="filter-label">Term:</label>
+                        <label className="filter-label" style={{ marginRight: '8px' }}>Term:</label>
                         <select
                             value={selectedTerm}
                             onChange={(e) => setSelectedTerm(e.target.value)}
                             className="filter-input"
-                            style={{ minWidth: '100px' }}
+                            style={{ minWidth: '150px' }}
                         >
                             <option value="1">Term 1</option>
                             <option value="2">Term 2</option>
@@ -318,8 +337,9 @@ const TestMarks = () => {
                         </select>
                     </div>
 
+                    {/* Year Filter */}
                     <div className="filter-group">
-                        <label className="filter-label">Year:</label>
+                        <label className="filter-label" style={{ marginRight: '8px' }}>Year:</label>
                         <input
                             type="text"
                             value={selectedYear}
@@ -331,76 +351,124 @@ const TestMarks = () => {
                 </div>
             </div>
 
-            {/* Table Section */}
-            <div className="report-content-container ecl-table-container" style={{ flex: 1, overflowY: 'auto' }}>
-                <table className="ecl-table">
-                    <thead>
-                        <tr>
-                            <th>TEST TITLE</th>
-                            <th>TYPE</th>
-                            <th>MAX MARK</th>
-                            <th>DATE</th>
-                            <th>ACTIONS</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {!selectedClass ? (
+            {/* Error Display */}
+            {error && (
+                <div style={{ padding: '10px 30px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem' }}>
+                    {error}
+                </div>
+            )}
+
+            {/* Table Container */}
+            <div className="report-content-container ecl-table-container" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                overflow: 'auto',
+                minHeight: 0,
+                padding: 0,
+                height: '100%'
+            }}>
+                {loading && tests.length === 0 ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
+                        Loading tests...
+                    </div>
+                ) : (
+                    <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+                        <thead style={{
+                            position: 'sticky',
+                            top: 0,
+                            zIndex: 10,
+                            background: 'var(--sidebar-bg)'
+                        }}>
                             <tr>
-                                <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                                    Please select a subject class to view tests.
-                                </td>
+                                <th style={{ padding: '6px 10px' }}>TEST TITLE</th>
+                                <th style={{ padding: '6px 10px' }}>TYPE</th>
+                                <th style={{ padding: '6px 10px' }}>MAX MARK</th>
+                                <th style={{ padding: '6px 10px' }}>DATE</th>
+                                <th style={{ padding: '6px 10px' }}>ACTIONS</th>
                             </tr>
-                        ) : loading ? (
-                            <tr>
-                                <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                                    <FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: '10px' }} />
-                                    Loading tests...
-                                </td>
-                            </tr>
-                        ) : tests.length === 0 ? (
-                            <tr>
-                                <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-                                    No tests found for the selected criteria.
-                                </td>
-                            </tr>
-                        ) : (
-                            tests.map((test) => (
-                                <tr key={test.id}>
-                                    <td style={{ fontWeight: '600' }}>{test.title}</td>
-                                    <td>{test.test_type}</td>
-                                    <td>{test.max_mark}</td>
-                                    <td>{new Date(test.created_at).toLocaleDateString()}</td>
-                                    <td className="actions-cell">
-                                        <button
-                                            onClick={() => handleOpenAddMarks(test)}
-                                            className="view-btn"
-                                            title="Manage Marks"
-                                        >
-                                            <FontAwesomeIcon icon={faEdit} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteTest(test.id)}
-                                            className="delete-btn"
-                                            title="Delete Test"
-                                        >
-                                            <FontAwesomeIcon icon={faTrash} />
-                                        </button>
+                        </thead>
+                        <tbody>
+                            {!selectedClass ? (
+                                <tr style={{ height: '32px', backgroundColor: '#fafafa' }}>
+                                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                                        Please select a subject class to view tests.
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ) : tests.length === 0 ? (
+                                <tr style={{ height: '32px', backgroundColor: '#fafafa' }}>
+                                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                                        No tests found for the selected criteria.
+                                    </td>
+                                </tr>
+                            ) : (
+                                <>
+                                    {tests.map((test, index) => (
+                                        <tr
+                                            key={test.id}
+                                            style={{
+                                                height: '32px',
+                                                backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                                            }}
+                                        >
+                                            <td style={{ padding: '4px 10px' }}>{test.title}</td>
+                                            <td style={{ padding: '4px 10px' }}>{test.test_type}</td>
+                                            <td style={{ padding: '4px 10px' }}>{test.max_mark}</td>
+                                            <td style={{ padding: '4px 10px' }}>{new Date(test.created_at).toLocaleDateString()}</td>
+                                            <td style={{ padding: '4px 10px' }}>
+                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                    <button
+                                                        onClick={() => handleOpenAddMarks(test)}
+                                                        style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                                        title="Manage Marks"
+                                                    >
+                                                        <FontAwesomeIcon icon={faEdit} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteTest(test.id)}
+                                                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                                        title="Delete Test"
+                                                    >
+                                                        <FontAwesomeIcon icon={faTrash} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        ))}
+                                    {/* Empty placeholder rows to match Employees.jsx (limit 25) */}
+                                    {Array.from({ length: Math.max(0, limit - tests.length) }).map((_, index) => (
+                                        <tr
+                                            key={`empty-${index}`}
+                                            style={{
+                                                height: '32px',
+                                                backgroundColor: (tests.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                                            }}
+                                        >
+                                            <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                                            <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                                            <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                                            <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                                            <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                                        </tr>
+                                    ))}
+                                </>
+                            )}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
-            {/* Footer Section */}
-            <div className="ecl-table-footer" style={{ borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', background: 'white' }}>
-                <div className="footer-info" style={{ fontSize: '0.75rem', color: '#666' }}>
-                    Showing {tests.length} results.
+            {/* Pagination Footer */}
+            <div className="ecl-table-footer" style={{ flexShrink: 0 }}>
+                <div className="table-footer-left">
+                    Showing {tests.length > 0 ? 1 : 0} to {tests.length} of {tests.length || 0} results.
                 </div>
-                <div className="pagination-controls" style={{ display: 'flex', gap: '5px' }}>
-                    <button className="pagination-btn disabled" disabled>Previous</button>
-                    <button className="pagination-btn disabled" disabled>Next</button>
+                <div className="table-footer-right">
+                    {tests.length > 0 && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                            All data displayed
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -476,20 +544,31 @@ const TestMarks = () => {
                                     Loading students...
                                 </div>
                             ) : (
-                                <table className="ecl-table sticky-header">
-                                    <thead>
+                                <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
+                                    <thead style={{
+                                        position: 'sticky',
+                                        top: 0,
+                                        zIndex: 10,
+                                        background: 'var(--sidebar-bg)'
+                                    }}>
                                         <tr>
-                                            <th>REG NUMBER</th>
-                                            <th>STUDENT NAME</th>
-                                            <th style={{ textAlign: 'right' }}>MARK</th>
+                                            <th style={{ padding: '6px 10px' }}>REG NUMBER</th>
+                                            <th style={{ padding: '6px 10px' }}>STUDENT NAME</th>
+                                            <th style={{ padding: '6px 10px', textAlign: 'right' }}>MARK</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {studentMarks.map((record, index) => (
-                                            <tr key={record.regNumber}>
-                                                <td style={{ fontFamily: 'monospace' }}>{record.regNumber}</td>
-                                                <td>{record.name}</td>
-                                                <td style={{ textAlign: 'right' }}>
+                                            <tr
+                                                key={record.regNumber}
+                                                style={{
+                                                    height: '32px',
+                                                    backgroundColor: index % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                                                }}
+                                            >
+                                                <td style={{ padding: '4px 10px', fontFamily: 'monospace' }}>{record.regNumber}</td>
+                                                <td style={{ padding: '4px 10px' }}>{record.name}</td>
+                                                <td style={{ padding: '4px 10px', textAlign: 'right' }}>
                                                     <input
                                                         type="number"
                                                         value={record.mark}
@@ -499,10 +578,39 @@ const TestMarks = () => {
                                                             newList[index].mark = e.target.value;
                                                             setStudentMarks(newList);
                                                         }}
-                                                        className="w-20 border border-gray-300 px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-gray-400"
+                                                        style={{
+                                                            width: '80px',
+                                                            border: '1px solid #d1d5db',
+                                                            padding: '2px 6px',
+                                                            fontSize: '0.75rem',
+                                                            textAlign: 'right',
+                                                            outline: 'none'
+                                                        }}
+                                                        onFocus={(e) => {
+                                                            e.target.style.borderColor = '#2563eb';
+                                                            e.target.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.1)';
+                                                        }}
+                                                        onBlur={(e) => {
+                                                            e.target.style.borderColor = '#d1d5db';
+                                                            e.target.style.boxShadow = 'none';
+                                                        }}
                                                         placeholder="0"
                                                     />
                                                 </td>
+                                            </tr>
+                                        ))}
+                                        {/* Empty placeholder rows to match Employees.jsx (limit 25) */}
+                                        {Array.from({ length: Math.max(0, limit - studentMarks.length) }).map((_, index) => (
+                                            <tr
+                                                key={`empty-${index}`}
+                                                style={{
+                                                    height: '32px',
+                                                    backgroundColor: (studentMarks.length + index) % 2 === 0 ? '#fafafa' : '#f3f4f6'
+                                                }}
+                                            >
+                                                <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                                                <td style={{ padding: '4px 10px' }}>&nbsp;</td>
+                                                <td style={{ padding: '4px 10px' }}>&nbsp;</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -603,30 +711,47 @@ const TestMarks = () => {
           font-size: 0.75rem;
         }
         .ecl-table thead th {
-          background-color: #1e3a5f;
+          background-color: var(--sidebar-bg);
           color: white;
           text-align: left;
-          padding: 10px 15px;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.025em;
-          border-right: 1px solid rgba(255,255,255,0.1);
+          letter-spacing: 0.5px;
+          border-left: 2px solid rgba(255, 255, 255, 0.3);
+          border-right: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .ecl-table thead th:first-child {
+          border-left: none;
         }
         .ecl-table thead th:last-child {
           border-right: none;
         }
         .ecl-table tbody tr {
-          border-bottom: 1px solid #e5e7eb;
+          height: 32px;
         }
         .ecl-table tbody tr:nth-child(even) {
-          background-color: #f9fafb;
+          background-color: #fafafa;
         }
-        .ecl-table tbody tr:hover {
+        .ecl-table tbody tr:nth-child(odd) {
           background-color: #f3f4f6;
         }
+        .ecl-table tbody tr:hover {
+          background: rgba(249, 250, 251, 0.5);
+        }
         .ecl-table td {
-          padding: 10px 15px;
-          color: #374151;
+          padding: 4px 10px;
+          color: var(--text-primary);
+          vertical-align: top;
+          line-height: 1.2;
+          border-left: 2px solid #e5e7eb;
+          border-right: 2px solid #e5e7eb;
+          font-size: 0.75rem;
+        }
+        .ecl-table td:first-child {
+          border-left: none;
+        }
+        .ecl-table td:last-child {
+          border-right: none;
         }
         .actions-cell {
           display: flex;
@@ -649,20 +774,30 @@ const TestMarks = () => {
         }
         .pagination-btn {
           padding: 6px 12px;
-          border: 1px solid #d1d5db;
           background: white;
-          font-size: 0.75rem;
-          color: #374151;
-          cursor: pointer;
+          border: 1px solid #e5e7eb;
           border-radius: 4px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          cursor: pointer;
+          transition: all 0.2s;
+          font-family: 'Nunito', sans-serif;
         }
-        .pagination-btn:hover:not(.disabled) {
+        .pagination-btn:hover:not(:disabled) {
           background: #f3f4f6;
+          border-color: #d1d5db;
         }
-        .pagination-btn.disabled {
-          color: #9ca3af;
+        .pagination-btn:disabled {
+          opacity: 0.5;
           cursor: not-allowed;
-          background: #f9fafb;
+        }
+        .pagination-info {
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: var(--text-primary);
+          min-width: 80px;
+          text-align: center;
         }
       `}</style>
         </div>

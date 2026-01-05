@@ -111,25 +111,33 @@ const Profile = () => {
       case 'personal':
         return (
           <div className="space-y-6">
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faEnvelope} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Email Address</p>
-                <p className="text-sm text-gray-900 font-medium">{profileData.email || 'N/A'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faEnvelope} className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Email Address</p>
+                  <p className="text-sm text-gray-900 font-medium break-words">{profileData.email || 'N/A'}</p>
+                </div>
+              </div>
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faPhone} className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Phone Number</p>
+                  <p className="text-sm text-gray-900 font-medium">{profileData.phone_number || 'N/A'}</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faPhone} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Phone Number</p>
-                <p className="text-sm text-gray-900 font-medium">{profileData.phone_number || 'N/A'}</p>
+            <div className="flex items-start">
+              <div className="flex-shrink-0 w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center mr-4">
+                <FontAwesomeIcon icon={faMapMarkerAlt} className="h-4 w-4 text-purple-600" />
               </div>
-            </div>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faMapMarkerAlt} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Home Address</p>
-                <p className="text-sm text-gray-900 font-medium">{profileData.address || 'N/A'}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Home Address</p>
+                <p className="text-sm text-gray-900 font-medium break-words">{profileData.address || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -138,32 +146,42 @@ const Profile = () => {
       case 'employment':
         return (
           <div className="space-y-6">
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faBuilding} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Department</p>
-                <p className="text-sm text-gray-900 font-medium">{profileData.department_name || 'N/A'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faBuilding} className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Department</p>
+                  <p className="text-sm text-gray-900 font-medium">{profileData.department_name || 'N/A'}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faBriefcase} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Position / Job Title</p>
-                <p className="text-sm text-gray-900 font-medium">{profileData.job_title || 'N/A'}</p>
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faBriefcase} className="h-4 w-4 text-indigo-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Position / Job Title</p>
+                  <p className="text-sm text-gray-900 font-medium">{profileData.job_title || 'N/A'}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Hire Date</p>
-                <p className="text-sm text-gray-900 font-medium">{formatDate(profileData.hire_date)}</p>
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-orange-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Hire Date</p>
+                  <p className="text-sm text-gray-900 font-medium">{formatDate(profileData.hire_date)}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faCreditCard} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Salary Tier / Amount</p>
-                <p className="text-sm text-gray-900 font-medium">{profileData.salary ? `$${profileData.salary.toLocaleString()}` : 'N/A'}</p>
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faCreditCard} className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Salary Tier / Amount</p>
+                  <p className="text-sm text-gray-900 font-medium">{profileData.salary ? `$${profileData.salary.toLocaleString()}` : 'N/A'}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -172,25 +190,43 @@ const Profile = () => {
       case 'account':
         return (
           <div className="space-y-6">
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faUser} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">System Username</p>
-                <p className="text-sm text-gray-900 font-medium">{profileData.username || 'N/A'}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faUser} className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">System Username</p>
+                  <p className="text-sm text-gray-900 font-medium">{profileData.username || 'N/A'}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faClock} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Last Login Session</p>
-                <p className="text-sm text-gray-900 font-medium">{formatDateTime(profileData.last_login)}</p>
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faClock} className="h-4 w-4 text-purple-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Last Login Session</p>
+                  <p className="text-sm text-gray-900 font-medium">{formatDateTime(profileData.last_login)}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Initial Password Status</p>
-                <p className="text-sm text-gray-900 font-medium">{profileData.password_set ? 'Password Locked' : 'Temporary Password active'}</p>
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-yellow-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-yellow-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Password Status</p>
+                  <p className="text-sm text-gray-900 font-medium">
+                    {profileData.password_set ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-700">
+                        Password Set
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-700">
+                        Temporary Password
+                      </span>
+                    )}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -199,27 +235,41 @@ const Profile = () => {
       case 'status':
         return (
           <div className="space-y-6">
-            <div className="flex items-center">
-              <div className="mr-4">
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1.5">Employment Status</p>
-                <div className={`inline-flex items-center px-2.5 py-0.5 rounded text-[0.7rem] font-bold ${profileData.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                  {profileData.is_active ? 'ACTIVE' : 'INACTIVE'}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faInfoCircle} className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Employment Status</p>
+                  <div className="mt-1">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold ${
+                      profileData.is_active 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {profileData.is_active ? 'ACTIVE' : 'INACTIVE'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Record Created At</p>
-                <p className="text-sm text-gray-900 font-medium">{formatDateTime(profileData.created_at)}</p>
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Record Created At</p>
+                  <p className="text-sm text-gray-900 font-medium">{formatDateTime(profileData.created_at)}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center">
-              <FontAwesomeIcon icon={faCalendarAlt} className="h-4 w-4 text-gray-400 mr-4" />
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-0.5">Last Record Update</p>
-                <p className="text-sm text-gray-900 font-medium">{formatDateTime(profileData.updated_at)}</p>
+              <div className="flex items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center mr-4">
+                  <FontAwesomeIcon icon={faClock} className="h-4 w-4 text-purple-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[0.65rem] uppercase tracking-wider text-gray-500 font-bold mb-1">Last Record Update</p>
+                  <p className="text-sm text-gray-900 font-medium">{formatDateTime(profileData.updated_at)}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -261,7 +311,7 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs (Acting as Filters) */}
+      {/* Navigation Tabs */}
       <div className="report-filters" style={{ flexShrink: 0, paddingBottom: '0' }}>
         <div className="report-filters-left" style={{ overflowX: 'auto', paddingBottom: '10px', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           <style>{`
@@ -273,13 +323,21 @@ const Profile = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center px-4 py-2 text-xs font-bold rounded-md whitespace-nowrap transition-all duration-200
+                  flex items-center px-4 py-2 text-xs font-semibold rounded-md whitespace-nowrap transition-all duration-200
                   ${activeTab === tab.id
-                    ? 'bg-blue-100 text-blue-700 scale-105'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 bg-white border border-gray-200'}
                 `}
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: activeTab === tab.id ? '600' : '500'
+                }}
               >
-                <FontAwesomeIcon icon={tab.icon} className={`mr-2 h-3.5 w-3.5 ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`} />
+                <FontAwesomeIcon 
+                  icon={tab.icon} 
+                  className={`mr-2 h-3.5 w-3.5 ${activeTab === tab.id ? 'text-white' : 'text-gray-400'}`}
+                  style={{ fontSize: '0.7rem' }}
+                />
                 {tab.name}
               </button>
             ))}
@@ -289,7 +347,7 @@ const Profile = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto" style={{ paddingTop: '10px' }}>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full overflow-auto">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 h-full overflow-auto">
           {renderTabContent()}
         </div>
       </div>

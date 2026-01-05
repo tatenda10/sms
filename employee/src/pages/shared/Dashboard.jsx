@@ -14,7 +14,9 @@ import {
   FileText,
   BookOpen,
   GraduationCap,
-  Users
+  Users,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -99,6 +101,38 @@ const Dashboard = () => {
     }
   };
 
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat('en-US').format(num || 0);
+  };
+
+  const MetricCard = ({ title, value, icon: Icon, change, changeType, color = 'blue' }) => {
+    const colorClasses = {
+      blue: 'bg-blue-50 text-blue-600',
+      green: 'bg-green-50 text-green-600',
+      orange: 'bg-orange-50 text-orange-600',
+      purple: 'bg-purple-50 text-purple-600',
+      red: 'bg-red-50 text-red-600'
+    };
+
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow relative" style={{ minHeight: '100px' }}>
+        <div className={`absolute top-3 right-3 p-2 rounded-lg ${colorClasses[color]}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="pr-12">
+          <p className="font-medium text-gray-600 mb-1" style={{ fontSize: '0.75rem' }}>{title}</p>
+          <p className="font-bold text-gray-900 mb-1" style={{ fontSize: '1.1rem' }}>{value}</p>
+          {change && (
+            <div className={`flex items-center ${changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`} style={{ fontSize: '0.7rem' }}>
+              {changeType === 'increase' ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
+              <span>{change}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const quickActions = [
     {
       name: 'Profile',
@@ -162,287 +196,223 @@ const Dashboard = () => {
   ];
 
   return (
-    <div>
+    <div className="w-full space-y-6">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-medium text-gray-900">
-              Welcome back, {employee?.full_name || 'Employee'}!
-            </h1>
-            <p className="mt-1 text-xs text-gray-500">
-              {employee?.job_title} • {employee?.department_name}
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Employee ID</p>
-              <p className="text-sm font-semibold text-gray-900">
-                {employee?.employee_id}
-              </p>
-            </div>
-            <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-gray-600" />
-            </div>
-          </div>
-        </div>
+        <h3 className="report-title">Welcome to Brooklyn</h3>
+        <p className="report-subtitle">Dashboard Overview</p>
       </div>
 
-      <div>
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white border border-gray-200 p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CreditCard className="h-4 w-4 text-green-600" />
-              </div>
-              <div className="ml-3 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs font-medium text-gray-500 truncate">
-                    Available Payslips
-                  </dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    {stats.payslips}
-                  </dd>
-                </dl>
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          title="Available Payslips"
+          value={formatNumber(stats.payslips)}
+          icon={CreditCard}
+          color="green"
+        />
+        <MetricCard
+          title="New Announcements"
+          value={formatNumber(stats.announcements)}
+          icon={Bell}
+          color="orange"
+        />
+        <MetricCard
+          title="Upcoming Events"
+          value={formatNumber(stats.upcomingEvents)}
+          icon={Calendar}
+          color="blue"
+        />
+        <MetricCard
+          title="My Classes"
+          value={formatNumber(classes.length)}
+          icon={BookOpen}
+          color="purple"
+        />
+      </div>
+
+      {/* My Classes Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h4 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>My Classes</h4>
+        {isLoadingClasses ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          </div>
+        ) : classesError ? (
+          <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-xs font-medium text-red-800">Error loading classes</h3>
+                <div className="mt-1 text-xs text-red-700">
+                  <p>{classesError}</p>
+                </div>
               </div>
             </div>
           </div>
-
-          <div className="bg-white border border-gray-200 p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Bell className="h-4 w-4 text-yellow-600" />
-              </div>
-              <div className="ml-3 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs font-medium text-gray-500 truncate">
-                    New Announcements
-                  </dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    {stats.announcements}
-                  </dd>
-                </dl>
-              </div>
-            </div>
+        ) : classes.length === 0 ? (
+          <div className="text-center py-8">
+            <BookOpen className="mx-auto h-8 w-8 text-gray-400" />
+            <h3 className="mt-2 text-xs font-medium text-gray-900">No classes assigned</h3>
+            <p className="mt-1 text-xs text-gray-500">
+              You haven't been assigned to any classes yet.
+            </p>
           </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Subject Classes */}
+            {classes.filter(cls => cls.class_type === 'Subject Class').length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-gray-700 mb-3 flex items-center">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Subject Classes ({classes.filter(cls => cls.class_type === 'Subject Class').length})
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {classes.filter(cls => cls.class_type === 'Subject Class').map((cls) => (
+                    <div 
+                      key={`subject-${cls.id}`} 
+                      className="bg-blue-50 border border-blue-200 p-3 rounded-lg cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-colors"
+                      onClick={() => handleClassClick(cls)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h5 className="text-xs font-medium text-blue-900">{cls.subject_name}</h5>
+                          <p className="text-xs text-blue-700">{cls.subject_code}</p>
+                          <p className="text-xs text-blue-600 mt-1">
+                            {cls.stream_name} {cls.gradelevel_class_name ? `• ${cls.gradelevel_class_name}` : ''}
+                          </p>
+                          {cls.room_id && (
+                            <p className="text-xs text-blue-500 mt-1">Room ID: {cls.room_id}</p>
+                          )}
+                          {cls.capacity && (
+                            <p className="text-xs text-blue-500">Capacity: {cls.capacity}</p>
+                          )}
+                        </div>
+                        <div className="ml-2">
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                            Subject
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          <div className="bg-white border border-gray-200 p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Calendar className="h-4 w-4 text-blue-600" />
+            {/* Grade-Level Classes */}
+            {classes.filter(cls => cls.class_type === 'Grade-Level Class').length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-gray-700 mb-3 flex items-center">
+                  <GraduationCap className="h-4 w-4 mr-2" />
+                  Grade-Level Classes ({classes.filter(cls => cls.class_type === 'Grade-Level Class').length})
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {classes.filter(cls => cls.class_type === 'Grade-Level Class').map((cls) => (
+                    <div 
+                      key={`gradelevel-${cls.id}`} 
+                      className="bg-green-50 border border-green-200 p-3 rounded-lg cursor-pointer hover:bg-green-100 hover:border-green-300 transition-colors"
+                      onClick={() => handleClassClick(cls)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h5 className="text-xs font-medium text-green-900">{cls.name}</h5>
+                          <p className="text-xs text-green-700">{cls.stream_name}</p>
+                          <p className="text-xs text-green-600 mt-1">Stage: {cls.stream_stage}</p>
+                          {cls.capacity && (
+                            <p className="text-xs text-green-500 mt-1">Capacity: {cls.capacity}</p>
+                          )}
+                        </div>
+                        <div className="ml-2">
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                            Homeroom
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="ml-3 w-0 flex-1">
-                <dl>
-                  <dt className="text-xs font-medium text-gray-500 truncate">
-                    Upcoming Events
-                  </dt>
-                  <dd className="text-sm font-medium text-gray-900">
-                    {stats.upcomingEvents}
-                  </dd>
-                </dl>
-              </div>
-            </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Additional Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Quick Actions */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h4 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>Quick Actions</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {quickActions.map((action) => (
+              <a
+                key={action.name}
+                href={action.href}
+                className="group relative bg-white p-4 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 border border-gray-200 hover:border-gray-300 transition-colors rounded-lg"
+              >
+                <div>
+                  <span className={`rounded-lg inline-flex p-2 ${action.color} text-white`}>
+                    <action.icon className="h-4 w-4" />
+                  </span>
+                </div>
+                <div className="mt-3">
+                  <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-600">
+                    {action.name}
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {action.description}
+                  </p>
+                </div>
+              </a>
+            ))}
           </div>
         </div>
 
-        {/* My Classes Section */}
-        <div className="mb-8">
-          <div className="bg-white border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-sm font-medium text-gray-900">My Classes</h3>
-              <p className="text-xs text-gray-500">Classes you are assigned to teach</p>
-            </div>
-            <div className="p-6">
-              {isLoadingClasses ? (
-                <div className="flex items-center justify-center h-32">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                </div>
-              ) : classesError ? (
-                <div className="bg-red-50 border border-red-200 p-4">
-                  <div className="flex">
-                    <div className="ml-3">
-                      <h3 className="text-xs font-medium text-red-800">Error loading classes</h3>
-                      <div className="mt-1 text-xs text-red-700">
-                        <p>{classesError}</p>
+        {/* Recent Activity */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h4 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>Recent Activity</h4>
+          <div className="flow-root">
+            <ul className="-mb-8">
+              {recentActivities.map((activity, activityIdx) => (
+                <li key={activity.id}>
+                  <div className="relative pb-8">
+                    {activityIdx !== recentActivities.length - 1 ? (
+                      <span
+                        className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    <div className="relative flex space-x-3">
+                      <div>
+                        <span className={`h-6 w-6 rounded-full flex items-center justify-center ring-8 ring-white ${
+                          activity.type === 'payslip' ? 'bg-green-500' :
+                          activity.type === 'announcement' ? 'bg-yellow-500' :
+                          'bg-blue-500'
+                        }`}>
+                          {activity.type === 'payslip' ? (
+                            <CreditCard className="h-3 w-3 text-white" />
+                          ) : activity.type === 'announcement' ? (
+                            <Bell className="h-3 w-3 text-white" />
+                          ) : (
+                            <User className="h-3 w-3 text-white" />
+                          )}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                        <div>
+                          <p className="text-xs text-gray-900">
+                            {activity.title}
+                          </p>
+                        </div>
+                        <div className="text-right text-xs whitespace-nowrap text-gray-500">
+                          <Clock className="h-3 w-3 inline mr-1" />
+                          {activity.time}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : classes.length === 0 ? (
-                <div className="text-center py-8">
-                  <BookOpen className="mx-auto h-8 w-8 text-gray-400" />
-                  <h3 className="mt-2 text-xs font-medium text-gray-900">No classes assigned</h3>
-                  <p className="mt-1 text-xs text-gray-500">
-                    You haven't been assigned to any classes yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Subject Classes */}
-                  {classes.filter(cls => cls.class_type === 'Subject Class').length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-medium text-gray-700 mb-3 flex items-center">
-                        <BookOpen className="h-4 w-4 mr-2" />
-                        Subject Classes ({classes.filter(cls => cls.class_type === 'Subject Class').length})
-                      </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {classes.filter(cls => cls.class_type === 'Subject Class').map((cls) => (
-                                  <div 
-                                    key={`subject-${cls.id}`} 
-                                    className="bg-blue-50 border border-blue-200 p-3 cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition-colors"
-                                    onClick={() => handleClassClick(cls)}
-                                  >
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <h5 className="text-xs font-medium text-blue-900">{cls.subject_name}</h5>
-                                        <p className="text-xs text-blue-700">{cls.subject_code}</p>
-                                        <p className="text-xs text-blue-600 mt-1">
-                                          {cls.stream_name} {cls.gradelevel_class_name ? `• ${cls.gradelevel_class_name}` : ''}
-                                        </p>
-                                        {cls.room_id && (
-                                          <p className="text-xs text-blue-500 mt-1">Room ID: {cls.room_id}</p>
-                                        )}
-                                        {cls.capacity && (
-                                          <p className="text-xs text-blue-500">Capacity: {cls.capacity}</p>
-                                        )}
-                                      </div>
-                                      <div className="ml-2">
-                                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800">
-                                          Subject
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Grade-Level Classes */}
-                  {classes.filter(cls => cls.class_type === 'Grade-Level Class').length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-medium text-gray-700 mb-3 flex items-center">
-                        <GraduationCap className="h-4 w-4 mr-2" />
-                        Grade-Level Classes ({classes.filter(cls => cls.class_type === 'Grade-Level Class').length})
-                      </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                {classes.filter(cls => cls.class_type === 'Grade-Level Class').map((cls) => (
-                                  <div 
-                                    key={`gradelevel-${cls.id}`} 
-                                    className="bg-green-50 border border-green-200 p-3 cursor-pointer hover:bg-green-100 hover:border-green-300 transition-colors"
-                                    onClick={() => handleClassClick(cls)}
-                                  >
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <h5 className="text-xs font-medium text-green-900">{cls.name}</h5>
-                                        <p className="text-xs text-green-700">{cls.stream_name}</p>
-                                        <p className="text-xs text-green-600 mt-1">Stage: {cls.stream_stage}</p>
-                                        {cls.capacity && (
-                                          <p className="text-xs text-green-500 mt-1">Capacity: {cls.capacity}</p>
-                                        )}
-                                      </div>
-                                      <div className="ml-2">
-                                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800">
-                                          Homeroom
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Quick Actions */}
-          <div className="bg-white border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-sm font-medium text-gray-900">Quick Actions</h3>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {quickActions.map((action) => (
-                  <a
-                    key={action.name}
-                    href={action.href}
-                    className="group relative bg-white p-4 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 border border-gray-200 hover:border-gray-300 transition-colors"
-                  >
-                    <div>
-                      <span className={`rounded-lg inline-flex p-2 ${action.color} text-white`}>
-                        <action.icon className="h-4 w-4" />
-                      </span>
-                    </div>
-                    <div className="mt-3">
-                      <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-600">
-                        {action.name}
-                      </h3>
-                      <p className="mt-1 text-xs text-gray-500">
-                        {action.description}
-                      </p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div className="bg-white border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-sm font-medium text-gray-900">Recent Activity</h3>
-            </div>
-            <div className="p-6">
-              <div className="flow-root">
-                <ul className="-mb-8">
-                  {recentActivities.map((activity, activityIdx) => (
-                    <li key={activity.id}>
-                      <div className="relative pb-8">
-                        {activityIdx !== recentActivities.length - 1 ? (
-                          <span
-                            className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
-                            aria-hidden="true"
-                          />
-                        ) : null}
-                        <div className="relative flex space-x-3">
-                          <div>
-                            <span className={`h-6 w-6 rounded-full flex items-center justify-center ring-8 ring-white ${
-                              activity.type === 'payslip' ? 'bg-green-500' :
-                              activity.type === 'announcement' ? 'bg-yellow-500' :
-                              'bg-blue-500'
-                            }`}>
-                              {activity.type === 'payslip' ? (
-                                <CreditCard className="h-3 w-3 text-white" />
-                              ) : activity.type === 'announcement' ? (
-                                <Bell className="h-3 w-3 text-white" />
-                              ) : (
-                                <User className="h-3 w-3 text-white" />
-                              )}
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                            <div>
-                              <p className="text-xs text-gray-900">
-                                {activity.title}
-                              </p>
-                            </div>
-                            <div className="text-right text-xs whitespace-nowrap text-gray-500">
-                              <Clock className="h-3 w-3 inline mr-1" />
-                              {activity.time}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>

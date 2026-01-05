@@ -23,7 +23,6 @@ const Sidebar = ({ open, setOpen }) => {
     { name: 'Announcements', href: '/announcements', icon: faBell },
     { name: 'Payroll', href: '/payslips', icon: faCalculator },
     { name: 'Notifications', href: '/notifications', icon: faBell },
-    { name: 'Settings', href: '/settings', icon: faCog },
   ];
 
   const renderNavItem = (item) => {

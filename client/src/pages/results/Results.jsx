@@ -13,11 +13,15 @@ import {
   faTrophy,
   faMedal,
   faAward,
-  faUserGraduate
+  faUserGraduate,
+  faChartLine,
+  faTrash
 } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate } from 'react-router-dom';
 
 const Results = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,6 +42,23 @@ const Results = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentResults, setStudentResults] = useState([]);
   const [studentModalLoading, setStudentModalLoading] = useState(false);
+  
+  // Add Result modal states
+  const [showAddResultModal, setShowAddResultModal] = useState(false);
+  const [addResultClassId, setAddResultClassId] = useState(null);
+  const [addResultClassInfo, setAddResultClassInfo] = useState(null);
+  const [addResultLoading, setAddResultLoading] = useState(false);
+  const [subjectClasses, setSubjectClasses] = useState([]);
+  const [addResultStudents, setAddResultStudents] = useState([]);
+  const [gradingCriteria, setGradingCriteria] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedStudentForResult, setSelectedStudentForResult] = useState('');
+  const [selectedTerm, setSelectedTerm] = useState('');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [courseworkMark, setCourseworkMark] = useState('');
+  const [paperMarks, setPaperMarks] = useState([{ name: 'Paper 1', mark: '' }]);
+  const [savingResult, setSavingResult] = useState(false);
+  const [resultError, setResultError] = useState('');
   
   // Toast states
   const [toast, setToast] = useState({ message: null, type: 'success', visible: false });
@@ -202,6 +223,8 @@ const Results = () => {
   };
 
   const handleViewStudent = async (student) => {
+    // Close the class results modal when opening student modal
+    setShowViewModal(false);
     setShowStudentResultsModal(true);
     setStudentModalLoading(true);
     setSelectedStudent(student);
@@ -226,6 +249,11 @@ const Results = () => {
     setSelectedStudent(null);
     setStudentResults([]);
     setStudentModalLoading(false);
+    
+    // Reopen the class results modal if we have a selected class
+    if (selectedClass) {
+      setShowViewModal(true);
+    }
   };
 
   const getPositionIcon = (position) => {
@@ -242,9 +270,133 @@ const Results = () => {
     return { background: '#dbeafe', color: '#1e40af' };
   };
 
-  const handleAddResult = (classId) => {
-    // Navigate to results entry page
-    window.location.href = `/dashboard/results/entry/${classId}`;
+  const handleAddResult = async (classId) => {
+    setAddResultClassId(classId);
+    setAddResultLoading(true);
+    setShowAddResultModal(true);
+    setResultError('');
+    
+    try {
+      // Fetch class info
+      const classRes = await axios.get(`${BASE_URL}/classes/gradelevel-classes/${classId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAddResultClassInfo(classRes.data.data);
+      
+      // Fetch subject classes
+      const subjectRes = await axios.get(`${BASE_URL}/classes/subject-classes?gradelevel_class_id=${classId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSubjectClasses(subjectRes.data.data || []);
+      
+      // Fetch students
+      const studentsRes = await axios.get(`${BASE_URL}/classes/gradelevel-classes/${classId}/students`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAddResultStudents(studentsRes.data.data || []);
+      
+      // Fetch grading criteria
+      const gradingRes = await axios.get(`${BASE_URL}/results/grading`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGradingCriteria(gradingRes.data.data || []);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      showToast('Failed to load data', 'error');
+    } finally {
+      setAddResultLoading(false);
+    }
+  };
+
+  const handleCloseAddResultModal = () => {
+    setShowAddResultModal(false);
+    setAddResultClassId(null);
+    setAddResultClassInfo(null);
+    setAddResultLoading(false);
+    setSubjectClasses([]);
+    setAddResultStudents([]);
+    setGradingCriteria([]);
+    setSelectedSubject('');
+    setSelectedStudentForResult('');
+    setSelectedTerm('');
+    setSelectedYear(new Date().getFullYear().toString());
+    setCourseworkMark('');
+    setPaperMarks([{ name: 'Paper 1', mark: '' }]);
+    setSavingResult(false);
+    setResultError('');
+  };
+
+  const addPaperMark = () => {
+    setPaperMarks([...paperMarks, { name: `Paper ${paperMarks.length + 1}`, mark: '' }]);
+  };
+
+  const updatePaperMark = (index, field, value) => {
+    const updated = [...paperMarks];
+    updated[index][field] = value;
+    setPaperMarks(updated);
+  };
+
+  const removePaperMark = (index) => {
+    if (paperMarks.length > 1) {
+      setPaperMarks(paperMarks.filter((_, i) => i !== index));
+    }
+  };
+
+  const calculateTotalMarks = () => {
+    const coursework = parseFloat(courseworkMark) || 0;
+    const paperTotal = paperMarks.reduce((sum, paper) => sum + (parseFloat(paper.mark) || 0), 0);
+    const paperCount = paperMarks.filter(p => p.mark && parseFloat(p.mark) > 0).length;
+    const paperAverage = paperCount > 0 ? paperTotal / paperCount : 0;
+    return Math.round((coursework + paperAverage) * 100) / 100;
+  };
+
+  const calculateGrade = (totalMarks) => {
+    const criteria = gradingCriteria.find(c => 
+      totalMarks >= c.min_mark && totalMarks <= c.max_mark
+    );
+    return criteria ? { grade: criteria.grade, points: criteria.points } : { grade: 'N/A', points: 0 };
+  };
+
+  const handleSaveResult = async () => {
+    if (!selectedSubject || !selectedStudentForResult || !selectedTerm || !selectedYear) {
+      setResultError('Please fill in all required fields');
+      return;
+    }
+
+    setSavingResult(true);
+    setResultError('');
+    
+    try {
+      const totalMarks = calculateTotalMarks();
+      const gradeInfo = calculateGrade(totalMarks);
+
+      const payload = {
+        student_regnumber: selectedStudentForResult,
+        subject_class_id: parseInt(selectedSubject),
+        term: selectedTerm,
+        academic_year: selectedYear,
+        coursework_mark: courseworkMark ? parseFloat(courseworkMark) : null,
+        paper_marks: paperMarks.map(paper => ({
+          paper_name: paper.name,
+          mark: paper.mark ? parseFloat(paper.mark) : 0
+        })),
+        total_marks: totalMarks,
+        grade: gradeInfo.grade,
+        points: gradeInfo.points
+      };
+
+      await axios.post(`${BASE_URL}/results/results`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      showToast('Result saved successfully!', 'success');
+      handleCloseAddResultModal();
+    } catch (err) {
+      console.error('Error saving result:', err);
+      setResultError(err.response?.data?.message || 'Failed to save result');
+    } finally {
+      setSavingResult(false);
+    }
   };
 
   // Toast functions
@@ -319,8 +471,20 @@ const Results = () => {
 
   if (loading && classes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading classes...</div>
+      <div className="reports-container" style={{ 
+        height: '100%', 
+        maxHeight: '100%', 
+        overflow: 'hidden', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div className="loading-spinner"></div>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Loading classes...</p>
+        </div>
       </div>
     );
   }
@@ -341,7 +505,14 @@ const Results = () => {
           <p className="report-subtitle">View and manage student results by class.</p>
         </div>
         <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* No add button here since we navigate to entry page */}
+          <button
+            onClick={() => navigate('/dashboard/results/grading')}
+            className="btn-checklist"
+            style={{ fontSize: '0.7rem', padding: '6px 12px' }}
+          >
+            <FontAwesomeIcon icon={faChartLine} style={{ marginRight: '4px', fontSize: '0.7rem' }} />
+            Grading Criteria
+          </button>
         </div>
       </div>
 
@@ -410,8 +581,9 @@ const Results = () => {
         height: '100%'
       }}>
         {loading && classes.length === 0 ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#64748b' }}>
-            Loading classes...
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', gap: '16px' }}>
+            <div className="loading-spinner"></div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Loading classes...</p>
           </div>
         ) : (
           <table className="ecl-table" style={{ fontSize: '0.75rem', width: '100%' }}>
@@ -788,6 +960,211 @@ const Results = () => {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Result Modal */}
+      {showAddResultModal && (
+        <div className="modal-overlay" onClick={handleCloseAddResultModal}>
+          <div 
+            className="modal-dialog" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ maxWidth: '1200px', width: '95%', maxHeight: '90vh' }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ color: '#000000' }}>
+                Add Result - {addResultClassInfo?.name || 'Loading...'}
+              </h3>
+              <button className="modal-close-btn" onClick={handleCloseAddResultModal}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            
+            <div className="modal-body" style={{ maxHeight: 'calc(90vh - 120px)', overflowY: 'auto', padding: '20px' }}>
+              {addResultLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px' }}>
+                  <div className="loading-spinner"></div>
+                </div>
+              ) : (
+                <div>
+                  {resultError && (
+                    <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+                      {resultError}
+                    </div>
+                  )}
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    {/* Left Column - Selection */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Subject <span className="required">*</span></label>
+                        <select
+                          value={selectedSubject}
+                          onChange={(e) => setSelectedSubject(e.target.value)}
+                          className="form-control"
+                          required
+                        >
+                          <option value="">Select Subject</option>
+                          {subjectClasses.map((subject) => (
+                            <option key={subject.id} value={subject.id}>
+                              {subject.subject_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Student <span className="required">*</span></label>
+                        <select
+                          value={selectedStudentForResult}
+                          onChange={(e) => setSelectedStudentForResult(e.target.value)}
+                          className="form-control"
+                          required
+                        >
+                          <option value="">Select Student</option>
+                          {addResultStudents.map((student) => (
+                            <option key={student.RegNumber} value={student.RegNumber}>
+                              {student.Surname} {student.Name} ({student.RegNumber})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="form-group">
+                          <label className="form-label">Term <span className="required">*</span></label>
+                          <select
+                            value={selectedTerm}
+                            onChange={(e) => setSelectedTerm(e.target.value)}
+                            className="form-control"
+                            required
+                          >
+                            <option value="">Select Term</option>
+                            <option value="1">Term 1</option>
+                            <option value="2">Term 2</option>
+                            <option value="3">Term 3</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Academic Year <span className="required">*</span></label>
+                          <input
+                            type="text"
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(e.target.value)}
+                            className="form-control"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column - Marks Entry */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div className="form-group">
+                        <label className="form-label">Coursework Mark</label>
+                        <input
+                          type="number"
+                          value={courseworkMark}
+                          onChange={(e) => setCourseworkMark(e.target.value)}
+                          className="form-control"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="0"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <label className="form-label">Paper Marks</label>
+                          <button
+                            type="button"
+                            onClick={addPaperMark}
+                            className="modal-btn modal-btn-confirm"
+                            style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+                          >
+                            <FontAwesomeIcon icon={faPlus} style={{ marginRight: '4px', fontSize: '0.7rem' }} />
+                            Add Paper
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {paperMarks.map((paper, index) => (
+                            <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                value={paper.name}
+                                onChange={(e) => updatePaperMark(index, 'name', e.target.value)}
+                                className="form-control"
+                                style={{ flex: 1 }}
+                                placeholder="Paper name"
+                              />
+                              <input
+                                type="number"
+                                value={paper.mark}
+                                onChange={(e) => updatePaperMark(index, 'mark', e.target.value)}
+                                className="form-control"
+                                style={{ width: '100px' }}
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                placeholder="0"
+                              />
+                              {paperMarks.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removePaperMark(index)}
+                                  style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                                >
+                                  <FontAwesomeIcon icon={faTrash} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <div style={{ marginTop: '24px', padding: '16px', background: '#f9fafb', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
+                    <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '12px', textTransform: 'uppercase' }}>Summary</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', fontSize: '0.75rem' }}>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>Coursework:</span> {courseworkMark || 'N/A'}
+                      </div>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>Paper Average:</span> {calculateTotalMarks()}
+                      </div>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>Grade:</span> {calculateGrade(calculateTotalMarks()).grade}
+                      </div>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>Points:</span> {calculateGrade(calculateTotalMarks()).points}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="modal-footer">
+              <button className="modal-btn modal-btn-cancel" onClick={handleCloseAddResultModal}>
+                Cancel
+              </button>
+              {!addResultLoading && (
+                <button
+                  className="modal-btn modal-btn-confirm"
+                  onClick={handleSaveResult}
+                  disabled={savingResult || !selectedSubject || !selectedStudentForResult || !selectedTerm || !selectedYear}
+                >
+                  {savingResult ? 'Saving...' : 'Save Result'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

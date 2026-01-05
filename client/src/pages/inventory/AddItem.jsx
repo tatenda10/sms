@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import BASE_URL from '../../contexts/Api';
 
-const AddItem = () => {
+const AddItem = ({ onClose }) => {
   const navigate = useNavigate();
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -130,7 +130,7 @@ const AddItem = () => {
       console.log('✅ Item created successfully:', response.data);
       setSuccess('Item added successfully!');
 
-      // Reset form after 2 seconds
+      // Reset form and close modal after 2 seconds
       setTimeout(() => {
         setFormData({
           name: '',
@@ -143,6 +143,9 @@ const AddItem = () => {
           supplier: ''
         });
         setSuccess(null);
+        if (onClose) {
+          onClose();
+        }
       }, 2000);
 
     } catch (err) {
@@ -194,19 +197,21 @@ const AddItem = () => {
   };
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="mb-4">
-        <h3 className="text-sm font-medium text-gray-900 border-b border-gray-200 pb-2">Item Details</h3>
-      </div>
+    <div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {error && (
+        <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="modal-form">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
           {/* Left Column */}
-          <div className="space-y-4">
-            {/* Basic Information */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Item Name *
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-group">
+              <label className="form-label">
+                Item Name <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <input
                 type="text"
@@ -214,14 +219,14 @@ const AddItem = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 placeholder="e.g., Primary School Uniform - Boys"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Category *
+            <div className="form-group">
+              <label className="form-label">
+                Category <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 name="category"
@@ -229,7 +234,8 @@ const AddItem = () => {
                 onChange={handleInputChange}
                 required
                 disabled={loadingCategories}
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 disabled:bg-gray-100"
+                className="form-control"
+                style={loadingCategories ? { background: '#f3f4f6' } : {}}
               >
                 <option value="">
                   {loadingCategories ? 'Loading categories...' : 'Select Category'}
@@ -240,47 +246,47 @@ const AddItem = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Reference *
+            <div className="form-group">
+              <label className="form-label">
+                Reference <span style={{ color: '#dc2626' }}>*</span>
               </label>
-              <div className="flex gap-2">
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <input
                   type="text"
                   name="reference"
                   value={formData.reference}
                   onChange={handleInputChange}
                   required
-                  className="flex-1 px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                  className="form-control"
+                  style={{ flex: 1 }}
                   placeholder="e.g., UNI-PRI-B-001"
                 />
                 <button
                   type="button"
                   onClick={generateReference}
-                  className="px-3 py-2 bg-gray-100 text-gray-700 text-xs hover:bg-gray-200 border border-gray-300"
+                  className="btn-checklist"
+                  style={{ whiteSpace: 'nowrap' }}
                 >
                   Auto
                 </button>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Description
-              </label>
+            <div className="form-group">
+              <label className="form-label">Description</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
                 rows="2"
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 placeholder="Brief description of the item..."
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Unit Price (USD) *
+            <div className="form-group">
+              <label className="form-label">
+                Unit Price (USD) <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <input
                 type="number"
@@ -290,18 +296,17 @@ const AddItem = () => {
                 required
                 step="0.01"
                 min="0"
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 placeholder="0.00"
               />
             </div>
           </div>
 
           {/* Right Column */}
-          <div className="space-y-4">
-            {/* Stock Information */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Current Stock *
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-group">
+              <label className="form-label">
+                Current Stock <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <input
                 type="number"
@@ -310,35 +315,31 @@ const AddItem = () => {
                 onChange={handleInputChange}
                 required
                 min="0"
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 placeholder="0"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Storage Location
-              </label>
+            <div className="form-group">
+              <label className="form-label">Storage Location</label>
               <input
                 type="text"
                 name="location"
                 value={formData.location}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 placeholder="e.g., Storage Room A"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Supplier
-              </label>
+            <div className="form-group">
+              <label className="form-label">Supplier</label>
               <input
                 type="text"
                 name="supplier"
                 value={formData.supplier}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 text-xs focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                className="form-control"
                 placeholder="e.g., Uniforms Plus Ltd"
               />
             </div>
@@ -346,30 +347,30 @@ const AddItem = () => {
         </div>
 
         {/* Preview Section */}
-        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded">
-          <h4 className="text-xs font-medium text-gray-900 mb-3">Item Preview</h4>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+        <div style={{ marginTop: '20px', padding: '16px', background: '#f9fafb', border: '1px solid var(--border-color)', borderRadius: '4px' }}>
+          <h4 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>Item Preview</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.75rem' }}>
             <div>
-              <span className="text-gray-600">Total Value:</span>
-              <span className="ml-2 font-medium text-gray-900">
+              <span style={{ color: 'var(--text-secondary)' }}>Total Value:</span>
+              <span style={{ marginLeft: '8px', fontWeight: 500, color: 'var(--text-primary)' }}>
                 {formatCurrency(calculateTotalValue())}
               </span>
             </div>
             <div>
-              <span className="text-gray-600">Stock Status:</span>
-              <span className={`ml-2 font-medium ${getStatusColor(getStockStatus())}`}>
+              <span style={{ color: 'var(--text-secondary)' }}>Stock Status:</span>
+              <span style={{ marginLeft: '8px', fontWeight: 500 }} className={getStatusColor(getStockStatus())}>
                 {getStockStatus()}
               </span>
             </div>
             <div>
-              <span className="text-gray-600">Category:</span>
-              <span className="ml-2 font-medium text-gray-900">
+              <span style={{ color: 'var(--text-secondary)' }}>Category:</span>
+              <span style={{ marginLeft: '8px', fontWeight: 500, color: 'var(--text-primary)' }}>
                 {categories.find(cat => cat.id === parseInt(formData.category))?.name || 'Not selected'}
               </span>
             </div>
             <div>
-              <span className="text-gray-600">Reference:</span>
-              <span className="ml-2 font-medium text-gray-900">
+              <span style={{ color: 'var(--text-secondary)' }}>Reference:</span>
+              <span style={{ marginLeft: '8px', fontWeight: 500, color: 'var(--text-primary)' }}>
                 {formData.reference || 'Not generated'}
               </span>
             </div>
@@ -377,20 +378,28 @@ const AddItem = () => {
         </div>
 
         {/* Form Actions */}
-        <div className="mt-6 flex justify-end space-x-3">
+        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="modal-btn modal-btn-cancel"
+          >
+            Cancel
+          </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 flex items-center rounded"
+            className="modal-btn modal-btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             {loading ? (
               <>
-                <div className="animate-spin h-3.5 w-3.5 border-b-2 border-white mr-2"></div>
+                <div className="loading-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></div>
                 Adding...
               </>
             ) : (
               <>
-                <FontAwesomeIcon icon={faSave} className="mr-2" />
+                <FontAwesomeIcon icon={faSave} style={{ fontSize: '0.7rem' }} />
                 Add Item
               </>
             )}
@@ -398,33 +407,17 @@ const AddItem = () => {
         </div>
       </form>
 
-      {/* Success Modal */}
+      {/* Success Message */}
       {success && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div className="relative mx-auto p-6 border w-96 shadow-lg bg-white rounded-lg">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-              </div>
-              <h3 className="text-sm font-medium text-gray-900 mb-2">Success!</h3>
-              <p className="text-xs text-gray-600 mb-4">{success}</p>
-              <button
-                onClick={() => setSuccess(null)}
-                className="px-4 py-2 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 shadow-lg z-50 text-xs rounded">
-          {error}
+        <div style={{ 
+          padding: '10px', 
+          background: '#d1fae5', 
+          color: '#065f46', 
+          fontSize: '0.75rem', 
+          marginTop: '16px',
+          borderRadius: '4px'
+        }}>
+          {success}
         </div>
       )}
     </div>

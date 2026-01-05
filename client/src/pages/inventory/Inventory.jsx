@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faBoxes,
-  faPlus,
-  faTshirt,
-  faCogs,
-  faColumns
-} from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faTshirt, faCogs } from '@fortawesome/free-solid-svg-icons';
+import { useInventory } from '../../contexts/InventoryContext';
 
 // Import components
 import InventoryList from './components/InventoryList';
@@ -15,85 +10,168 @@ import IssueUniform from './IssueUniform';
 import Configurations from './Configurations';
 
 const Inventory = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { activeTab, setActiveTab } = useInventory();
+  const [showAddItemModal, setShowAddItemModal] = useState(false);
+  const [showIssueUniformModal, setShowIssueUniformModal] = useState(false);
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
 
-  const tabs = [
-    { id: 'dashboard', name: 'Dashboard', icon: faColumns },
-    { id: 'add-item', name: 'Add Item', icon: faPlus },
-    { id: 'issue-uniform', name: 'Issue Uniform', icon: faTshirt },
-    { id: 'categories', name: 'Categories', icon: faCogs }
-  ];
+  const handleOpenAddItem = () => {
+    setShowAddItemModal(true);
+  };
+
+  const handleCloseAddItemModal = () => {
+    setShowAddItemModal(false);
+  };
+
+  const handleOpenIssueUniform = () => {
+    setShowIssueUniformModal(true);
+  };
+
+  const handleCloseIssueUniformModal = () => {
+    setShowIssueUniformModal(false);
+  };
+
+  const handleOpenCategories = () => {
+    setShowCategoriesModal(true);
+  };
+
+  const handleCloseCategoriesModal = () => {
+    setShowCategoriesModal(false);
+  };
 
   const renderContent = () => {
-    const content = (() => {
-      switch (activeTab) {
-        case 'dashboard':
-          return <InventoryList />;
-        case 'add-item':
-          return <AddItem />;
-        case 'issue-uniform':
-          return <IssueUniform />;
-        case 'categories':
-          return <Configurations />;
-        default:
-          return <InventoryList />;
-      }
-    })();
-
-    return (
-      <div className="h-full overflow-hidden">
-        {content}
-      </div>
-    );
+    switch (activeTab) {
+      case 'dashboard':
+        return <InventoryList />;
+      default:
+        return <InventoryList />;
+    }
   };
 
   return (
-    <div className="reports-container" style={{
-      height: '100%',
-      maxHeight: '100%',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      background: '#f9fafb'
+    <div className="reports-container" style={{ 
+      height: '100%', 
+      maxHeight: '100%', 
+      overflow: 'hidden', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      position: 'relative' 
     }}>
       {/* Report Header */}
-      <div className="report-header" style={{ flexShrink: 0, padding: '15px 30px' }}>
+      <div className="report-header" style={{ flexShrink: 0 }}>
         <div className="report-header-content">
           <h2 className="report-title">Inventory Management</h2>
           <p className="report-subtitle">Manage school uniforms, supplies, and stock levels.</p>
         </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="report-filters" style={{ flexShrink: 0, padding: '0 30px 10px 30px' }}>
-        <div className="report-filters-left" style={{ overflowX: 'auto', paddingBottom: '0' }}>
-          <div className="flex space-x-1">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                                    flex items-center px-4 py-2 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-200
-                                    ${activeTab === tab.id
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}
-                                `}
-              >
-                <FontAwesomeIcon icon={tab.icon} className={`mr-2 h-3.5 w-3.5 ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`} />
-                {tab.name}
-              </button>
-            ))}
-          </div>
+        <div className="report-header-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={handleOpenAddItem}
+            className="btn-checklist"
+          >
+            <FontAwesomeIcon icon={faPlus} />
+            Add Item
+          </button>
+          <button
+            onClick={handleOpenIssueUniform}
+            className="btn-checklist"
+          >
+            <FontAwesomeIcon icon={faTshirt} />
+            Issue Uniform
+          </button>
+          <button
+            onClick={handleOpenCategories}
+            className="btn-checklist"
+          >
+            <FontAwesomeIcon icon={faCogs} />
+            Categories
+          </button>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-auto" style={{
-        padding: '0 30px 20px 30px'
+      {/* Content Container */}
+      <div className="report-content-container ecl-table-container" style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        flex: 1, 
+        overflow: 'auto', 
+        minHeight: 0,
+        padding: 0,
+        height: '100%'
       }}>
         {renderContent()}
       </div>
+
+      {/* Add Item Modal */}
+      {showAddItemModal && (
+        <div className="modal-overlay" onClick={handleCloseAddItemModal}>
+          <div 
+            className="modal-dialog" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '800px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title">Add Item</h3>
+              <button className="modal-close-btn" onClick={handleCloseAddItemModal}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <AddItem onClose={handleCloseAddItemModal} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Issue Uniform Modal */}
+      {showIssueUniformModal && (
+        <div className="modal-overlay" onClick={handleCloseIssueUniformModal}>
+          <div 
+            className="modal-dialog" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '900px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title">Issue Uniform</h3>
+              <button className="modal-close-btn" onClick={handleCloseIssueUniformModal}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <IssueUniform onClose={handleCloseIssueUniformModal} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Categories Modal */}
+      {showCategoriesModal && (
+        <div className="modal-overlay" onClick={handleCloseCategoriesModal}>
+          <div 
+            className="modal-dialog" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '900px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title">Categories</h3>
+              <button className="modal-close-btn" onClick={handleCloseCategoriesModal}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <Configurations onClose={handleCloseCategoriesModal} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -13,11 +13,17 @@ import {
   faShoppingCart,
   faList,
   faWarehouse,
-  faChartLine
+  faChartLine,
+  faBoxes,
+  faPlus,
+  faTshirt,
+  faCogs,
+  faColumns
 } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useSports } from '../contexts/SportsContext';
 import { useAccounting } from '../contexts/AccountingContext';
+import { useInventory } from '../contexts/InventoryContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logo from '../assets/brooklyne.png';
 
@@ -36,6 +42,10 @@ const Header = ({ onMenuClick }) => {
   const accountingContext = useAccounting();
   const { activeTab: activeAccountingTab, setActiveTab: onAccountingTabChange } = accountingContext;
 
+  // Get inventory context (will return default if not in provider)
+  const inventoryContext = useInventory();
+  const { activeTab: activeInventoryTab, setActiveTab: onInventoryTabChange } = inventoryContext;
+
   // Check if we're on the sports page
   const isSportsPage = location.pathname.startsWith('/dashboard/sports');
 
@@ -45,6 +55,9 @@ const Header = ({ onMenuClick }) => {
                            location.pathname.startsWith('/dashboard/procurement') ||
                            location.pathname.startsWith('/dashboard/assets') ||
                            location.pathname.startsWith('/dashboard/reports');
+
+  // Check if we're on an inventory page
+  const isInventoryPage = location.pathname.startsWith('/dashboard/inventory');
 
   // Set active accounting tab based on current route
   useEffect(() => {
@@ -62,6 +75,14 @@ const Header = ({ onMenuClick }) => {
       }
     }
   }, [location.pathname, isAccountingPage, onAccountingTabChange]);
+
+  // Set active inventory tab based on current route (if needed in future)
+  useEffect(() => {
+    if (isInventoryPage && onInventoryTabChange) {
+      // For now, keep the current tab from context
+      // Can be extended to set based on route if needed
+    }
+  }, [location.pathname, isInventoryPage, onInventoryTabChange]);
 
   // Determine active accounting tab from route (for display)
   const getActiveAccountingTab = () => {
@@ -266,9 +287,14 @@ const Header = ({ onMenuClick }) => {
             ))}
           </div>
         )}
-        {!isSportsPage && !isAccountingPage && (
+        {isInventoryPage && (
           <div className="top-nav-center">
-            {/* Empty when not on sports or accounting page */}
+            {/* Empty when on inventory page */}
+          </div>
+        )}
+        {!isSportsPage && !isAccountingPage && !isInventoryPage && (
+          <div className="top-nav-center">
+            {/* Empty when not on sports, accounting, or inventory page */}
           </div>
         )}
 

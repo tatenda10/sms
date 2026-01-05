@@ -14,7 +14,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import BASE_URL from '../../contexts/Api';
 
-const IssueUniform = () => {
+const IssueUniform = ({ onClose }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { token } = useAuth();
@@ -284,7 +284,7 @@ const IssueUniform = () => {
       console.log('✅ Issue created successfully:', response.data);
       setSuccess('Uniform issued successfully!');
 
-      // Reset form after 2 seconds
+      // Reset form and close modal after 2 seconds
       setTimeout(() => {
         const baseCurrency = currencies.find(c => c.base_currency);
         setIssueForm({
@@ -302,7 +302,9 @@ const IssueUniform = () => {
         setSelectedItem(null);
         setSelectedStudent(null);
         setSuccess(null);
-        navigate('/dashboard/inventory');
+        if (onClose) {
+          onClose();
+        }
       }, 2000);
 
     } catch (err) {
@@ -375,12 +377,15 @@ const IssueUniform = () => {
   const filteredStudents = students;
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="mb-4">
-        <h3 className="text-sm font-medium text-gray-900 border-b border-gray-200 pb-2">Issue Uniform Details</h3>
-      </div>
+    <div>
+      {error && (
+        <div style={{ padding: '10px', background: '#fee2e2', color: '#dc2626', fontSize: '0.75rem', marginBottom: '16px', borderRadius: '4px' }}>
+          {error}
+        </div>
+      )}
 
-      <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="modal-form">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Item Selection */}
         <div className="search-container">
           <label className="block text-xs font-medium text-gray-700 mb-2">
@@ -729,40 +734,49 @@ const IssueUniform = () => {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Form Actions */}
-      <div className="mt-6 flex justify-end space-x-3">
-        <button
-          type="button"
-          className="px-6 py-2 text-xs font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:opacity-50 flex items-center rounded"
-          onClick={handleSubmit}
-          disabled={loading || !selectedItem || !selectedStudent}
-        >
-          {loading ? (
-            <>
-              <div className="animate-spin h-3.5 w-3.5 border-b-2 border-white mr-2"></div>
-              Issuing...
-            </>
-          ) : (
-            <>
-              <FontAwesomeIcon icon={faUserGraduate} className="mr-2" />
-              Issue Uniform
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Success/Error Messages */}
-      {success && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 shadow-lg z-50 text-xs rounded">
-          {success}
         </div>
-      )}
 
-      {error && (
-        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 shadow-lg z-50 text-xs rounded">
-          {error}
+        {/* Form Actions */}
+        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="modal-btn modal-btn-cancel"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !selectedItem || !selectedStudent}
+            className="modal-btn modal-btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            {loading ? (
+              <>
+                <div className="loading-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }}></div>
+                Issuing...
+              </>
+            ) : (
+              <>
+                <FontAwesomeIcon icon={faUserGraduate} style={{ fontSize: '0.7rem' }} />
+                Issue Uniform
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+
+      {/* Success Message */}
+      {success && (
+        <div style={{ 
+          padding: '10px', 
+          background: '#d1fae5', 
+          color: '#065f46', 
+          fontSize: '0.75rem', 
+          marginTop: '16px',
+          borderRadius: '4px'
+        }}>
+          {success}
         </div>
       )}
     </div>

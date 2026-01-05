@@ -5,16 +5,19 @@ import {
   faUser,
   faCog,
   faSignOutAlt,
-  faBars
+  faBars,
+  faTimes
 } from '@fortawesome/free-solid-svg-icons';
 import { useEmployeeAuth } from '../contexts/EmployeeAuthContext';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/brooklyne.png';
+import SettingsModal from './SettingsModal';
 
 const Header = ({ onMenuClick }) => {
   const { employee, logout } = useEmployeeAuth();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -134,7 +137,7 @@ const Header = ({ onMenuClick }) => {
                 <button
                   className="dropdown-item"
                   onClick={() => {
-                    navigate('/settings');
+                    setShowSettingsModal(true);
                     setShowDropdown(false);
                   }}
                 >
@@ -153,6 +156,11 @@ const Header = ({ onMenuClick }) => {
           </div>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <SettingsModal onClose={() => setShowSettingsModal(false)} />
+      )}
     </nav>
   );
 };
